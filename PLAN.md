@@ -241,6 +241,11 @@ Encoder benchmark (24 s of 1728×1080, same content): `h264_videotoolbox` 6.5 s 
 
 ### Phase 3: Editor · Oct 17
 **Also in this phase:** B23, U13 (custom player controls + hover thumbnails).
+**Do first (§3d screens 3–5, references arrived after Phase 2 finished):** `design/loom-ref/` now holds the watch page (`16.22.00`), the watch page with the control bar and camera bubble live while recording (`16.22.37`), the library (`16.23.07`) and personal settings (`16.24.22`). Restyle the watch page, library, settings, control bar and bubble to match them. Note that Loom's current accent is **blue**, not purple: re-sample the tokens. Map the watch page's right panel tabs (Edit · Activity · Generate · Transcript · Settings) onto Spool's: the AI crew goes under **Generate**, and the editor's clean-up toggles (silence, filler words, captions) go under **Edit**, the way Loom shows them. Also now in the folder: `share-modal.webp` (Share title, Social and Embed links top right, "Add names, emails, or Space" field, General access row with Public dropdown, footer with Copy link · Share video at 0:00 · Set password · Share) and `countdown-and-control-bar.webp` (blue countdown circle with a cancel ✕ on its left and a skip ⏭ on its right, a tip line under it; full control bar: stop, timer, pause, restart, delete, rewind, more).
+**User-reported issues (2026-10-15, from testing the Phase 2 build):**
+- **B26 Countdown appeared late, by a varying amount.** Cause: `session.start` created the countdown only after `__prepare` resolved (camera and mic wake-up plus the 400 ms warm-up). **Fixed by Opus on 2026-10-15, not yet verified in the app:** the countdown now starts at once and the streams open while it counts (`await countdown` after `__prepare`). Verify: click Start → countdown visible in < 150 ms (U7), the recording still starts with no gap, cancel during the countdown leaves no stray windows or files.
+- **B27 Camera preview before recording, as in Loom.** While the launcher is open in Screen + Cam or Cam mode, show the camera bubble at its saved position so the user sees themselves before pressing Start. Keep this same window when recording starts (do not close and recreate it: that also removes one window creation from the start path). Hide it when the launcher closes without recording, when the mode switches to Screen only, or when the camera is turned off.
+- Match the countdown to the reference: cancel ✕ (aborts, deletes the empty record) and skip ⏭ (starts now).
 
 Page `server/public/editor.html` (owner-only). Non-destructive: edits are a list in the video record. "Apply" renders a new `video.mp4` with videotoolbox and keeps `video.prev.mp4` for one-level undo.
 1. Timeline with waveform (decode the audio once to a peaks JSON), zoom up to 50×, playhead, trim handles, split, delete range.
@@ -249,6 +254,33 @@ Page `server/public/editor.html` (owner-only). Non-destructive: edits are a list
 4. Stitch/insert: append or insert another library video or a new recording at the playhead.
 5. Overlays (text, arrow, box, blur box) with start/end, and variables `{{name}}` (already rendered by the player, so only the editor UI is missing). Caption style, background, CTA, custom thumbnail (frame picker or upload), GIF preview (3 s, `palettegen`).
 **Acceptance:** cutting 3 transcript words from a test clip removes exactly those ±50 ms; the filler pass finds the "um"s in a `say`-generated test clip; undo restores the previous file.
+
+#### Phase 3 results (executed 2026-10-15, Apple M2, 1440×900 @2x; one batched Electron run at the end, announced to the user first)
+**Done**
+- **Restyle to `design/loom-ref/` (blue):** watch page (Edit · Activity · Generate · Transcript · Settings; the clean-up toggles are under Edit, the AI crew under Generate), library with sidebar, personal settings, share modal, spaces, embed, countdown, control bar record button. Tokens re-sampled from the screenshots (accent `#3267d4`). Checked with headless Chrome screenshots (light and dark), not by eye in the app.
+- **B27:** the camera bubble is shown while the launcher is open, at the saved position, and reused when recording starts (same window id before and during: checked). It closes when the camera is turned off, when the launcher closes, or in Screen-only mode, and comes back with the launcher.
+- **Countdown:** ✕ cancel (stops the streams, deletes the empty record and folder, launcher returns, camera preview returns; 8/8 checks) and ⏭ skip (recording goes live; checked).
+- **B28:** focus stealing fixed (see §3b). Spool was never frontmost in any e2e scenario.
+- **Editor (`/edit/:id`, owner only):** timeline with waveform (100 peaks/s), zoom 1–50× (checked at 50×), playhead, trim handles, split markers, drag-select, delete range, restore; edit by transcript (word timestamps, click to seek, drag to select, delete); Clean up (silences > 0.8 s keeping a 0.3 s breath, filler words, LLM "rambles"), each a reviewable list that only adds to the draft; Insert (library video at playhead or at the end, "Record a new clip" opens the launcher); Overlays (text, arrow, box, blur) with start/end, drag/resize on the picture and `{{name}}` fallbacks; Style (caption style, background, **CTA text + link**, thumbnail from a frame or an uploaded picture, 3 s GIF). Draft autosaves; Apply renders once and keeps one level of undo; every time-keyed field (segments, words, chapters, overlays, comments, reactions, guide steps, cursor/clicks) is remapped.
+
+**Measured**
+| Acceptance | Result |
+|---|---|
+| Cut 3 transcript words ("show you the") removes exactly those ±50 ms | asked for 0.500 s, removed 0.480 s (headless, real ffmpeg + real Whisper on a `say` clip); in the editor UI the 3 selected words produce the single cut 3.000–4.400 s |
+| Filler pass finds the "um"s in a `say` clip | found `um@1.40, uh@4.42, um@7.64`; after cutting, Whisper hears no fillers |
+| Undo restores the previous file | yes, file and all remapped fields (unit test) |
+| B26 countdown painted < 150 ms after the click (Screen only) | **not reliable.** 8 runs: 7 at 90–112 ms, 1 at 151 ms (80 ms of IPC before `start()` ran). An earlier batch of 7 under heavier machine load: 3 at 405–419 ms. Median ≈ 100 ms; the tail is not under control |
+| Privacy Guard ≤ 20 s since Stop | 15.6 s when run alone (blur pass 6.6 s). It read 24.9 s once inside the full run (blur pass 13.2 s) while the machine was busy |
+| e2e (`node tests/e2e/run.js all`) | 82/83 (the one miss is the Privacy Guard timing above); the pipeline scenario alone: 19/19 |
+| Unit tests | 119/119 |
+
+**Not done / caveats**
+- **B26 is not met reliably** (see the table). `beginCountdown` records where the time goes (`metrics.cd`: prepared, loaded, bounds, load-wait, show). In the good runs the window shows 80–90 ms after `start()` is entered, of which ~25 ms is awaiting an already-resolved promise because the main process is busy, and 45 ms is the permission check that runs before the countdown. Next step: begin the countdown before `ensure()` and the setup, and cancel it if permissions fail.
+- **U13** (custom player controls + hover thumbnails) and **B23** (AudioWorklet dictation) were not in this session's task list and are **not done**.
+- Cursor highlight, ripples and zoom still exist only in the player; they are not burned into a downloaded file.
+- The editor preview skips the cut ranges while playing, but the rendered file is only made on Apply. The editor was exercised in headless Chrome with a synthetic clip, not with a long real recording. Apply from the page (button → queue → SSE progress) was not exercised end to end; the render itself is covered by the unit tests.
+- After Stop, `shell.openExternal` still opens the watch page in the browser, which brings the browser forward (a product choice, unchanged).
+- The Electron windows (launcher, bubble toolbar) were only checked as far as their tokens already match the reference.
 
 ### Phase 4: AI actions + MCP · Oct 18
 1. "AI Actions" tab: one-click outputs from transcript + guide + screen text: SOP doc, PR description, bug report, Jira/Linear issue body, follow-up email/message, meeting recap. Each is an agent with its own prompt and JSON schema, run through `agents/llm.js`, cached per video.
@@ -311,6 +343,7 @@ Fix each bug in the phase shown. Each fix gets a unit test or a self-test where 
 | B23 | `notes/index.html` | Dictation uses the deprecated `ScriptProcessorNode`. | AudioWorklet (tiny inline module). | 3 |
 | B24 | All windows | Self-test code ships inside `main.js`. | Move to `main/selftest.js`, loaded only when `SPOOL_SELFTEST` is set. | 1 |
 | B25 | Overlays and the Dock | Found in Phase 1: a regular (Dock) app cannot show windows over another app's full-screen Space. | The app runs as an accessory (Dock icon hidden) while any overlay is up, via `holdOverlay`/`releaseOverlay` plus `skipTransformProcessType`. Verified by the guard windows in the acceptance run. | 1 ✅ |
+| B28 | `windows.releaseOverlay`, countdown, startup | **Spool steals focus in normal use** (reported 2026-10-15: "keeps switching my tab"). `app.dock.show()` after every recording turns the process back into a foreground app, which activates it and switches Space; the countdown did `show(); focus()`; the launcher showed itself when the system started the app at login. | Dock icon is no longer re-shown after the last overlay (menu-bar app: tray and ⌥⇧R open the launcher). Countdown uses `showInactive` + `acceptFirstMouse` (✕ and ⏭ work on the first click; Space/Esc are gone because the window never has focus). No launcher at login (`wasOpenedAtLogin`). **Acceptance:** Spool is never the frontmost app during a run (`tests/e2e/run.js` polls `lsappinfo` every 100 ms; a before/after comparison alone gave a false failure when the user switched apps mid-run). **Open:** after Stop, `shell.openExternal` still opens the watch page in the browser, which does bring the browser forward; that is a product choice, not changed. | 3 ✅ (verified 2026-10-15: 7 e2e scenarios, Spool never frontmost) |
 
 ---
 
@@ -392,6 +425,7 @@ Keep the name **Spool** and its own logo. For icons, use inline SVGs drawn in th
 - Start each session by reading `PLAN.md` and `FEATURES.md`, and update both at the end (status + measured numbers).
 - Self-tests capture the user's real screen. Keep runs short, only inspect frames you need, and **delete test captures right after**.
 - Never change macOS system or security settings, and never toggle permissions. Ask the user.
+- **Do not launch the app (`electron .`, `npm start`, e2e, self-tests) while developing.** Every launch shows windows and takes focus, which pulls the user out of what they are doing. Batch all e2e and self-test runs into ONE run at the end of the phase, and tell the user right before it starts (how long, and that Spool will take over the screen). Unit tests (`npm test`) open no windows and are fine any time.
 - Do not rebuild `Spool.app` more than once per phase. Tell the user when a rebuild will reset permissions.
 - Do not add dependencies without a reason written here. Allowed new ones: `@modelcontextprotocol/sdk`, and possibly `smart-whisper` (Phase 2 benchmark).
 - Keep `npm start` working on a clean clone at every commit.

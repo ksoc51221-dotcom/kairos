@@ -10,7 +10,8 @@ html, body { height: 100%; overflow: hidden; }
 .key .i { width: 22px; height: 22px; }
 .key:hover { background: color-mix(in srgb, var(--key), white 8%); }
 .key:active { transform: scale(.95); }
-.rec .key { color: var(--red); }          /* recording: the square is red; paused: grey */
+.rec .key { background: var(--rec); color: var(--ink-strong); }  /* recording: orange-red key, white square (reference); paused: grey */
+.rec .key:hover { background: color-mix(in srgb, var(--rec), white 8%); }
 .paused .key { color: var(--key-ink); }
 
 #time { margin: 5px 0 6px; font: 600 13px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--ink-strong); }

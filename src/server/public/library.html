@@ -1,54 +1,75 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Spool</title><link rel="stylesheet" href="/static/app.css"><style>
-body{display:grid;grid-template-columns:230px 1fr;grid-template-rows:auto 1fr;height:100vh}
-.top{grid-column:1/3}
-nav{background:var(--card);border-right:1px solid var(--line);padding:14px 10px;overflow:auto}
-nav a,nav .nl{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;font-size:14px;color:var(--ink);cursor:pointer;justify-content:space-between}
-nav a:hover{background:var(--bg)}nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
-nav h6{margin:16px 11px 5px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);display:flex;justify-content:space-between;align-items:center}
-nav h6 button{border:0;background:none;color:var(--accent);font-size:16px;cursor:pointer;line-height:1}
-.bdg{background:var(--accent);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:700}
-main{overflow:auto;padding:26px 30px}
-h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:26px 0 10px}
-#q{width:340px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;transition:.15s;display:block}
-.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(35,25,66,.14)}
-.th{aspect-ratio:16/9;background:#25232f center/cover;position:relative}
-.th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 200ms cubic-bezier(.2,.8,.2,1)}.th img.in{opacity:1}
-.th .gif{position:absolute;inset:0;background:center/cover;opacity:0;transition:opacity 200ms cubic-bezier(.2,.8,.2,1)}.th .gif.on{opacity:1}
-.ring{width:46px;height:46px;transform:rotate(-90deg)}.ring circle{fill:none;stroke-width:4}.ring .bg{stroke:rgba(255,255,255,.25)}.ring .fg{stroke:#fff;stroke-linecap:round;transition:stroke-dashoffset 400ms cubic-bezier(.2,.8,.2,1)}
-.ring.spin{animation:rs 1s linear infinite}@keyframes rs{to{transform:rotate(270deg)}}
-.proc{flex-direction:column;gap:8px;text-align:center;padding:0 10px}.proc span{font-size:12px}
-.upbar{height:4px;background:rgba(255,255,255,.3);border-radius:4px;width:70%;overflow:hidden}.upbar i{display:block;height:100%;background:#fff;width:0;transition:width 150ms linear}
-@media (prefers-reduced-motion:reduce){.th img,.th .gif,.ring .fg{transition:none}.ring.spin{animation:none}}
-.dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font:600 11px -apple-system,sans-serif;padding:2px 6px;border-radius:5px}
-.tools{position:absolute;left:8px;top:8px;display:flex;gap:5px;opacity:0;transition:.15s}.card:hover .tools{opacity:1}
-.tools button{border:0;background:rgba(35,25,66,.85);color:#fff;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:13px}
-.lock{position:absolute;right:8px;top:8px;background:rgba(35,25,66,.85);color:#fff;border-radius:7px;padding:3px 7px;font-size:11px}
-.meta{padding:10px 12px}.t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.s{font-size:12px;color:var(--mute);margin-top:3px}
-.proc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;background:rgba(35,25,66,.65)}
-.empty{text-align:center;color:var(--mute);padding:60px 0}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.chip2{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif;cursor:pointer;color:var(--ink)}.chip2.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-#drop{position:fixed;inset:0;background:rgba(123,92,240,.85);color:#fff;display:none;place-items:center;font-size:26px;font-weight:700;z-index:90}
-.panelx{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px;max-width:720px}
-.panelx h3{margin:0 0 4px;font-size:15px}.panelx p.d{margin:0 0 12px;color:var(--mute);font-size:13px}
-.fr{display:flex;gap:12px;align-items:center;margin:10px 0}.fr label{flex:0 0 170px;font-size:13px;font-weight:600}.fr input[type=text],.fr input[type=password],.fr input:not([type]),.fr select,.fr input[type=number]{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:13.5px;min-width:0}
-.fr input[type=color]{width:44px;height:34px;border:0;background:none}.fr small{color:var(--mute);font-size:12px}
-.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:14px 0}.stat div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}.stat b{display:block;font-size:26px}.stat span{font-size:12px;color:var(--mute)}
-.bars{display:flex;align-items:flex-end;gap:6px;height:120px;margin:10px 0}.bars div{flex:1;background:linear-gradient(var(--accent),var(--mint));border-radius:4px 4px 0 0;position:relative;min-height:3px}.bars span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--mute)}
-table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mute);font-weight:600}
-.nt{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.nt.un{background:linear-gradient(90deg,var(--accent-soft),transparent)}.nt q{display:block;color:var(--mute);font-size:12.5px;margin-top:4px}
-.warn{background:#fff6e5;color:#7a5200;border-radius:10px;padding:10px 14px;font-size:13px;margin:10px 0}@media (prefers-color-scheme:dark){.warn{background:#3a2c0a;color:#ffd685}}
+/* Library and settings, in the layout of the Loom reference: sidebar (workspace card, navigation, admin tools), search bar, filters, video cards. */
+body { display: grid; grid-template-columns: 252px minmax(0, 1fr); grid-template-rows: 76px 1fr; height: 100vh; overflow: hidden; }
+@media (max-width: 860px) { body { grid-template-columns: 1fr; } nav { display: none; } .tophead .brand-s { display: none; } }
+nav { grid-row: 1 / 3; grid-column: 1; border-right: 1px solid var(--line); padding: 0; overflow: auto; display: flex; flex-direction: column; background: var(--bg); }
+.navtop { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px 20px; } .navtop .brand { font-size: 22px; flex: 1; }
+.ws { margin: 6px 12px 14px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.ws .a { padding: 14px 16px 12px; } .ws .a b { font: 500 17px/1.2 var(--font); display: flex; align-items: center; } .ws .a .m { display: flex; gap: 10px; align-items: center; margin-top: 8px; color: var(--mute); font-size: 14px; }
+.ws .tag { border: 1px solid var(--line); background: var(--wash); border-radius: 6px; padding: 2px 8px; font: 500 14px var(--font); color: var(--ink); }
+.ws .inv { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; border-top: 1px solid var(--line); background: none; padding: 12px 16px; font: 500 14px var(--font); cursor: pointer; text-align: left; } .ws .inv:hover { background: var(--wash); }
+nav .grp { padding: 0 12px; } nav a.ni, nav .ni { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; font: 500 16px/1.2 var(--font); color: var(--ink); cursor: pointer; margin-bottom: 2px; }
+nav a.ni:hover { background: var(--wash); } nav a.ni.on { background: var(--accent-soft); color: var(--accent); }
+nav a.ni .bdg { margin-left: auto; background: var(--danger); color: #fff; border-radius: 99px; font-size: 12px; padding: 1px 7px; font-weight: 700; } nav a.ni .pill { margin-left: auto; font-size: 13px; padding: 1px 8px; }
+nav hr { border: 0; border-top: 1px solid var(--line); margin: 14px 12px; }
+nav h6 { margin: 8px 24px 6px; font: 500 16px var(--font); color: var(--mute); display: flex; justify-content: space-between; align-items: center; } nav h6 button { border: 0; background: none; color: var(--mute); cursor: pointer; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; } nav h6 button:hover { background: var(--wash); }
+nav a.ni.sub { padding-left: 24px; font-weight: 400; }
+.rec { margin: auto 0 0; position: sticky; bottom: 0; padding: 14px 12px; background: var(--bg); } .rec .btn { width: 100%; min-height: 54px; font-size: 17px; border-radius: 14px; }
+.tophead { grid-column: 2; display: flex; align-items: center; gap: 14px; padding: 0 28px 0 24px; border-bottom: 0; }
+.search { flex: 1; max-width: 1100px; position: relative; } .search input { width: 100%; height: 48px; border: 1.5px solid var(--line); border-radius: 10px; padding: 0 16px 0 48px; font: 400 17px var(--font); background: var(--bg); color: var(--ink); } .search input:focus { outline: 0; border-color: var(--accent); } .search svg { position: absolute; left: 14px; top: 14px; color: var(--mute); }
+.badgebtn { position: relative; } .badgebtn i { position: absolute; right: 4px; top: 3px; background: var(--danger); color: #fff; border-radius: 6px; font: 600 11px/1 var(--font); padding: 3px 5px; font-style: normal; }
+main { grid-column: 2; overflow: auto; padding: 8px 40px 60px 40px; }
+.crumb { color: var(--mute); font: 500 19px var(--font); margin: 18px 0 2px; } h1 { font: 700 44px/1.1 var(--font); letter-spacing: -.02em; margin: 0; } h2 { font: 700 24px var(--font); margin: 34px 0 14px; letter-spacing: -.01em; }
+.headrow { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; } .headrow .grow { min-width: 20px; }
+.tabs { padding: 0; margin-top: 22px; border-bottom: 1px solid var(--line); gap: 24px; align-items: center; } .tabs .cnt { margin-left: auto; color: var(--mute); font-size: 18px; padding-bottom: 12px; }
+.filters { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; margin: 20px 0 22px; }
+.filters select { appearance: none; -webkit-appearance: none; border: 1px solid var(--line); border-radius: 10px; background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23292a2e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; padding: 11px 38px 11px 16px; font: 400 17px var(--font); color: var(--ink); cursor: pointer; } .filters select:hover { background-color: var(--wash); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 22px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; position: relative; display: block; transition: box-shadow 150ms var(--ease), transform 150ms var(--ease); }
+.card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.th { aspect-ratio: 16/9; background: #25272c center/cover; position: relative; }
+.th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 200ms var(--ease); } .th img.in { opacity: 1; }
+.th .gif { position: absolute; inset: 0; background: center/cover; opacity: 0; transition: opacity 200ms var(--ease); } .th .gif.on { opacity: 1; }
+.ring { width: 46px; height: 46px; transform: rotate(-90deg); } .ring circle { fill: none; stroke-width: 4; } .ring .bg { stroke: rgba(255, 255, 255, .25); } .ring .fg { stroke: #fff; stroke-linecap: round; transition: stroke-dashoffset 400ms var(--ease); }
+.ring.spin { animation: rs 1s linear infinite; } @keyframes rs { to { transform: rotate(270deg); } }
+.proc { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; color: #fff; font-size: 13px; background: rgba(20, 22, 26, .66); text-align: center; padding: 0 10px; }
+.upbar { height: 4px; background: rgba(255, 255, 255, .3); border-radius: 4px; width: 70%; overflow: hidden; } .upbar i { display: block; height: 100%; background: #fff; width: 0; transition: width 150ms linear; }
+@media (prefers-reduced-motion: reduce) { .th img, .th .gif, .ring .fg { transition: none; } .ring.spin { animation: none; } }
+.dur { position: absolute; right: 10px; bottom: 10px; background: rgba(40, 41, 45, .86); color: #fff; font: 500 17px/1 var(--font); padding: 6px 10px; border-radius: 8px; }
+.tools { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; opacity: 0; transition: opacity 150ms; } .card:hover .tools { opacity: 1; }
+.tools button { border: 0; background: rgba(40, 41, 45, .86); color: #fff; border-radius: 9px; width: 34px; height: 34px; cursor: pointer; display: grid; place-items: center; } .tools svg { width: 18px; height: 18px; }
+.lock { position: absolute; right: 10px; top: 10px; background: rgba(40, 41, 45, .86); color: #fff; border-radius: 8px; padding: 4px 9px; font-size: 13px; display: flex; gap: 5px; align-items: center; } .lock svg { width: 14px; height: 14px; }
+.meta { padding: 16px 18px 16px; } .who { display: flex; gap: 12px; align-items: center; } .who .avatar { width: 44px; height: 44px; font-size: 16px; } .who b { font: 500 17px/1.25 var(--font); } .who small { display: block; color: var(--mute); font-size: 16px; }
+.t { font: 500 20px/1.35 var(--font); margin: 14px 0 12px; min-height: 54px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; letter-spacing: -.005em; }
+.stats { display: flex; gap: 22px; color: var(--ink); font-size: 17px; } .stats span { display: inline-flex; align-items: center; gap: 8px; } .stats svg { color: var(--mute); }
+.empty { text-align: center; color: var(--mute); padding: 80px 0; font-size: 16px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 6px; } .chip2 { border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 6px 14px; font: 500 14px var(--font); cursor: pointer; color: var(--ink); } .chip2.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+#drop { position: fixed; inset: 0; background: color-mix(in srgb, var(--accent), transparent 12%); color: #fff; display: none; place-items: center; font-size: 28px; font-weight: 700; z-index: 90; }
+/* settings: one bordered panel, sections divided by rules (reference: personal settings) */
+.sp-wrap { max-width: 1180px; margin: 22px auto 0; border: 1px solid var(--line); border-radius: 24px; padding: 8px 36px 12px; }
+.sec { padding: 28px 0; border-bottom: 1px solid var(--line); } .sec:last-child { border-bottom: 0; } .sec h3 { margin: 0 0 6px; font: 600 24px var(--font); letter-spacing: -.01em; } .sec p.d { margin: 0 0 16px; color: var(--ink); font-size: 17px; }
+.sec .ident { display: flex; align-items: center; gap: 28px; margin-top: 22px; } .sec .ident .nm small { display: block; font-size: 17px; margin-bottom: 14px; } .sec .ident .nm b { font-size: 18px; }
+.fr { display: flex; gap: 16px; align-items: center; margin: 12px 0; } .fr label { flex: 0 0 210px; font: 600 15px var(--font); } .fr input[type=text], .fr input[type=password], .fr input:not([type]), .fr select, .fr input[type=number] { flex: 1; padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font-size: 15px; min-width: 0; }
+.fr input[type=color] { width: 48px; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: none; padding: 2px; } .fr small { color: var(--mute); font-size: 13.5px; line-height: 1.45; }
+.fr.note label { visibility: hidden; }
+.savebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 22px 0 14px; }
+.stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 18px 0; } .stat div { border: 1px solid var(--line); border-radius: 14px; padding: 18px; text-align: center; } .stat b { display: block; font-size: 30px; } .stat span { font-size: 14px; color: var(--mute); }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 130px; margin: 10px 0 26px; } .bars div { flex: 1; background: var(--accent); border-radius: 5px 5px 0 0; position: relative; min-height: 3px; } .bars span { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--mute); }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; } td, th { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; } th { color: var(--mute); font-weight: 600; }
+.nt { display: flex; gap: 12px; padding: 14px 8px; border-bottom: 1px solid var(--line); } .nt.un { background: var(--accent-soft); border-radius: 10px; } .nt q { display: block; color: var(--mute); font-size: 14px; margin-top: 4px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 10px 0; }
 </style></head><body>
-<div class="top"><a class="brand" href="/"><span class="logo"></span><span id="bn">Spool</span></a><input id="q" placeholder="Search titles, transcripts, tags, people…"><div class="grow"></div><label class="btn" for="file">⬆ Upload video</label><input id="file" type="file" accept="video/*,.mkv,.avi,.mov" hidden></div>
-<nav id="nav"></nav><main id="main"></main><div id="drop">Drop a video to add it to your library</div><div id="modal" class="modal" hidden></div>
-<script src="/static/csrf.js"></script>
+<nav id="nav"></nav>
+<header class="tophead"><div class="search"><span data-i="search"></span><input id="q" placeholder="Search for people, tags, folders, Spaces, and videos" aria-label="Search"></div>
+  <a class="iconbtn" href="#/settings" title="Help and settings" data-i="help"></a><a class="iconbtn badgebtn" href="#/notifications" id="bell" title="Notifications" data-i="bell"></a><a class="avatar" id="who" href="#/settings" title="Personal settings"></a></header>
+<main id="main"></main><div id="drop">Drop a video to add it to your library</div><div id="modal" class="modal" hidden></div>
+<input id="file" type="file" accept="video/*,.mkv,.avi,.mov" hidden>
+<script src="/static/csrf.js"></script><script src="/static/ui.js"></script>
 <script>
 let SCOPE = null; // while a soft update renders into a detached element, ids are looked up there first
-const $ = (i) => (SCOPE && SCOPE.querySelector('#' + i)) || document.getElementById(i), esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (i) => (SCOPE && SCOPE.querySelector('#' + i)) || document.getElementById(i), { esc, i: I, ago, dur } = UI;
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-const ago = (t) => { const m = (Date.now() - t) / 60000; return m < 1 ? 'just now' : m < 60 ? `${Math.floor(m)}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`; };
 const J = async (u, m, b) => { const r = await fetch(u, { method: m || (b ? 'POST' : 'GET'), headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText); return r.status === 204 ? null : r.json().catch(() => null); };
 // U3/U18: make `dst`'s children match `src`'s while touching only what differs. Cards are matched by data-key, so a card whose video did not change
 // keeps its DOM node (hover, loaded image, running GIF) and a changed one is swapped in place.
@@ -70,26 +91,36 @@ function morph(dst, src) {
   for (const n of old.values()) n.remove();
 }
 let uploads = []; // U19: files being sent right now, shown as cards at once
-let videos = [], folders = [], spaces = [], notifs = [], settings = {}, route = location.hash.slice(2) || 'home';
+let videos = [], folders = [], spaces = [], notifs = [], settings = {}, me = {}, route = location.hash.slice(2) || 'home';
+const F = { type: '', act: '', date: '', sort: 'new', tab: 'videos' }; // filters on My Library
 
 async function refresh() { [videos, folders, spaces, notifs] = await Promise.all([J('/api/videos'), J('/api/folders'), J('/api/spaces'), J('/api/notifications')]); renderNav(); }
 function renderNav() {
-  const un = notifs.filter((n) => !n.read).length, nav = (r, l, extra = '') => `<a href="#/${r}" class="${route === r ? 'on' : ''}"><span>${l}</span>${extra}</a>`;
-  $('nav').innerHTML = nav('home', '🏠 Home') + nav('library', '📚 My Library') + nav('watchlater', '⏱ Watch later') + nav('recent', '🕘 Recently watched') + nav('unfinished', '▶ Unfinished') +
-    `<h6>Folders <button id="addf" title="New folder">+</button></h6>` + folders.map((f) => nav('folder/' + f.id, '📁 ' + esc(f.name))).join('') +
-    `<h6>Spaces <button id="adds" title="New space">+</button></h6>` + spaces.map((s) => nav('space/' + s.id, '👥 ' + esc(s.name))).join('') +
-    `<h6>Workspace</h6>` + nav('notifications', '🔔 Notifications', un ? `<span class="bdg">${un}</span>` : '') + nav('insights', '📈 Insights') + nav('settings', '⚙ Settings');
+  const un = notifs.filter((n) => !n.read).length, ni = (r, ic, l, extra = '', cls = '') => `<a href="#/${r}" class="ni ${cls} ${route === r ? 'on' : ''}">${ic ? I(ic) : ''}<span>${l}</span>${extra}</a>`;
+  $('nav').innerHTML = `<div class="navtop"><a class="brand" href="#/home">${UI.logo(me.brand)}<span>${esc(me.brand?.hideBranding ? '' : me.brand?.name || 'Spool')}</span></a><button class="iconbtn" id="collapse" title="Hide the sidebar">${I('sidebar')}</button></div>
+    <div class="ws"><div class="a"><b>${esc(settings.ownerName || 'You')}</b><div class="m"><span class="tag">Local</span><span>${settings.lan ? 'Shared on your network' : 'This computer only'}</span></div></div><button class="inv" id="invite">${I('user-plus')}Share on my network</button></div>
+    <div class="grp">${ni('home', 'foryou', 'For you')}${ni('library', 'library', 'Library')}${ni('watchlater', 'bookmark', 'Watch later')}${ni('recent', 'clock', 'Recent')}${ni('notifications', 'bell', 'Notifications', un ? `<span class="bdg">${un}</span>` : '')}${ni('settings', 'gear', 'Personal settings')}</div>
+    <hr><h6>Folders <button id="addf" title="New folder">${I('plus')}</button></h6><div class="grp">${folders.map((f) => ni('folder/' + f.id, 'folder', esc(f.name))).join('') || '<div style="padding:4px 12px 8px;color:var(--mute);font-size:14px">No folders yet</div>'}</div>
+    <h6>Spaces <button id="adds" title="New space">${I('plus')}</button></h6><div class="grp">${spaces.map((s) => ni('space/' + s.id, 'users', esc(s.name))).join('') || '<div style="padding:4px 12px 8px;color:var(--mute);font-size:14px">No spaces yet</div>'}</div>
+    <hr><h6 style="margin-top:0">Admin tools</h6><div class="grp">${ni('insights', 'chart', 'Insights')}${ni('workspace', 'gear', 'Workspace')}</div>
+    <div class="rec"><button class="btn pri" id="record">${I('logo')}Record a video</button></div>`;
   $('addf').onclick = async () => { const n = prompt('Folder name?'); if (n) { await J('/api/folders', 'POST', { name: n }); await refresh(); } };
   $('adds').onclick = async () => { const n = prompt('Space name? A space is a shareable page of videos.'); if (n) { await J('/api/spaces', 'POST', { name: n }); await refresh(); } };
+  $('invite').onclick = () => (location.hash = '#/settings');
+  $('record').onclick = recordVideo; $('collapse').onclick = () => { document.body.style.gridTemplateColumns = document.body.style.gridTemplateColumns ? '' : '0 minmax(0,1fr)'; $('nav').style.display = document.body.style.gridTemplateColumns ? 'none' : ''; };
+  $('bell').dataset.n = un; $('bell').querySelector('i')?.remove(); if (un) $('bell').insertAdjacentHTML('beforeend', `<i>${un}</i>`);
 }
+async function recordVideo() { try { await J('/api/launcher/open', 'POST', {}); } catch (e) { alert(e.message); } }
 const pct = (v) => { const m = /(\d+)%/.exec(v.stage || ''); return m ? +m[1] : null; };
 const ring = (p) => { const C = 2 * Math.PI * 18; return `<svg class="ring ${p == null ? 'spin' : ''}" viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" cx="22" cy="22" r="18" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - (p == null ? 0.28 : p / 100))).toFixed(1)}"/></svg>`; };
+const ACCESS = { link: 'Public', email: 'Asks for email', password: 'Password', private: 'Only you' };
 const card = (v) => `<a class="card" data-key="${v.id}" href="/v/${v.id}"><div class="th">${v.status === 'failed' ? '' : `<img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')">`}${v.hasGif ? `<div class="gif" data-gif="/media/${v.id}/preview.gif"></div>` : ''}
   ${v.status !== 'ready' ? `<div class="proc">${v.status === 'failed' ? 'Failed' : `${ring(pct(v))}<span>${esc((v.stage || 'Processing').replace(/\s*\d+%$/, ''))}${pct(v) != null ? ' ' + pct(v) + '%' : '…'}</span>`}</div>` : ''}
-  <div class="tools"><button data-a="later" data-id="${v.id}" title="Watch later">${v.watchLater ? '★' : '☆'}</button><button data-a="del" data-id="${v.id}" title="Delete">🗑</button></div>
-  ${v.privacy?.mode && v.privacy.mode !== 'link' ? `<span class="lock">🔒 ${v.privacy.mode}</span>` : ''}${v.type === 'image' ? '' : `<span class="dur">${fmt(v.duration)}</span>`}</div>
-  <div class="meta"><div class="t">${esc(v.title)}</div><div class="s">${v.views} view${v.views === 1 ? '' : 's'} · ${ago(v.createdAt)}${v.tags?.length ? ' · #' + esc(v.tags[0]) : ''}</div></div></a>`;
-const upCard = (u) => `<div class="card" data-key="up-${u.id}"><div class="th"><div class="proc">${u.error ? esc(u.error) : `<span>Uploading ${esc(u.name.slice(0, 28))}</span><div class="upbar"><i style="width:${u.pct}%"></i></div><span>${u.pct}%</span>`}</div></div><div class="meta"><div class="t">${esc(u.name)}</div><div class="s">Uploading</div></div></div>`;
+  <div class="tools"><button data-a="later" data-id="${v.id}" title="Watch later">${I(v.watchLater ? 'bookmark-on' : 'bookmark')}</button><button data-a="del" data-id="${v.id}" title="Delete">${I('trash')}</button></div>
+  ${v.privacy?.mode && v.privacy.mode !== 'link' ? `<span class="lock">${I('lock')} ${v.privacy.mode}</span>` : ''}${v.type === 'image' ? '' : `<span class="dur">${dur(v.duration)}</span>`}</div>
+  <div class="meta"><div class="who"><span class="avatar">${esc(UI.initials(v.by || settings.ownerName || 'You'))}</span><div><b>${esc(v.by || settings.ownerName || 'You')} · ${ago(v.createdAt)}</b><small>${ACCESS[v.privacy?.mode || 'link']}${(v.spaces || []).length ? ` · ${v.spaces.length} space${v.spaces.length > 1 ? 's' : ''}` : ''}</small></div></div>
+  <div class="t">${esc(v.title)}</div><div class="stats"><span>${I('eye')}${v.views}</span><span>${I('comment')}${v.comments.length}</span><span>${I('smile')}${Object.values(v.reactions || {}).reduce((a, b) => a + b, 0)}</span></div></div></a>`;
+const upCard = (u) => `<div class="card" data-key="up-${u.id}"><div class="th"><div class="proc">${u.error ? esc(u.error) : `<span>Uploading ${esc(u.name.slice(0, 28))}</span><div class="upbar"><i style="width:${u.pct}%"></i></div><span>${u.pct}%</span>`}</div></div><div class="meta"><div class="t">${esc(u.name)}</div><div class="stats"><span>Uploading</span></div></div></div>`;
 let upShown = false;
 const grid = (list, empty = 'Nothing here yet.') => { const ups = !upShown && uploads.length ? (upShown = true, uploads.map(upCard).join('')) : ''; return list.length || ups ? `<div class="grid" data-morph>${ups}${list.map(card).join('')}</div>` : `<div class="empty">${empty}</div>`; };
 function wireCards() {
@@ -112,83 +143,117 @@ async function show(soft = false) {
   if (soft) SCOPE = stage;
   try { await render_(m, q); } finally { SCOPE = null; }
   if (soft) { morph(live, stage); }
-  wireCards();
+  UI.fill(live); wireCards();
+}
+const head = (crumb, title, actions = '') => `<div class="crumb">${crumb}</div><div class="headrow"><h1>${title}</h1><div class="grow"></div>${actions}</div>`;
+const newMenu = `<span class="split"><button class="btn pri" id="newvid">New video</button><button class="btn pri" id="newvidd" aria-label="More" data-i="down"></button></span>`;
+function wireNew() {
+  const open = (e) => { const a = e.currentTarget, r = a.getBoundingClientRect(); document.querySelectorAll('.pop').forEach((p) => p.remove()); const p = document.createElement('div'); p.className = 'pop'; p.style.cssText = `position:fixed;z-index:30;right:${innerWidth - r.right}px;top:${r.bottom + 8}px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-pop);padding:8px;min-width:220px`;
+    p.innerHTML = `<button class="btn ghost" style="width:100%;justify-content:flex-start" id="p-rec">${I('video')}Record a video</button><button class="btn ghost" style="width:100%;justify-content:flex-start" id="p-up">${I('upload')}Upload a video</button>`; document.body.appendChild(p);
+    p.querySelector('#p-rec').onclick = () => { p.remove(); recordVideo(); }; p.querySelector('#p-up').onclick = () => { p.remove(); $('file').click(); };
+    setTimeout(() => document.addEventListener('mousedown', function f(ev) { if (!p.contains(ev.target)) { p.remove(); document.removeEventListener('mousedown', f); } }));
+  };
+  if ($('newvid')) { $('newvid').onclick = recordVideo; $('newvidd').onclick = open; }
+}
+const sel = (id, opts, cur) => `<select id="${id}" aria-label="${opts[0][1]}">${opts.map(([k, l]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+function filtered(list) {
+  const day = 86400000, now = Date.now();
+  let r = list.filter((v) => (F.tab === 'screenshots' ? v.type === 'image' : v.type !== 'image'));
+  if (F.type) r = r.filter((v) => (F.type === 'upload' ? v.source === 'upload' : v.mode === F.type));
+  if (F.act === 'comments') r = r.filter((v) => v.comments.length); else if (F.act === 'views') r = r.filter((v) => v.views > 0); else if (F.act === 'none') r = r.filter((v) => !v.views);
+  if (F.date) r = r.filter((v) => now - v.createdAt < { today: day, week: 7 * day, month: 30 * day }[F.date]);
+  r = r.slice().sort((a, b) => (F.sort === 'old' ? a.createdAt - b.createdAt : F.sort === 'views' ? b.views - a.views : F.sort === 'title' ? a.title.localeCompare(b.title) : b.createdAt - a.createdAt));
+  return r;
 }
 async function render_(m, q) {
-  if (q && !route.startsWith('settings')) { const r = videos.filter((v) => matches(v, q)); m.innerHTML = `<h1>Search</h1><div class="s chip">${r.length} result${r.length === 1 ? '' : 's'} for “${esc(q)}”</div><br>${grid(r, 'No matches.')}`; return; }
+  if (q && !route.startsWith('settings')) { const r = videos.filter((v) => matches(v, q)); m.innerHTML = head('Search', 'Results') + `<div class="crumb" style="margin:6px 0 20px">${r.length} result${r.length === 1 ? '' : 's'} for “${esc(q)}”</div>` + grid(r, 'No matches.'); return; }
   if (route === 'home') {
     const f = await J('/api/feed'); const sec = (t, l) => (l.length ? `<h2>${t}</h2>${grid(l)}` : '');
-    m.innerHTML = `<h1>Welcome back</h1><div class="chip">Everything here is computed on this computer.</div>` + sec('Continue watching', f.unfinished) + sec('Trending this week', f.trending) + sec('Recommended for you', f.recommended) + sec('From tags you follow', f.following) + sec('Latest', f.latest) +
-      (videos.length ? '' : '<div class="empty">No videos yet. Click ● Spool in your menu bar to record one, or upload a file.</div>');
+    m.innerHTML = head('Home', `Welcome back, ${esc(settings.ownerName || 'there')}`, newMenu) + `<div class="crumb" style="margin-top:6px">Everything here is computed on this computer.</div>` + sec('Continue watching', f.unfinished) + sec('Trending this week', f.trending) + sec('Recommended for you', f.recommended) + sec('From tags you follow', f.following) + sec('Latest', f.latest) +
+      (videos.length ? '' : '<div class="empty">No videos yet. Click “Record a video”, or upload a file.</div>'); wireNew();
   } else if (route === 'library') {
-    const tags = [...new Set(videos.flatMap((v) => v.tags || []))].sort(), fol = settings.follows || [];
-    m.innerHTML = `<h1>My Library</h1><div class="chips" id="tags">${tags.map((t) => `<button class="chip2 ${window._tag === t ? 'on' : ''}" data-t="${esc(t)}">#${esc(t)}</button>`).join('')}${window._tag ? `<button class="chip2" id="follow">${fol.includes(window._tag) ? '✓ Following' : '+ Follow'} #${esc(window._tag)}</button>` : ''}</div>` + grid(videos.filter((v) => !window._tag || (v.tags || []).includes(window._tag)), 'No videos yet.');
+    const tags = [...new Set(videos.flatMap((v) => v.tags || []))].sort(), fol = settings.follows || [], all = filtered(videos);
+    m.innerHTML = head('Library', 'Videos', `<button class="btn" id="newf">New folder</button>${newMenu}`) +
+      `<div class="tabs" id="ltabs"><button data-t="videos" class="${F.tab === 'videos' ? 'on' : ''}">Videos</button><button data-t="screenshots" class="${F.tab === 'screenshots' ? 'on' : ''}">Screenshots</button><span class="cnt">${all.length} ${F.tab === 'videos' ? 'video' : 'screenshot'}${all.length === 1 ? '' : 's'}</span></div>
+      <div class="filters">${sel('f-type', [['', 'Video type'], ['screen', 'Screen'], ['screen-cam', 'Screen + camera'], ['cam', 'Camera only'], ['upload', 'Uploaded']], F.type)}${sel('f-act', [['', 'Activity'], ['views', 'Has views'], ['none', 'No views yet'], ['comments', 'Has comments']], F.act)}${sel('f-date', [['', 'Upload date'], ['today', 'Today'], ['week', 'This week'], ['month', 'This month']], F.date)}${sel('f-sort', [['new', 'Newest to Oldest'], ['old', 'Oldest to Newest'], ['views', 'Most viewed'], ['title', 'Title A to Z']], F.sort)}</div>` +
+      (tags.length ? `<div class="chips" id="tags">${tags.map((t) => `<button class="chip2 ${window._tag === t ? 'on' : ''}" data-t="${esc(t)}">#${esc(t)}</button>`).join('')}${window._tag ? `<button class="chip2" id="follow">${fol.includes(window._tag) ? '✓ Following' : '+ Follow'} #${esc(window._tag)}</button>` : ''}</div>` : '') +
+      grid(all.filter((v) => !window._tag || (v.tags || []).includes(window._tag)), F.tab === 'videos' ? 'No videos yet.' : 'No screenshots yet. Press ⌥⇧A to take one.');
+    wireNew(); $('newf').onclick = () => $('addf').click();
+    document.querySelectorAll('#ltabs button').forEach((b) => (b.onclick = () => { F.tab = b.dataset.t; show(); }));
+    for (const [id, k] of [['f-type', 'type'], ['f-act', 'act'], ['f-date', 'date'], ['f-sort', 'sort']]) $(id).onchange = (e) => { F[k] = e.target.value; show(); };
     document.querySelectorAll('#tags .chip2[data-t]').forEach((b) => (b.onclick = () => { window._tag = window._tag === b.dataset.t ? null : b.dataset.t; show(); }));
-    if ($('follow')) $('follow').onclick = async () => { const s = await J('/api/settings'); const f = s.follows || []; const t = window._tag; await J('/api/settings', 'PUT', { follows: f.includes(t) ? f.filter((x) => x !== t) : [...f, t] }); settings.follows = null; settings = await J('/api/settings'); show(); };
-  } else if (route === 'watchlater') m.innerHTML = '<h1>Watch later</h1>' + grid(videos.filter((v) => v.watchLater), 'Star a video to save it here.');
-  else if (route === 'recent') m.innerHTML = '<h1>Recently watched</h1>' + grid(videos.filter((v) => v.lastWatchedAt).sort((a, b) => b.lastWatchedAt - a.lastWatchedAt), 'Videos you watch show up here.');
-  else if (route === 'unfinished') m.innerHTML = '<h1>Unfinished</h1>' + grid(videos.filter((v) => v.progress > 3 && v.duration > 5 && v.progress < v.duration * 0.9), 'Nothing half-watched.');
-  else if (route.startsWith('folder/')) { const f = folders.find((x) => x.id === route.split('/')[1]); m.innerHTML = `<h1>📁 ${esc(f?.name || 'Folder')}</h1><div class="chips"><button class="chip2" id="rn">Rename</button><button class="chip2" id="rm">Delete folder</button></div>` + grid(videos.filter((v) => v.folder === f?.id), 'Move videos here from the Share dialog.');
+    if ($('follow')) $('follow').onclick = async () => { const s = await J('/api/settings'); const f = s.follows || []; const t = window._tag; await J('/api/settings', 'PUT', { follows: f.includes(t) ? f.filter((x) => x !== t) : [...f, t] }); settings = await J('/api/settings'); show(); };
+  } else if (route === 'watchlater') m.innerHTML = head('Library', 'Watch later') + grid(videos.filter((v) => v.watchLater), 'Save a video with the bookmark button to find it here.');
+  else if (route === 'recent') m.innerHTML = head('Library', 'Recent') + grid(videos.filter((v) => v.lastWatchedAt).sort((a, b) => b.lastWatchedAt - a.lastWatchedAt), 'Videos you watch show up here.');
+  else if (route.startsWith('folder/')) { const f = folders.find((x) => x.id === route.split('/')[1]); m.innerHTML = head('Folder', esc(f?.name || 'Folder'), `<button class="btn" id="rn">Rename</button><button class="btn danger" id="rm">Delete folder</button>`) + `<div style="height:22px"></div>` + grid(videos.filter((v) => v.folder === f?.id), 'Move videos here from a video’s Settings tab.');
     $('rn').onclick = async () => { const n = prompt('New name?', f.name); if (n) { await J('/api/folders/' + f.id, 'PATCH', { name: n }); await refresh(); show(); } }; $('rm').onclick = async () => { if (confirm('Delete this folder? Videos stay in your library.')) { await J('/api/folders/' + f.id, 'DELETE'); location.hash = '#/library'; await refresh(); } }; }
   else if (route.startsWith('space/')) { const s = spaces.find((x) => x.id === route.split('/')[1]); const link = `${location.origin}/space/${s?.id}`;
-    m.innerHTML = `<h1>👥 ${esc(s?.name || 'Space')}</h1><div class="chip">Shareable page: <a href="${link}" style="color:var(--accent)">${link}</a></div><div class="chips"><button class="chip2" id="cp">Copy link</button><button class="chip2" id="rm">Delete space</button></div>` + grid(videos.filter((v) => (v.spaces || []).includes(s?.id)), 'Add videos from the Share dialog.');
+    m.innerHTML = head('Space', esc(s?.name || 'Space'), `<button class="btn" id="cp">${I('link')}Copy link</button><button class="btn danger" id="rm">Delete space</button>`) + `<div class="crumb" style="margin:8px 0 22px">Shareable page: <a href="${link}" style="color:var(--accent)">${link}</a></div>` + grid(videos.filter((v) => (v.spaces || []).includes(s?.id)), 'Add videos from a video’s Share dialog.');
     $('cp').onclick = () => navigator.clipboard.writeText(link); $('rm').onclick = async () => { if (confirm('Delete this space?')) { await J('/api/spaces/' + s.id, 'DELETE'); location.hash = '#/library'; await refresh(); } }; }
   else if (route === 'notifications') {
-    m.innerHTML = '<h1>Notifications</h1>' + (notifs.length ? notifs.map((n) => `<div class="nt ${n.read ? '' : 'un'}"><div style="flex:1"><b>${esc(n.by || 'Someone')}</b> ${n.type === 'comment' ? 'commented on' : n.type === 'mention' ? `mentioned <b>@${esc(n.to)}</b> on` : 'on'} <a href="/v/${n.videoId}?t=${Math.floor(n.t || 0)}" style="color:var(--accent);font-weight:600">${esc(n.title || 'a video')}</a> at ${fmt(n.t || 0)}${n.type === 'reaction' ? ' ' + esc(n.text) : ''}<br>${n.type !== 'reaction' ? `<span>“${esc(n.text)}”</span>` : ''}${n.snippet ? `<q>While you said: “${esc(n.snippet)}”</q>` : ''}</div><span class="chip">${ago(n.at)}</span></div>`).join('') : '<div class="empty">No notifications yet. Comments and reactions from viewers appear here.</div>');
+    m.innerHTML = head('Inbox', 'Notifications') + `<div style="height:14px"></div>` + (notifs.length ? notifs.map((n) => `<div class="nt ${n.read ? '' : 'un'}"><div style="flex:1"><b>${esc(n.by || 'Someone')}</b> ${n.type === 'comment' ? 'commented on' : n.type === 'mention' ? `mentioned <b>@${esc(n.to)}</b> on` : 'on'} <a href="/v/${n.videoId}?t=${Math.floor(n.t || 0)}" style="color:var(--accent);font-weight:600">${esc(n.title || 'a video')}</a> at ${fmt(n.t || 0)}${n.type === 'reaction' ? ' ' + esc(n.text) : ''}<br>${n.type !== 'reaction' ? `<span>“${esc(n.text)}”</span>` : ''}${n.snippet ? `<q>While you said: “${esc(n.snippet)}”</q>` : ''}</div><span class="chip">${ago(n.at)}</span></div>`).join('') : '<div class="empty">No notifications yet. Comments and reactions from viewers appear here.</div>');
     if (notifs.some((n) => !n.read)) { await J('/api/notifications/read', 'POST'); notifs.forEach((n) => (n.read = true)); setTimeout(renderNav, 400); }
   } else if (route === 'insights') renderInsights(m);
+  else if (route === 'workspace') renderWorkspace(m);
   else if (route === 'settings') renderSettings(m);
 }
 
 async function renderInsights(m) {
   const d = await J('/api/insights'), mx = Math.max(1, ...d.byDay.map((x) => x.n)), mb = (b) => (b / 1048576).toFixed(b > 1e8 ? 0 : 1) + ' MB';
-  m.innerHTML = `<h1>Insights</h1><div class="chip">Admin overview of this workspace</div><div class="stat"><div><b>${d.videos}</b><span>videos</span></div><div><b>${d.views}</b><span>views by others</span></div><div><b>${d.comments}</b><span>comments</span></div><div><b>${d.reactions}</b><span>reactions</span></div><div><b>${d.blurred}</b><span>secrets blurred</span></div><div><b>${mb(d.storage)}</b><span>on disk</span></div></div>
-  <h2>Views, last 14 days</h2><div class="bars">${d.byDay.map((x) => `<div style="height:${(x.n / mx) * 100}%" title="${x.n}"><span>${x.day.slice(3)}</span></div>`).join('')}</div><br>
+  m.innerHTML = head('Admin tools', 'Insights') + `<div class="crumb" style="margin:6px 0 0">Overview of this library</div><div class="stat"><div><b>${d.videos}</b><span>videos</span></div><div><b>${d.views}</b><span>views by others</span></div><div><b>${d.comments}</b><span>comments</span></div><div><b>${d.reactions}</b><span>reactions</span></div><div><b>${d.blurred}</b><span>secrets blurred</span></div><div><b>${mb(d.storage)}</b><span>on disk</span></div></div>
+  <h2>Views, last 14 days</h2><div class="bars">${d.byDay.map((x) => `<div style="height:${(x.n / mx) * 100}%" title="${x.n}"><span>${x.day.slice(3)}</span></div>`).join('')}</div>
   <h2>Top videos</h2><table><tr><th>Video</th><th>Views</th></tr>${d.top.map((t) => `<tr><td><a href="/v/${t.id}">${esc(t.title)}</a></td><td>${t.views}</td></tr>`).join('') || '<tr><td colspan=2 class="chip">No data yet</td></tr>'}</table>
   <h2>People</h2><table><tr><th>Who</th><th>Views</th><th>Time watched</th></tr>${d.people.map((p) => `<tr><td>${esc(p.name)} <span class="chip">${esc(p.email)}</span></td><td>${p.views}</td><td>${fmt(p.watched)}</td></tr>`).join('') || '<tr><td colspan=3 class="chip">No viewers yet</td></tr>'}</table>
   <h2>Activity log</h2><table>${d.activity.map((a) => `<tr><td>${new Date(a.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${esc(a.event)}</td><td>${esc(a.who || '')}</td><td>${esc(a.title || '')}</td></tr>`).join('')}</table>`;
 }
 
+const frow = (label, html, hint = '') => `<div class="fr"><label>${label}</label>${html}</div>${hint ? `<div class="fr note"><label></label><small>${hint}</small></div>` : ''}`;
+async function saveSettings(patchFn, doneMsg = 'Saved ✓') {
+  try { await J('/api/settings', 'PUT', patchFn()); $('saved').textContent = doneMsg; settings = await J('/api/settings'); renderNav(); } catch (e) { $('saved').textContent = e.message; }
+}
 async function renderSettings(m) {
-  const s = (settings = await J('/api/settings')), b = s.brand, I = s.integrations || {}, mb = (x) => (x / 1048576).toFixed(1) + ' MB';
-  const f = (label, html, hint = '') => `<div class="fr"><label>${label}</label>${html}</div>${hint ? `<div class="fr"><label></label><small>${hint}</small></div>` : ''}`;
-  m.innerHTML = `<h1>Settings</h1>
-  <div class="panelx"><h3>Profile & sharing</h3><p class="d">Spool runs on your computer. Links only work for people who can reach it.</p>
-    ${f('Your name', `<input id="s-name" value="${esc(s.ownerName)}">`)}
-    ${f('People on my network', `<input type="checkbox" id="s-lan" ${s.lan ? 'checked' : ''}>`, s.lan ? `Anyone on your Wi-Fi can open links at <b>http://${esc(s.lanIp || '?')}:${s.port}</b>. Only videos you shared are visible to them; the library and settings stay owner-only.` : 'Off: only this computer can open links. Turn on to share with colleagues on the same Wi-Fi.')}
-    ${f('Default who can watch', `<select id="s-dp">${[['link', 'Anyone with the link'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<option value="${k}" ${s.defaultPrivacy === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
-    ${f('Links expire after', `<input id="s-exp" type="number" min="0" value="${s.linkExpiryDays}">`, 'Days. 0 means never.')}</div>
-  <div class="panelx"><h3>Branding</h3><p class="d">Make the player yours.</p>
-    ${f('Product name', `<input id="b-name" value="${esc(b.name)}">`)}${f('Accent colour', `<input type="color" id="b-acc" value="${esc(b.accent)}">`)}
-    ${f('Logo', `<input type="file" id="b-logo" accept="image/png,image/jpeg">`, b.logo ? 'A logo is set.' : '')}${f('Hide product branding', `<input type="checkbox" id="b-hide" ${b.hideBranding ? 'checked' : ''}>`, 'Removes the name from the player header and embed watermark.')}</div>
-  <div class="panelx"><h3>Privacy & security</h3><p class="d">Workspace-wide controls.</p>
-    ${f('Privacy Guard', `<input type="checkbox" id="s-pg" ${s.privacyGuard ? 'checked' : ''}>`, 'Blur secrets and personal data. Until it has checked a video, only you can watch it.')}
-    ${f('Keep the unblurred original', `<input type="checkbox" id="s-ko" ${s.keepOriginal ? 'checked' : ''}>`, 'Off: when something is blurred, the unblurred file is deleted. On: it is kept on this computer (owner only, never served to viewers).')}
-    ${f('Disable downloads', `<input type="checkbox" id="s-dd" ${s.disableDownloads ? 'checked' : ''}>`, 'Viewers cannot download any video. You still can.')}
-    ${f('Delete videos after', `<input id="s-ret" type="number" min="0" value="${s.retentionDays}">`, 'Days. 0 keeps everything. Applies automatically, hourly.')}</div>
-  <div class="panelx"><h3>AI</h3><p class="d">Everything runs on this computer.</p>${f('Model', `<input id="s-model" value="${esc(s.model)}">`, 'Any model you have pulled in Ollama, for example qwen3:8b.')}<div id="models" class="fr" style="display:block"><span class="chip">Checking models…</span></div></div>
-  <div class="panelx"><h3>Integrations</h3><p class="d">Tokens stay on this computer and are only sent to the service you configure.</p>
-    ${f('Slack incoming webhook', `<input id="i-slack" type="password" placeholder="https://hooks.slack.com/services/…" value="${esc(I.slack?.hook || '')}">`)}
-    ${f('GitHub repo (owner/name)', `<input id="i-ghr" value="${esc(I.github?.repo || '')}">`)}${f('GitHub token', `<input id="i-ght" type="password" placeholder="ghp_…" value="${esc(I.github?.token || '')}">`)}
-    ${f('Linear API key', `<input id="i-lin" type="password" placeholder="lin_api_…" value="${esc(I.linear?.key || '')}">`)}${f('Linear team ID', `<input id="i-lint" value="${esc(I.linear?.teamId || '')}">`)}
-    ${f('Jira site', `<input id="i-jsite" placeholder="yourcompany.atlassian.net" value="${esc(I.jira?.site || '')}">`)}${f('Jira email', `<input id="i-jmail" value="${esc(I.jira?.email || '')}">`)}${f('Jira API token', `<input id="i-jtok" type="password" value="${esc(I.jira?.token || '')}">`)}${f('Jira project key', `<input id="i-jkey" value="${esc(I.jira?.project || '')}">`)}</div>
-  <div class="panelx"><h3>Your data</h3><p class="d">${mb(s.storage)} stored in the app's data folder on this computer. Nothing is uploaded anywhere.</p>
-    <a class="btn" href="/api/export.json">Export library (JSON)</a> <button class="btn danger" id="wipe">Delete everything…</button></div>
-  <div class="panelx"><h3>Security & compliance, honestly</h3><p class="d">What this local-first build does and does not claim.</p>
-    <ul style="margin:0;padding-left:18px;line-height:1.7;font-size:13.5px"><li><b>Data residency:</b> your computer. No cloud region.</li><li><b>Access control:</b> owner = this machine; everyone else is a viewer limited by each link's privacy mode, passwords (scrypt-hashed), expiry and download rules.</li><li><b>Audit trail:</b> per-video activity log and a workspace log (Insights).</li><li><b>Not included:</b> SSO/SAML, SCIM and certifications such as SOC 2 or ISO 27001. A hosted team plan would need these.</li></ul></div>
-  <div class="fr" style="max-width:720px;justify-content:flex-end"><span id="saved" class="chip"></span><button class="btn pri" id="save">Save settings</button></div>`;
+  const s = (settings = await J('/api/settings'));
+  m.innerHTML = head('Settings', 'Personal settings') + `<div class="sp-wrap">
+    <div class="sec"><h3>Name and photo</h3><p class="d">This is the name on your videos, comments and share pages.</p><div class="ident"><span class="avatar lg">${esc(UI.initials(s.ownerName))}</span><div class="nm"><small>Full name</small><input class="field" id="s-name" value="${esc(s.ownerName)}" style="max-width:340px"></div></div></div>
+    <div class="sec"><h3>Sharing</h3><p class="d">Spool runs on your computer. Links only work for people who can reach it.</p>
+      ${frow('People on my network', `<input type="checkbox" class="sw" id="s-lan" ${s.lan ? 'checked' : ''}>`, s.lan ? `Anyone on your Wi-Fi can open links at <b>http://${esc(s.lanIp || '?')}:${s.port}</b>. Only videos you shared are visible to them; the library and settings stay owner-only.` : 'Off: only this computer can open links. Turn on to share with colleagues on the same Wi-Fi.')}
+      ${frow('Default who can watch', `<select id="s-dp">${[['link', 'Anyone with the link'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<option value="${k}" ${s.defaultPrivacy === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
+      ${frow('Links expire after', `<input id="s-exp" type="number" min="0" value="${s.linkExpiryDays}">`, 'Days. 0 means never.')}</div>
+    <div class="sec"><h3>Your data</h3><p class="d">${(s.storage / 1048576).toFixed(1)} MB stored in the app's data folder on this computer. Nothing is uploaded anywhere.</p>
+      <a class="btn" href="/api/export.json">Export library (JSON)</a> <button class="btn danger" id="wipe">Delete everything…</button></div>
+    <div class="savebar"><span id="saved" class="chip"></span><button class="btn pri" id="save">Save</button></div></div>`;
+  $('save').onclick = () => saveSettings(() => ({ ownerName: $('s-name').value, lan: $('s-lan').checked, defaultPrivacy: $('s-dp').value, linkExpiryDays: +$('s-exp').value || 0 }));
+  $('wipe').onclick = async () => { if (prompt('This deletes every video. Type DELETE to confirm.') === 'DELETE') { await J('/api/data', 'DELETE', { confirm: 'DELETE' }); await refresh(); location.hash = '#/home'; } };
+}
+async function renderWorkspace(m) {
+  const s = (settings = await J('/api/settings')), b = s.brand, I_ = s.integrations || {};
+  m.innerHTML = head('Admin tools', 'Workspace') + `<div class="sp-wrap">
+    <div class="sec"><h3>Branding</h3><p class="d">Make the player yours.</p>
+      ${frow('Product name', `<input id="b-name" value="${esc(b.name)}">`)}${frow('Accent colour', `<input type="color" id="b-acc" value="${esc(b.accent)}">`, 'Replaces the blue on watch and share pages.')}
+      ${frow('Logo', `<input type="file" id="b-logo" accept="image/png,image/jpeg">`, b.logo ? 'A logo is set.' : '')}${frow('Hide product branding', `<input type="checkbox" class="sw" id="b-hide" ${b.hideBranding ? 'checked' : ''}>`, 'Removes the name from the player header and embed watermark.')}</div>
+    <div class="sec"><h3>Privacy & security</h3><p class="d">Workspace-wide controls.</p>
+      ${frow('Privacy Guard', `<input type="checkbox" class="sw" id="s-pg" ${s.privacyGuard ? 'checked' : ''}>`, 'Blur secrets and personal data. Until it has checked a video, only you can watch it.')}
+      ${frow('Keep the unblurred original', `<input type="checkbox" class="sw" id="s-ko" ${s.keepOriginal ? 'checked' : ''}>`, 'Off: when something is blurred, the unblurred file is deleted. On: it is kept on this computer (owner only, never served to viewers).')}
+      ${frow('Disable downloads', `<input type="checkbox" class="sw" id="s-dd" ${s.disableDownloads ? 'checked' : ''}>`, 'Viewers cannot download any video. You still can.')}
+      ${frow('Delete videos after', `<input id="s-ret" type="number" min="0" value="${s.retentionDays}">`, 'Days. 0 keeps everything. Applies automatically, hourly.')}</div>
+    <div class="sec"><h3>AI</h3><p class="d">Everything runs on this computer.</p>${frow('Model', `<input id="s-model" value="${esc(s.model)}">`, 'Any model you have pulled in Ollama, for example qwen3:8b.')}<div id="models" class="fr" style="display:block"><span class="chip">Checking models…</span></div></div>
+    <div class="sec"><h3>Integrations</h3><p class="d">Tokens stay on this computer and are only sent to the service you configure.</p>
+      ${frow('Slack incoming webhook', `<input id="i-slack" type="password" placeholder="https://hooks.slack.com/services/…" value="${esc(I_.slack?.hook || '')}">`)}
+      ${frow('GitHub repo (owner/name)', `<input id="i-ghr" value="${esc(I_.github?.repo || '')}">`)}${frow('GitHub token', `<input id="i-ght" type="password" placeholder="ghp_…" value="${esc(I_.github?.token || '')}">`)}
+      ${frow('Linear API key', `<input id="i-lin" type="password" placeholder="lin_api_…" value="${esc(I_.linear?.key || '')}">`)}${frow('Linear team ID', `<input id="i-lint" value="${esc(I_.linear?.teamId || '')}">`)}
+      ${frow('Jira site', `<input id="i-jsite" placeholder="yourcompany.atlassian.net" value="${esc(I_.jira?.site || '')}">`)}${frow('Jira email', `<input id="i-jmail" value="${esc(I_.jira?.email || '')}">`)}${frow('Jira API token', `<input id="i-jtok" type="password" value="${esc(I_.jira?.token || '')}">`)}${frow('Jira project key', `<input id="i-jkey" value="${esc(I_.jira?.project || '')}">`)}</div>
+    <div class="sec"><h3>Security & compliance, honestly</h3><p class="d">What this local-first build does and does not claim.</p>
+      <ul style="margin:0;padding-left:20px;line-height:1.75;font-size:15px"><li><b>Data residency:</b> your computer. No cloud region.</li><li><b>Access control:</b> owner = this machine; everyone else is a viewer limited by each link's privacy mode, passwords (scrypt-hashed), expiry and download rules.</li><li><b>Audit trail:</b> per-video activity log and a workspace log (Insights).</li><li><b>Not included:</b> SSO/SAML, SCIM and certifications such as SOC 2 or ISO 27001. A hosted team plan would need these.</li></ul></div>
+    <div class="savebar"><span id="saved" class="chip"></span><button class="btn pri" id="save">Save</button></div></div>`;
   $('save').onclick = async () => {
     const v = (i) => $(i).value;
-    try {
-      await J('/api/settings', 'PUT', { ownerName: v('s-name'), lan: $('s-lan').checked, defaultPrivacy: v('s-dp'), linkExpiryDays: +v('s-exp') || 0, privacyGuard: $('s-pg').checked, keepOriginal: $('s-ko').checked, disableDownloads: $('s-dd').checked, retentionDays: +v('s-ret') || 0, model: v('s-model'),
-        brand: { name: v('b-name'), accent: v('b-acc'), hideBranding: $('b-hide').checked },
-        integrations: { slack: { hook: v('i-slack') }, github: { repo: v('i-ghr'), token: v('i-ght') }, linear: { key: v('i-lin'), teamId: v('i-lint') }, jira: { site: v('i-jsite'), email: v('i-jmail'), token: v('i-jtok'), project: v('i-jkey') } } });
-      const f = $('b-logo').files[0]; if (f) await fetch('/api/branding/logo', { method: 'PUT', body: f });
-      $('saved').textContent = 'Saved ✓'; document.documentElement.style.setProperty('--accent', v('b-acc')); setTimeout(() => renderSettings($('main')), 600);
-    } catch (e) { $('saved').textContent = e.message; }
+    await saveSettings(() => ({ privacyGuard: $('s-pg').checked, keepOriginal: $('s-ko').checked, disableDownloads: $('s-dd').checked, retentionDays: +v('s-ret') || 0, model: v('s-model'),
+      brand: { name: v('b-name'), accent: v('b-acc'), hideBranding: $('b-hide').checked },
+      integrations: { slack: { hook: v('i-slack') }, github: { repo: v('i-ghr'), token: v('i-ght') }, linear: { key: v('i-lin'), teamId: v('i-lint') }, jira: { site: v('i-jsite'), email: v('i-jmail'), token: v('i-jtok'), project: v('i-jkey') } } }));
+    const f = $('b-logo').files[0]; if (f) await fetch('/api/branding/logo', { method: 'PUT', body: f });
+    me = await J('/api/me'); UI.brand(me.brand); renderNav();
   };
   loadModels();
-  $('wipe').onclick = async () => { if (prompt('This deletes every video. Type DELETE to confirm.') === 'DELETE') { await J('/api/data', 'DELETE', { confirm: 'DELETE' }); await refresh(); location.hash = '#/home'; } };
 }
 
 // B17: what the AI needs, and a button to fetch the speech model once instead of failing silently offline
@@ -196,10 +261,10 @@ async function loadModels() {
   const el = $('models'); if (!el) return;
   try {
     const m = await J('/api/models'), sp = m.speech, d = sp.download || {}, mb = (b) => (b / 1048576).toFixed(0) + ' MB';
-    const speech = sp.cached ? `<b>Speech (Whisper)</b> ready · ${mb(sp.bytes)}` : d.state === 'running' ? `<b>Speech (Whisper)</b> downloading… ${d.percent}%` : `<b>Speech (Whisper)</b> not downloaded yet (about 290 MB). Transcripts wait until it is.${d.state === 'error' ? ` <span style="color:#e5484d">${esc(d.error)}</span>` : ''} <button class="btn sm" id="dlm">Download models</button>`;
-    el.innerHTML = `<div style="font-size:13px;line-height:1.9">${speech}<br><b>Screen reading (OCR)</b> ${esc(m.ocr.engine)}<br><b>Notes model</b> ${m.ollama.available ? `Ollama is running (${esc(m.ollama.model)})` : 'Ollama is not running: titles, summaries and guides are skipped'}</div>`;
+    const speech = sp.cached ? `<b>Speech (Whisper)</b> ready · ${mb(sp.bytes)}` : d.state === 'running' ? `<b>Speech (Whisper)</b> downloading… ${d.percent}%` : `<b>Speech (Whisper)</b> not downloaded yet (about 290 MB). Transcripts wait until it is.${d.state === 'error' ? ` <span style="color:var(--danger)">${esc(d.error)}</span>` : ''} <button class="btn sm" id="dlm">Download models</button>`;
+    el.innerHTML = `<div style="font-size:14.5px;line-height:1.9">${speech}<br><b>Screen reading (OCR)</b> ${esc(m.ocr.engine)}<br><b>Notes model</b> ${m.ollama.available ? `Ollama is running (${esc(m.ollama.model)})` : 'Ollama is not running: titles, summaries and guides are skipped'}</div>`;
     if ($('dlm')) $('dlm').onclick = async () => { await J('/api/models/download', 'POST', {}); loadModels(); };
-    if (d.state === 'running') setTimeout(() => { if (route === 'settings') loadModels(); }, 1500);
+    if (d.state === 'running') setTimeout(() => { if (route === 'workspace') loadModels(); }, 1500);
   } catch (e) { el.innerHTML = `<span class="chip">${esc(e.message)}</span>`; }
 }
 
@@ -210,7 +275,7 @@ async function upload(file) {
   const done = () => { uploads = uploads.filter((x) => x !== u); };
   try {
     const token = await window.spoolToken();
-    const id = await new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       const x = new XMLHttpRequest(); x.open('PUT', `/api/upload?name=${encodeURIComponent(file.name)}`); x.setRequestHeader('x-spool-csrf', token);
       x.upload.onprogress = (e) => { if (e.lengthComputable) { u.pct = Math.round((e.loaded / e.total) * 100); show(true); } };
       x.onload = () => { let d = {}; try { d = JSON.parse(x.responseText); } catch {} x.status < 300 ? resolve(d.id) : reject(new Error(d.error || x.statusText)); };
@@ -226,11 +291,14 @@ $('q').oninput = () => show(); addEventListener('hashchange', () => { $('q').val
 // U3: the server says when something changed; no 5 s timer. Updates are coalesced and rendered as a morph of the visible page.
 let softTimer = null;
 function liveUpdates() {
-  const run = async () => { softTimer = null; if (document.hidden) return; await refresh(); if (!$('q').value && !['settings', 'insights', 'notifications'].includes(route)) show(true); };
+  const run = async () => { softTimer = null; if (document.hidden) return; await refresh(); if (!$('q').value && !['settings', 'workspace', 'insights', 'notifications'].includes(route)) show(true); };
   const kick = () => { if (!softTimer) softTimer = setTimeout(run, 120); };
   if (!window.EventSource) return void setInterval(kick, 8000);
-  const es = new EventSource('/api/events'); es.addEventListener('video', kick); es.addEventListener('settings', () => { if (route === 'settings') loadModels(); });
+  const es = new EventSource('/api/events'); es.addEventListener('video', kick); es.addEventListener('settings', () => { if (route === 'workspace') loadModels(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
 }
-(async () => { const me = await J('/api/me'); $('bn').textContent = me.brand.name; document.documentElement.style.setProperty('--accent', me.brand.accent); if (location.pathname === '/settings') location.hash = '#/settings'; settings = await J('/api/settings'); await refresh(); show(); liveUpdates(); })();
+(async () => {
+  UI.fill(document); me = await J('/api/me'); UI.brand(me.brand); $('who').textContent = UI.initials(me.name || me.brand.name);
+  if (location.pathname === '/settings') location.hash = '#/settings'; settings = await J('/api/settings'); await refresh(); show(); liveUpdates();
+})();
 </script></body></html>

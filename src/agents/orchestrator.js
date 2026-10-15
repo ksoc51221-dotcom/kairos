@@ -16,6 +16,7 @@ const ocr = require('./ocr');
 const privacy = require('./privacy');
 const { insights } = require('./insights');
 const { makeGuide, plan } = require('./guide');
+const editJob = require('./edit-job');
 
 let dataDir, say = (...a) => console.log(...a), busy = () => false;
 // Loading a 5 GB model competes with screen capture for memory and the GPU (measured: it costs frames), so the model is only warmed when no
@@ -34,9 +35,15 @@ function init(dir, { log, isBusy } = {}) {
   return r;
 }
 // B4: one job at a time. `process` = the whole pipeline for a new video; `ai` = re-run the notes (and the Privacy Guard if the video was never cleared).
-async function processJobs(job) { try { return await (job.kind === 'ai' ? rerunJob(job) : processJob(job)); } finally { warmWhenIdle(2000); } }
+// `edit` and `words` are the editor's jobs (Phase 3): apply an edit list, and time every word of a video that has none.
+async function processJobs(job) {
+  const run = { ai: rerunJob, process: processJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }) }[job.kind] || processJob;
+  try { return await run(job); } finally { warmWhenIdle(2000); }
+}
 const processVideo = (id) => queue.enqueue(id, 'process');
 const rerunAI = (id) => queue.enqueue(id, 'ai');
+const applyEdits = (id) => queue.enqueue(id, 'edit');
+const timeWords = (id) => queue.enqueue(id, 'words');
 
 const CREW = [
   { id: 'transcriber', name: 'Transcriber', role: 'Local Whisper turns speech into a timestamped transcript' },
@@ -175,8 +182,8 @@ async function processJob(job) {
     fs.mkdirSync(work, { recursive: true });
     if (!hasAudioStream(video)) log('transcriber', 'skipped', 'no audio in this recording');
     else if (!transcribeModel.modelStatus(models).cached && !(await online())) log('transcriber', 'skipped', 'waiting for the speech model: connect once, or use Settings → AI → Download models'); // B17
-    else tr = await guarded(log, 'transcriber', (d) => transcribe(video, work, models, d));
-    if (tr) { set({ transcript: tr.text, segments: tr.segments }); log('transcriber', 'done', `${tr.segments.length} segments`); mark('transcribe', t5); }
+    else tr = await guarded(log, 'transcriber', (d) => transcribe(video, work, models, d, null, { words: true }));
+    if (tr) { set({ transcript: tr.text, segments: tr.segments, ...(tr.words ? { words: tr.words } : {}) }); log('transcriber', 'done', `${tr.segments.length} segments`); mark('transcribe', t5); }
     set({ pipe: 'transcribed', stage: 'Writing the AI notes' });
   }
 
@@ -240,4 +247,4 @@ async function rerunJob(job) {
   await runAgents(id, { segments: v.segments || [], text: v.transcript || '', scan: null, meta: { duration: v.duration }, finalVideo: path.join(dir, 'video.mp4'), work: null });
 }
 
-module.exports = { init, processVideo, rerunAI, CREW, ORDER };
+module.exports = { init, processVideo, rerunAI, applyEdits, timeWords, CREW, ORDER };

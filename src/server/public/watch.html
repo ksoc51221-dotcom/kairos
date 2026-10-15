@@ -1,108 +1,134 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Spool</title><!--OG--><link rel="stylesheet" href="/static/app.css"><style>
-.wrap{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:24px;max-width:1380px;margin:0 auto;padding:24px}
-@media(max-width:1000px){.wrap{grid-template-columns:1fr}.side{position:static!important;height:520px!important}}
-#proc{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:#150f27;text-align:center;z-index:6}
-#proc[hidden]{display:none}
-.spin{width:34px;height:34px;border:4px solid #444;border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 12px}
-@keyframes s{to{transform:rotate(360deg)}}
-#title{font:700 24px -apple-system,BlinkMacSystemFont,"Inter",sans-serif;border:0;background:transparent;color:var(--ink);width:100%;padding:6px 4px;border-radius:8px;margin-top:14px}
-#title:not([readonly]):hover,#title:focus{background:var(--card);outline:1px solid var(--line)}
-.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
-.react{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;align-items:center}
-.react button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 12px;font-size:16px;cursor:pointer}
-.react button:hover{border-color:var(--accent);transform:scale(1.08)}
-.react button small{font:600 12px -apple-system,sans-serif;color:var(--mute);margin-left:5px}
-.react .hintx{font-size:11px;color:var(--mute);margin-left:4px}
-.side{background:var(--card);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;height:calc(100vh - 100px);position:sticky;top:76px;min-height:420px}
-.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
-.tabs button{flex:1;border:0;background:none;padding:13px 10px;font:600 12.5px -apple-system,sans-serif;color:var(--mute);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-.tabs button.on{color:var(--accent);border-color:var(--accent)}
-.panel{flex:1;overflow:auto;padding:14px 16px}
-.cm{margin-bottom:14px}.cm b{font-size:13px}.cm .at{color:var(--accent);font:600 12px -apple-system,sans-serif;cursor:pointer;margin-left:6px}
-.cm p{margin:3px 0 0;font-size:14px;line-height:1.4}.men{color:var(--accent);font-weight:600}
-.add{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
-.add input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:14px}
-.empty{color:var(--mute);font-size:13px;text-align:center;margin-top:30px}
-select.sp{padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 12px -apple-system,sans-serif}
-#notes{margin-top:16px;display:flex;flex-direction:column;gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.card h4{margin:0 0 6px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute)}
-.card p{margin:0;line-height:1.55;font-size:14.5px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip2{border:1px solid var(--line);background:var(--accent-soft);color:var(--ink);border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif;cursor:pointer}
-.chip2 b{color:var(--accent);margin-right:6px}.chip2:hover{border-color:var(--accent)}.chip2.tag{background:var(--mint-soft)}
-.badge{display:inline-flex;align-items:center;gap:6px;background:var(--mint-soft);color:#0f7a56;border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif}
-@media (prefers-color-scheme:dark){.badge{color:#5ee4b0}}
-.tasks{margin:0;padding-left:18px;font-size:14px;line-height:1.6}
-.banner{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:10px;padding:9px 14px;font-size:13px}.banner .spin{width:16px;height:16px;border-width:3px;margin:0}
-.viewas{background:var(--mint-soft);color:#0f7a56;text-align:center;font-size:13px;padding:7px;font-weight:600}.viewas a{text-decoration:underline;margin-left:8px}
-.step{margin-bottom:18px}.step h5{margin:0 0 4px;font-size:14px}.step h5 i{font-style:normal;background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-grid;place-items:center;font-size:11px;margin-right:8px}
-.step p{margin:0 0 8px;font-size:13.5px;line-height:1.5;color:var(--mute)}.step img{width:100%;border-radius:8px;border:1px solid var(--line);cursor:pointer;display:block}
-.crew{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
-.dot{flex:0 0 10px;height:10px;border-radius:50%;margin-top:5px;background:var(--line)}
-.dot.running{background:var(--accent);animation:p 1s infinite}.dot.done{background:var(--mint)}.dot.error{background:#e5484d}.dot.skipped{background:#b6b1c9}
-@keyframes p{50%{opacity:.3}}
-.crew b{font-size:13.5px}.crew small{display:block;color:var(--mute);font-size:12px;line-height:1.4;margin-top:2px}.crew .d{font-size:12px;margin-top:3px}
-.ghead{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.stats div{background:var(--bg);border-radius:10px;padding:10px;text-align:center}.stats b{display:block;font-size:20px}.stats span{font-size:11px;color:var(--mute)}
-.heat{display:flex;align-items:flex-end;height:56px;gap:1px;margin:8px 0 14px;cursor:pointer}.heat i{flex:1;background:linear-gradient(var(--accent),var(--mint));border-radius:2px 2px 0 0;min-height:2px;opacity:.85}
-table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mute);font-weight:600}
-.act{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line)}.act small{color:var(--mute);display:block}
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#231942;color:#fff;padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:99}#toast.on{opacity:1}
-.tabs{position:relative}.tabs .ind{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);width:0;transition:transform 240ms cubic-bezier(.2,.8,.2,1),width 240ms cubic-bezier(.2,.8,.2,1);pointer-events:none}
-.tabs button{border-bottom-color:transparent!important}
-.fade{animation:fadein 150ms cubic-bezier(.2,.8,.2,1)}@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.sk{background:linear-gradient(90deg,var(--line) 25%,var(--bg) 37%,var(--line) 63%);background-size:400% 100%;animation:sk 1.2s ease infinite;border-radius:8px}@keyframes sk{from{background-position:100% 50%}to{background-position:0 50%}}
-.modal:not([hidden]) .box{animation:pop 180ms cubic-bezier(.2,.8,.2,1)}@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-.fxrow{display:flex;gap:14px;margin-top:8px;font-size:12.5px;color:var(--mute)}.fxrow label{display:flex;gap:6px;align-items:center;cursor:pointer}
-@media (prefers-reduced-motion:reduce){.tabs .ind,.fade,.sk,.modal:not([hidden]) .box{animation:none!important;transition:none!important}}
-.imgview{display:grid;place-items:center;background:#0e0a1c}.imgview img{max-width:100%;max-height:70vh}
+/* Watch page, in the layout of the Loom reference: header, title row, player, reaction bar on the left; a tabbed panel on the right. */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 460px; min-height: calc(100vh - 68px); }
+@media (max-width: 1040px) { .layout { grid-template-columns: 1fr; } .side { position: static !important; height: 560px !important; border-left: 0 !important; border-top: 1px solid var(--line-soft); } }
+.main { padding: 28px 36px 48px; min-width: 0; }
+.titlerow { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+#title { font: 700 32px/1.15 var(--font); letter-spacing: -.015em; border: 0; background: transparent; color: var(--ink); width: 100%; padding: 2px 0; border-radius: 8px; }
+#title:not([readonly]):hover, #title:focus { background: var(--wash); outline: 0; padding-left: 8px; margin-left: -8px; }
+.by { color: var(--mute); font-size: 17px; margin-top: 4px; } .by b { font-weight: 500; color: var(--mute); }
+.views { flex: none; border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; font: 500 17px/1 var(--font); }
+.stagewrap { max-width: 1100px; margin: 0 auto; }
+#proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: #14161a; text-align: center; z-index: 6; }
+.spin { width: 34px; height: 34px; border: 4px solid #444; border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 12px; }
+@keyframes s { to { transform: rotate(360deg); } }
+.tools { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin: 10px 0 0; min-height: 34px; }
+.notes { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.banner { display: flex; align-items: center; gap: 10px; background: var(--accent-soft); border-radius: 12px; padding: 11px 16px; font-size: 14px; }
+.banner .spin { width: 16px; height: 16px; border-width: 3px; margin: 0; }
+.shield { display: inline-flex; gap: 6px; align-items: center; background: var(--good-tile); color: var(--good); border-radius: 99px; padding: 5px 12px; font: 600 13px/1.2 var(--font); width: fit-content; }
+.actions { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 22px auto 0; max-width: 1100px; }
+.rbar { display: flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 18px; padding: 8px 10px; background: var(--card); box-shadow: 0 2px 8px rgba(0, 0, 0, .04); }
+.rbar .em { border: 0; background: none; font-size: 28px; line-height: 1; padding: 8px 9px; border-radius: 12px; cursor: pointer; position: relative; transition: transform 120ms var(--ease), background 120ms var(--ease); }
+.rbar .em:hover { background: var(--wash); transform: scale(1.12); }
+.rbar .em small { position: absolute; right: -1px; top: -1px; background: var(--ink); color: #fff; border-radius: 99px; font: 600 11px/1 var(--font); padding: 3px 6px; }
+.rbar .sep { width: 1px; height: 36px; background: var(--line); margin: 0 8px; }
+.rbar .cbtn { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--wash); border-radius: 12px; padding: 0 20px; height: 54px; font: 500 20px/1 var(--font); cursor: pointer; }
+.rbar .cbtn:hover { background: var(--wash-d); }
+.rbar .cbtn svg { width: 26px; height: 26px; }
+.sq { width: 68px; height: 68px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .04); }
+.sq:hover { background: var(--wash); } .sq svg { width: 30px; height: 30px; }
+.pop { position: absolute; z-index: 20; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-pop); padding: 8px; }
+.pop .emrow { display: flex; flex-wrap: wrap; gap: 2px; max-width: 280px; } .pop .emrow button { border: 0; background: none; font-size: 26px; padding: 6px 8px; border-radius: 10px; cursor: pointer; } .pop .emrow button:hover { background: var(--wash); }
+.pop .mi { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; text-align: left; padding: 11px 14px; border-radius: 10px; font: 500 15px/1.2 var(--font); cursor: pointer; white-space: nowrap; }
+.pop .mi:hover { background: var(--wash); } .pop .mi.danger { color: var(--danger); } .pop .mi svg { color: var(--mute); }
+
+/* side panel */
+.side { background: var(--card); border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; height: calc(100vh - 68px); position: sticky; top: 68px; min-width: 0; }
+.side .tabs { border-bottom: 1px solid var(--line-soft); flex: none; }
+.panel { flex: 1; overflow: auto; padding: 20px 24px 28px; }
+.add { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line-soft); flex: none; }
+.add input { flex: 1; }
+.powered { font: 500 17px/1 var(--font); margin: 0 0 20px 4px; display: flex; gap: 6px; align-items: center; } .powered svg { width: 18px; height: 18px; }
+.sh { display: flex; align-items: center; gap: 10px; margin: 6px 0 14px; } .sh h3 { margin: 0; font: 700 25px/1.2 var(--font); letter-spacing: -.01em; } .sh .grow { text-align: right; color: var(--ink); font-weight: 500; }
+.hl { display: flex; align-items: center; gap: 16px; border: 2px solid transparent; border-radius: 14px; padding: 16px 20px; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; cursor: pointer; margin-bottom: 14px; font: 500 18px/1.2 var(--font); }
+.hl .tile { width: 46px; height: 46px; border-radius: 12px; background: var(--wash); color: var(--ink); }
+.row2 { display: flex; align-items: center; gap: 16px; padding: 10px 4px; font: 500 18px/1.2 var(--font); } .row2.off { color: var(--off); } .row2 .tile { width: 60px; height: 60px; border-radius: 14px; }
+.row2 .lab { flex: 1; min-width: 0; } .row2 small { display: block; color: var(--mute); font: 400 13px/1.3 var(--font); margin-top: 3px; }
+.promo { background: var(--accent-soft); border-radius: 16px; padding: 18px 20px; position: relative; margin: 6px 0 12px; }
+.promo h4 { margin: 0 0 8px; display: flex; align-items: center; gap: 10px; font: 600 18px/1.2 var(--font); } .promo p { margin: 0; font-size: 15px; line-height: 1.5; } .promo a, .promo button.lnk { color: var(--accent); border: 0; background: none; padding: 0; font: 500 15px var(--font); cursor: pointer; }
+.promo .x { position: absolute; right: 12px; top: 12px; width: 30px; height: 30px; }
+.nav2 { display: flex; align-items: center; gap: 16px; width: 100%; border: 0; background: none; padding: 12px 4px; font: 500 18px/1.2 var(--font); cursor: pointer; text-align: left; border-radius: 12px; } .nav2:hover { background: var(--wash); } .nav2 .tile { width: 46px; height: 46px; border-radius: 12px; background: var(--wash); color: var(--ink); } .nav2 > svg:last-child { color: var(--ink); }
+.apply { background: var(--accent-soft); border-radius: 14px; padding: 14px 16px; margin: 6px 0 12px; font-size: 15px; display: flex; flex-direction: column; gap: 10px; }
+.apply .r { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cm { margin-bottom: 18px; display: flex; gap: 12px; } .cm .avatar { width: 34px; height: 34px; font-size: 13px; } .cm b { font-size: 14px; } .cm .at { color: var(--accent); font: 600 13px var(--font); cursor: pointer; margin-left: 8px; }
+.cm p { margin: 3px 0 0; font-size: 15px; line-height: 1.45; } .men { color: var(--accent); font-weight: 600; }
+.empty { color: var(--mute); font-size: 14px; text-align: center; margin: 36px 0; }
+.card2 { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; } .card2 h4 { margin: 0 0 8px; font: 600 13px/1 var(--font); letter-spacing: .05em; text-transform: uppercase; color: var(--mute); } .card2 p { margin: 0; line-height: 1.55; font-size: 15px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; } .chip2 { border: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); border-radius: 99px; padding: 6px 13px; font: 500 13px var(--font); cursor: pointer; } .chip2 b { color: var(--accent); margin-right: 6px; } .chip2:hover { border-color: var(--accent); } .chip2.tag { background: var(--wash); cursor: default; }
+.tasks { margin: 0; padding-left: 20px; font-size: 15px; line-height: 1.6; }
+.step { margin-bottom: 20px; } .step h5 { margin: 0 0 4px; font-size: 15px; } .step h5 i { font-style: normal; background: var(--accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-grid; place-items: center; font-size: 12px; margin-right: 8px; }
+.step p { margin: 0 0 8px; font-size: 14.5px; line-height: 1.5; color: var(--mute); } .step img { width: 100%; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; display: block; }
+.crew { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); } .dot { flex: 0 0 10px; height: 10px; border-radius: 50%; margin-top: 6px; background: var(--line); }
+.dot.running { background: var(--accent); animation: p 1s infinite; } .dot.done { background: var(--good); } .dot.error { background: var(--danger); } .dot.skipped { background: var(--off); } @keyframes p { 50% { opacity: .3; } }
+.crew b { font-size: 14.5px; } .crew small { display: block; color: var(--mute); font-size: 13px; line-height: 1.4; margin-top: 2px; } .crew .d { font-size: 13px; margin-top: 3px; }
+.ghead { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; } .stats div { background: var(--wash); border-radius: 12px; padding: 12px; text-align: center; } .stats b { display: block; font-size: 22px; } .stats span { font-size: 12px; color: var(--mute); }
+.heat { display: flex; align-items: flex-end; height: 56px; gap: 1px; margin: 8px 0 14px; cursor: pointer; } .heat i { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; opacity: .8; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; } td, th { padding: 7px 4px; border-bottom: 1px solid var(--line-soft); text-align: left; } th { color: var(--mute); font-weight: 600; }
+.act { font-size: 13.5px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); } .act small { color: var(--mute); display: block; }
+.set { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-size: 15px; } .set .lab { flex: 1; } .set small { display: block; color: var(--mute); font-size: 13px; }
+.set .field { width: auto; max-width: 220px; padding: 8px 10px; font-size: 14px; }
+.sub { font: 600 13px/1 var(--font); letter-spacing: .05em; text-transform: uppercase; color: var(--mute); margin: 22px 0 4px; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 11px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; z-index: 99; } #toast.on { opacity: 1; }
+.fade { animation: fadein 150ms var(--ease); } @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.viewas { background: var(--good-tile); color: var(--good); text-align: center; font-size: 14px; padding: 8px; font-weight: 600; } .viewas a { text-decoration: underline; margin-left: 8px; }
+.imgview { display: grid; place-items: center; background: #0e0e10; } .imgview img { max-width: 100%; max-height: 70vh; }
+/* share modal (reference: share-modal.webp) */
+.sm .hd { display: flex; align-items: center; gap: 22px; } .sm .hd h3 { flex: 1; } .sm .lk { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; font: 500 16px var(--font); cursor: pointer; padding: 6px; border-radius: 8px; } .sm .lk:hover { background: var(--wash); } .sm .lk.on { color: var(--accent); }
+.sm .to { margin-top: 22px; position: relative; } .sm .to .field { font-size: 17px; padding: 15px 16px; border-radius: 10px; border-color: var(--line); }
+.sm .sug { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 10px 14px; font: 500 16px var(--font); cursor: pointer; }
+.sm .got { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; } .sm .got span { cursor: default; background: var(--accent-soft); border-color: transparent; padding: 7px 8px 7px 12px; font-size: 15px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 0; color: var(--mute); }
+.sm h5 { margin: 26px 0 10px; font: 600 16px var(--font); }
+.sm .acc { display: flex; align-items: center; gap: 14px; } .sm .acc .tile { width: 56px; height: 56px; border-radius: 14px; background: var(--good-tile); color: var(--good); } .sm .acc .tile.lockd { background: var(--wash); color: var(--ink); }
+.sm .acc b { display: inline-flex; align-items: center; gap: 6px; font: 600 18px var(--font); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--mute); font-size: 15px; margin-top: 2px; }
+.sm .ft { display: flex; align-items: center; gap: 22px; margin: 26px -32px -28px; padding: 18px 32px; border-top: 1px solid var(--line-soft); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
+.sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 9px; border: 0; background: none; font: 500 16px var(--font); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+.sm .more { margin-top: 18px; padding: 16px; background: var(--wash); border-radius: 12px; }
+.sm .more code.b { background: var(--card); }
+.sm .pwrow { margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .fade { animation: none; } }
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
-<div class="top"><a class="brand" href="/" id="brand"><span class="logo" id="logo"></span><span id="brandname">Spool</span></a><div class="grow"></div>
-<span id="ownerBtns" hidden><a class="btn" id="edit" href="#" hidden>✂ Edit</a> <button class="btn" id="dl">Download</button> <button class="btn danger" id="del">Delete</button> </span><button class="btn pri" id="share">Share</button></div>
-<div id="root"><div class="wrap"><div>
-  <div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin"></div>Processing…</div></div></div>
-  <input id="title" spellcheck="false">
-  <div class="row"><span class="chip" id="meta"></span><div class="grow"></div>
-    <button class="btn sm" id="later" hidden title="Watch later">☆ Watch later</button>
-    <select class="sp" id="cc"></select>
-    <select class="sp" id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
-  <div class="react" id="react"></div>
-  <div class="fxrow" id="fxrow" hidden><label><input type="checkbox" id="fx-cursor"> Cursor highlight &amp; click ripples</label><label><input type="checkbox" id="fx-zoom"> Auto-zoom on clicks</label></div>
-  <div id="notes"><div class="sk" style="height:64px"></div><div class="sk" style="height:96px"></div></div>
-</div>
-<aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"><div class="sk" style="height:18px;width:40%"></div><div class="sk" style="height:46px;margin-top:12px"></div><div class="sk" style="height:46px;margin-top:12px"></div></div>
-  <form class="add" id="form"><input id="ctext" placeholder="Add a comment at the current time… use @name to mention" autocomplete="off"><button class="btn pri">Send</button></form></aside></div></div>
+<header class="top"><a class="iconbtn" id="back" href="/" title="Library" data-i="sidebar"></a><a class="brand" href="/" id="brand"></a><div class="grow"></div>
+  <span id="ownerBtns" hidden style="display:contents"><span class="split"><button class="btn pri" id="share"><span data-i="globe"></span>Share</button><button class="btn pri" id="copy" title="Copy link" data-i="link"></button></span>
+    <button class="iconbtn" id="moreBtn" title="More" data-i="more"></button><a class="iconbtn" href="/#/library" title="Search your library" data-i="search"></a><a class="avatar" id="who" href="/#/settings" title="Settings"></a></span>
+  <button class="btn pri" id="vcopy" hidden><span data-i="link"></span>Copy link</button></header>
+<div id="root"><div class="layout"><main class="main">
+  <div class="titlerow"><div style="flex:1;min-width:0"><input id="title" spellcheck="false" aria-label="Title"><div class="by" id="by"></div></div><div class="views" id="views"></div></div>
+  <div class="stagewrap"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin"></div>Processing…</div></div></div>
+    <div class="tools"><select class="sp" id="cc" aria-label="Captions"></select><select class="sp" id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
+    <div class="notes" id="notes"></div></div>
+  <div class="actions"><div class="rbar" id="react"></div><button class="sq" id="later" title="Watch later" hidden></button></div>
+</main>
+<aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:56px;margin-top:14px"></div><div class="skeleton" style="height:56px;margin-top:12px"></div></div>
+  <form class="add" id="form"><input class="field" id="ctext" placeholder="Add a comment at the current time… use @name to mention" autocomplete="off"><button class="btn pri">Send</button></form></aside></div></div>
 <div id="modal" class="modal" hidden></div><div id="toast"></div>
-<script src="/static/csrf.js"></script>
-<script src="/static/player.js"></script>
+<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
 <script>
-const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP;
-const id = location.pathname.split('/').pop(), EMOJI = ['👍', '❤️', '😂', '🎉', '👏', '🔥'];
-// B13: unfinished features stay hidden until they ship (editor: Phase 3, AI Actions: Phase 4)
-const FEATURES = { editor: false, actions: false };
-let me = { owner: false }, vm, ctl, tab = 'comments', loaded = false, lastKey = '', sid = null;
-const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1600); };
+const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP, { i: I } = UI;
+const id = location.pathname.split('/').pop(), EMOJI = ['❤️', '👍', '🔥', '👏', '🙌', '👀'], MORE_EMOJI = ['😂', '🎉', '😮', '😢', '🤔', '💯', '🚀', '👎', '🙏', '😍', '🤝', '✅'];
+let me = { owner: false }, vm, ctl, tab = null, loaded = false, lastKey = '', an = null, anFor = '', promoShut = false;
+const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1800); };
 const now = () => $('v')?.currentTime || 0; // B10: screenshots replace #v with an <img>
-const copied = (btn) => { const t = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => (btn.textContent = t), 1400); }; // U16
+const copied = (btn) => { const t = btn.innerHTML; btn.textContent = 'Copied ✓'; setTimeout(() => (btn.innerHTML = t), 1400); }; // U16
 const seek = (t) => { const v = $('v'); if (!v) return; v.currentTime = t; v.play(); };
 const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
+const patch = async (body) => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); lastKey = ''; render(); };
 
 async function boot() {
-  $('v').poster = `/media/${id}/thumb.jpg`; // U12: the poster and the skeletons are on screen before any API call returns
-  me = await api('/api/me');
-  document.documentElement.style.setProperty('--accent', me.brand.accent);
-  $('brandname').textContent = me.brand.hideBranding ? '' : me.brand.name; if (me.brand.logo) { $('logo').style.cssText = 'background:url(/branding/logo.png) center/cover;border-radius:5px'; } if (me.brand.hideBranding && !me.brand.logo) $('logo').hidden = true;
+  UI.fill(document); $('v').poster = `/media/${id}/thumb.jpg`; // U12: the poster and the skeletons are on screen before any API call returns
+  me = await api('/api/me'); UI.brand(me.brand);
+  $('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${esc(me.brand.name)}</span>`);
   if (document.cookie.includes('sp_asviewer=1')) $('viewas').hidden = false;
-  $('ownerBtns').hidden = !me.owner; $('edit').href = `/static/editor.html?id=${id}`; $('edit').hidden = !(me.owner && FEATURES.editor); $('later').hidden = !me.owner;
-  $('title').readOnly = !me.owner; $('share').textContent = me.owner ? 'Share' : 'Copy link';
-  const nm = viewer().name || (me.owner ? me.name : ''); void nm;
+  $('ownerBtns').hidden = !me.owner; $('vcopy').hidden = me.owner; $('later').hidden = !me.owner; $('who').textContent = UI.initials(me.name || me.brand.name);
+  $('title').readOnly = !me.owner;
   try { vm = await api(`/api/v/${id}`); }
   catch (e) { if (e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
+  tab = me.owner ? 'edit' : 'activity';
   if (vm.type === 'image') { $('stage').className = 'stage imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('cc').hidden = $('speed').hidden = true; }
-  else ctl = attach({ stage: $('stage'), video: $('v'), vm });
+  else { ctl = attach({ stage: $('stage'), video: $('v'), vm }); }
   setupCC(); render(); listen();
 }
 function setupCC() {
@@ -110,11 +136,10 @@ function setupCC() {
   $('cc').onchange = async () => { const v = $('cc').value; try { if (v && v !== 'original') toast(`Translating to ${v}… first time takes a moment`); await ctl.setCaptions(v || null); } catch (e) { toast(e.message); $('cc').value = ''; } };
 }
 // U3: the server pushes "this video changed" over one event stream, and the page refetches only then. No timer, so nothing is rebuilt for no reason.
-// If the stream cannot be opened (an old browser, a proxy that buffers it), fall back to a slow poll.
 let refetching = false, again = false;
 async function refetch() {
   if (refetching) { again = true; return; }
-  if (document.activeElement.id === 'ctext' || document.activeElement.id === 'title' || !$('modal').hidden) { setTimeout(refetch, 1500); return; }
+  if (['ctext', 'title'].includes(document.activeElement.id) || !$('modal').hidden || document.activeElement.closest?.('.panel input,.panel select')) { setTimeout(refetch, 1500); return; }
   refetching = true;
   try { vm = await api(`/api/v/${id}`); ctl?.setVM(vm); render(); } catch {}
   refetching = false; if (again) { again = false; refetch(); }
@@ -123,145 +148,243 @@ function listen() {
   if (!window.EventSource) return void setInterval(() => { if (!document.hidden) refetch(); }, 5000);
   const es = new EventSource(`/api/events?video=${id}`);
   es.addEventListener('video', refetch);
-  es.onerror = () => { if (es.readyState === EventSource.CLOSED) setInterval(() => { if (!document.hidden) refetch(); }, 5000); }; // CLOSED = refused (e.g. 423): EventSource does not retry on its own
+  es.onerror = () => { if (es.readyState === EventSource.CLOSED) setInterval(() => { if (!document.hidden) refetch(); }, 5000); };
 }
 
-function tabsFor() { const t = [['comments', 'Comments'], ['transcript', 'Transcript'], ['guide', 'Guide']]; if (me.owner) { if (FEATURES.actions) t.push(['actions', 'AI Actions']); t.push(['insights', 'Insights'], ['crew', 'AI Crew'], ['activity', 'Activity']); } return t; }
+// ---- tabs: Edit · Activity · Generate · Transcript · Settings (owner); Activity · Generate · Transcript (viewers) ----
+const hasGen = () => !!(vm.summary || vm.chapters?.length || vm.tasks?.length || vm.guide);
+function tabsFor() { const t = []; if (me.owner) t.push(['edit', 'Edit']); t.push(['activity', 'Activity']); if (me.owner || hasGen()) t.push(['generate', 'Generate']); t.push(['transcript', 'Transcript']); if (me.owner) t.push(['settings', 'Settings']); return t; }
 const scrollOf = {};
 function renderTabs() {
   const t = tabsFor(), sig = t.map((x) => x[0]).join();
+  if (!t.some((x) => x[0] === tab)) tab = t[0][0];
   if ($('tabs').dataset.sig !== sig) {
     $('tabs').dataset.sig = sig;
-    $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('') + '<i class="ind"></i>';
-    $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => { scrollOf[tab] = $('panel').scrollTop; tab = b.dataset.t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; });
+    $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}">${l}${k === 'generate' && vm.stage && vm.stage !== 'done' && me.owner ? '<span class="pill" style="padding:1px 7px">…</span>' : ''}</button>`).join('') + '<i class="ind"></i>';
+    $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => go(b.dataset.t));
   }
   let on = null; $('tabs').querySelectorAll('button').forEach((b) => { const is = b.dataset.t === tab; b.classList.toggle('on', is); if (is) on = b; });
-  if (on) { const i = $('tabs').querySelector('.ind'); i.style.width = on.offsetWidth + 'px'; i.style.transform = `translateX(${on.offsetLeft}px)`; }
+  if (on) { const ind = $('tabs').querySelector('.ind'); ind.style.width = on.offsetWidth + 'px'; ind.style.transform = `translateX(${on.offsetLeft}px)`; }
 }
+function go(t) { scrollOf[tab] = $('panel').scrollTop; tab = t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; }
+
 function render() {
   document.title = vm.title + ' · ' + (me.brand?.name || 'Spool');
   if (document.activeElement !== $('title')) $('title').value = vm.title;
-  $('meta').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'} · ${new Date(vm.createdAt).toLocaleDateString()}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
-  $('later').textContent = vm.watchLater ? '★ Saved' : '☆ Watch later';
+  $('by').innerHTML = `<b>${esc(vm.by || me.brand.name)}</b> · ${UI.ago(vm.createdAt)}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
+  $('views').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'}`;
+  $('later').innerHTML = I(vm.watchLater ? 'bookmark-on' : 'bookmark'); $('later').title = vm.watchLater ? 'Saved to Watch later' : 'Watch later';
   drawReactions();
   const ready = vm.status === 'ready' || vm.status === undefined;
   $('proc').hidden = ready;
   if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
-  if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); }
+  if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); if (vm.captionsDefault) { $('cc').value = 'original'; ctl?.setCaptions('original').catch(() => {}); } }
+  if (loaded && ctl && vm.captionsDefault !== undefined && $('cc').dataset.d !== String(!!vm.captionsDefault)) { $('cc').dataset.d = String(!!vm.captionsDefault); if (vm.captionsDefault && !$('cc').value) { $('cc').value = 'original'; ctl.setCaptions('original').catch(() => {}); } else if (!vm.captionsDefault && $('cc').value === 'original') { $('cc').value = ''; ctl.setCaptions(null); } }
   renderNotes(); renderTabs();
-  $('fxrow').hidden = !(me.owner && vm.type !== 'image' && vm.track); if (document.activeElement !== $('fx-cursor')) $('fx-cursor').checked = vm.cursorFx !== false; if (document.activeElement !== $('fx-zoom')) $('fx-zoom').checked = !!vm.autoZoom;
-  const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy]);
+  const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy, vm.edits, vm.captionsDefault, vm.cursorFx, vm.autoZoom, vm.folder, vm.tags, vm.spaces, vm.summary, vm.words, vm.duration]);
   if (key !== lastKey) { lastKey = key; renderPanel(); }
 }
 // U15: the count goes up the instant you click; the server's answer replaces it a moment later (and corrects it if the write failed)
 function drawReactions() {
-  const html = EMOJI.map((e) => `<button data-e="${e}">${e}<small>${vm.reactions[e] || ''}</small></button>`).join('') + '<span class="hintx">⇧-click = super reaction</span>';
+  const html = EMOJI.map((e) => `<button class="em" data-e="${e}" title="React ${e}">${e}${vm.reactions[e] ? `<small>${vm.reactions[e]}</small>` : ''}</button>`).join('') + `<button class="em" id="moreEm" title="More reactions" style="padding:8px 10px">${I('smile-plus')}</button><span class="sep"></span><button class="cbtn" id="cfocus">${I('comment')}Comment</button>`;
   if ($('react').dataset.h === html) return; $('react').dataset.h = html; $('react').innerHTML = html;
-  $('react').querySelectorAll('button').forEach((b) => b.onclick = async (ev) => {
-    const sup = ev.shiftKey, at = now(), e = b.dataset.e, before = vm.reactions[e] || 0;
+  const react = async (e, sup) => {
+    const at = now(), before = vm.reactions[e] || 0;
     ctl?.floatReaction(e, sup); vm.reactions = { ...vm.reactions, [e]: before + (sup ? 3 : 1) }; drawReactions();
     try { vm = await api(`/api/v/${id}/reactions`, { body: { emoji: e, at, super: sup } }); } catch (er) { vm.reactions = { ...vm.reactions, [e]: before }; toast(er.status === 429 ? 'Slow down a little' : er.message); }
     drawReactions();
-  });
+  };
+  $('react').querySelectorAll('.em[data-e]').forEach((b) => b.onclick = (ev) => react(b.dataset.e, ev.shiftKey));
+  $('moreEm').onclick = (ev) => popover($('moreEm'), `<div class="emrow">${MORE_EMOJI.map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div>`, (p, close) => p.querySelectorAll('button').forEach((b) => (b.onclick = () => { close(); react(b.dataset.e, false); })), 'up');
+  $('cfocus').onclick = () => { go('activity'); setTimeout(() => $('ctext').focus(), 50); };
+}
+// small popover anchored to a button; closes on outside click or Esc
+function popover(anchor, html, wire, dir = 'down', right = false) {
+  document.querySelectorAll('.pop').forEach((p) => p.remove());
+  const p = document.createElement('div'); p.className = 'pop fade'; p.innerHTML = html; document.body.appendChild(p);
+  const r = anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
+  p.style.left = Math.max(8, Math.min(innerWidth - w - 8, right ? r.right - w : r.left)) + 'px'; p.style.top = (dir === 'up' ? Math.max(8, r.top - h - 8) : r.bottom + 8) + 'px';
+  const close = () => { p.remove(); document.removeEventListener('mousedown', out, true); document.removeEventListener('keydown', esc_, true); };
+  const out = (e) => { if (!p.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) close(); }, esc_ = (e) => { if (e.key === 'Escape') close(); };
+  setTimeout(() => { document.addEventListener('mousedown', out, true); document.addEventListener('keydown', esc_, true); }); wire(p, close); return close;
 }
 function renderNotes() {
   const n = [], busy = vm.status === 'ready' && vm.stage && vm.stage !== 'done';
   if (me.owner && vm.status === 'ready' && vm.shareable === false) n.push(`<div class="banner"><div class="spin"></div><span><b>Privacy Guard is checking…</b> You can watch now. Viewers can watch when it's done.</span></div>`);
   else if (busy && me.owner) n.push(`<div class="banner"><div class="spin"></div>${esc(vm.stage)}…</div>`);
-  if (vm.redactionCount) n.push(`<div><span class="badge" title="Blurred by the Privacy Guard before anyone could watch">🛡 ${vm.redactionCount} sensitive item${vm.redactionCount > 1 ? 's' : ''} blurred by Privacy Guard</span></div>`);
-  if (vm.tags?.length) n.push(`<div class="chips">${vm.tags.map((t) => `<span class="chip2 tag">#${esc(t)}</span>`).join('')}</div>`);
-  if (vm.summary) n.push(`<div class="card"><h4>Summary</h4><p>${esc(vm.summary)}</p></div>`);
-  if (vm.chapters?.length) n.push(`<div class="card"><h4>Chapters</h4><div class="chips">${vm.chapters.map((c) => `<button class="chip2" data-at="${c.start}"><b>${fmt(c.start)}</b>${esc(c.title)}</button>`).join('')}</div></div>`);
-  if (vm.tasks?.length) n.push(`<div class="card"><h4>Action items</h4><ul class="tasks">${vm.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`);
+  if (vm.redactionCount) n.push(`<div><span class="shield" title="Blurred by the Privacy Guard before anyone could watch">🛡 ${vm.redactionCount} sensitive item${vm.redactionCount > 1 ? 's' : ''} blurred by Privacy Guard</span></div>`);
   const html = n.join('');
-  if ($('notes').dataset.h !== html) { $('notes').innerHTML = html; $('notes').dataset.h = html; $('notes').querySelectorAll('.chip2[data-at]').forEach((c) => c.onclick = () => seek(+c.dataset.at)); }
+  if ($('notes').dataset.h !== html) { $('notes').innerHTML = html; $('notes').dataset.h = html; }
 }
+
 function renderPanel() {
-  const p = $('panel'); $('form').hidden = tab !== 'comments';
+  const p = $('panel'); $('form').hidden = tab !== 'activity';
   const bind = () => p.querySelectorAll('[data-at]').forEach((a) => (a.onclick = () => seek(+a.dataset.at)));
-  if (tab === 'comments') {
-    // U14: when only new comments arrived, append them with a short fade instead of rebuilding the list (keeps scroll and hover)
-    const shown = p.dataset.k === 'comments' ? new Set([...p.querySelectorAll('.cm[data-cid]')].map((x) => x.dataset.cid)) : null;
-    if (shown && shown.size && vm.comments.every((c) => !shown.has(c.id)) === false && [...shown].every((cid) => vm.comments.some((c) => c.id === cid))) {
-      vm.comments.filter((c) => !shown.has(c.id)).forEach((c) => p.insertAdjacentHTML('beforeend', `<div class="cm fade" data-cid="${c.id}"><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div>`));
-      bind(); return;
-    }
-    p.dataset.k = 'comments';
-    p.innerHTML = vm.comments.length ? vm.comments.map((c) => `<div class="cm" data-cid="${c.id}"><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div>`).join('') : '<div class="empty">No comments yet. Be the first!</div>'; bind();
-  } else if ((p.dataset.k = tab), tab === 'transcript') {
-    p.innerHTML = vm.segments?.length ? `<div class="ghead"><input id="tq" placeholder="Search transcript…" style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></div><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
-    if (vm.segments?.length) { const draw = () => { const q = $('tq').value.toLowerCase(); $('tl').innerHTML = vm.segments.filter((s) => !q || s.text.toLowerCase().includes(q)).map((s) => `<div class="cm"><span class="at" data-at="${s.start}" style="margin:0 8px 0 0">${fmt(s.start)}</span>${esc(s.text)}</div>`).join(''); bind(); }; $('tq').oninput = draw; draw(); }
-  } else if (tab === 'guide') renderGuide(p, bind);
-  else if (tab === 'crew') renderCrew(p);
-  else if (tab === 'insights') renderInsights(p);
-  else if (tab === 'activity') p.innerHTML = (vm.activity || []).map((a) => `<div class="act">${esc(a.event)}<small>${esc(a.who || '')} · ${new Date(a.at).toLocaleString()}</small></div>`).join('') || '<div class="empty">No activity yet.</div>';
-  else if (tab === 'actions') renderActions(p);
+  if (tab === 'edit') renderEdit(p);
+  else if (tab === 'activity') renderActivity(p, bind);
+  else if (tab === 'generate') renderGenerate(p, bind);
+  else if (tab === 'transcript') {
+    p.dataset.k = 'transcript';
+    p.innerHTML = vm.segments?.length ? `<div class="ghead"><input class="field" id="tq" placeholder="Search transcript…"></div><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
+    if (vm.segments?.length) { const draw = () => { const q = $('tq').value.toLowerCase(); $('tl').innerHTML = vm.segments.filter((s) => !q || s.text.toLowerCase().includes(q)).map((s) => `<div class="cm"><div><span class="at" data-at="${s.start}" style="margin:0 8px 0 0">${fmt(s.start)}</span>${esc(s.text)}</div></div>`).join(''); bind(); }; $('tq').oninput = draw; draw(); }
+  } else if (tab === 'settings') renderSettings(p);
 }
-function renderGuide(p, bind) {
+
+// ---- Edit: the clean-up switches and the way into the editor ----
+async function loadAnalysis() {
+  const sig = `${id}:${vm.duration}:${vm.words ? 1 : 0}`;
+  if (anFor === sig) return; anFor = sig;
+  try { an = await api(`/api/videos/${id}/analyze`, { method: 'POST', body: {} }); } catch { an = { silence: [], filler: null, silenceSeconds: 0, fillerCount: null, wordsReady: !!vm.words }; }
+  lastKey = ''; render();
+}
+const draft = () => vm.edits?.cuts || [];
+const countKind = (k) => draft().filter((c) => c.kind === k).length;
+async function setCuts(kind, on) {
+  const rest = draft().filter((c) => c.kind !== kind), add = on ? (kind === 'silence' ? an.silence : (an.filler || []).map(({ start, end }) => ({ start, end, kind: 'filler' }))) : [];
+  try { vm = await api(`/api/videos/${id}/edits`, { method: 'PUT', body: { cuts: [...rest, ...add.map((c) => ({ start: c.start, end: c.end, kind }))], inserts: vm.edits?.inserts || [] } }); lastKey = ''; render(); } catch (e) { toast(e.message); }
+}
+function renderEdit(p) {
+  p.dataset.k = 'edit';
+  if (vm.type === 'image' || vm.status !== 'ready') { p.innerHTML = `<div class="empty">${vm.type === 'image' ? 'Screenshots have no edits to make.' : 'Editing opens when the video is ready.'}</div>`; return; }
+  if (me.owner && vm.type !== 'image' && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !(vm.stage && vm.stage !== 'done')) loadAnalysis();
+  const sil = an?.silenceSeconds ?? null, fil = an?.fillerCount ?? null, cuts = draft().length, applying = /^Applying edits/.test(vm.stage || '');
+  const row = (icon, label, sub, checked, disabled, key) => `<div class="row2 ${disabled ? 'off' : ''}"><span class="tile ${disabled ? 'off' : ''}">${I(icon, 'lg')}</span><div class="lab">${label}${sub ? `<small>${sub}</small>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
+  p.innerHTML = `<div class="powered">Powered by AI ${I('sparkle')}</div>
+    <div class="sh"><h3>Make edits</h3><span class="pill">${I('sparkle')} On this computer</span></div>
+    <a class="hl" href="/edit/${id}">${'<span class="tile">' + I('scissors') + '</span>'}Edit and enhance video</a>
+    ${row('silence', sil === null ? 'Looking for silence…' : `${sil}s of silence ${countKind('silence') ? 'will be removed' : 'found'}`, sil ? 'Pauses over 0.8 s, shortened to a 0.3 s breath' : '', countKind('silence') > 0, !sil, 'silence')}
+    ${row('filler', vm.words ? `${fil ?? '…'} filler word${fil === 1 ? '' : 's'} ${countKind('filler') ? 'will be removed' : 'found'}` : 'Filler words need word timing', vm.words ? 'um, uh, “you know,”, and “like” when it is set apart' : `<button class="btn sm" id="wordsBtn" style="margin-top:6px">Time every word</button>${vm.wordsError ? ` <span class="err">${esc(vm.wordsError)}</span>` : ''}`, countKind('filler') > 0, !fil, 'filler')}
+    ${row('captions', 'Add stylized captions', 'Shown from the first second, in the style you pick in the editor', !!vm.captionsDefault, !(vm.segments || []).length, 'captions')}
+    ${cuts || vm.edits?.inserts?.length ? `<div class="apply"><div><b>${cuts} cut${cuts === 1 ? '' : 's'}${vm.edits?.inserts?.length ? ` and ${vm.edits.inserts.length} insert${vm.edits.inserts.length === 1 ? '' : 's'}` : ''} ready.</b> Nothing changes until you apply them; the previous version is kept so you can undo once.</div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
+    ${vm.canUndo ? `<div class="apply"><div>Edits were applied to this video.</div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
+    ${vm.editError ? `<div class="err">${esc(vm.editError)}</div>` : ''}
+    <div class="sh" style="margin-top:28px"><h3>Take action</h3><span class="pill">${I('sparkle')} Local</span></div>
+    ${promoShut ? '' : `<div class="promo"><button class="iconbtn x" id="promoX" title="Dismiss" data-i="x"></button><h4>${I('transform')} Transform your video</h4><p>Turn this recording into a how-to guide, bug report or team resource. <button class="lnk" id="tryNow">Try now</button></p></div>`}
+    <button class="nav2" id="genDoc"><span class="tile">${I('doc')}</span><span style="flex:1">Generate a document</span>${I('right')}</button>`;
+  UI.fill(p);
+  p.querySelectorAll('[data-sw]').forEach((s) => (s.onchange = async () => {
+    const k = s.dataset.sw;
+    if (k === 'captions') { try { await patch({ captionsDefault: s.checked, ...(s.checked && !vm.captionStyle ? { captionStyle: 'bold' } : {}) }); } catch (e) { toast(e.message); } } else await setCuts(k, s.checked);
+  }));
+  if ($('wordsBtn')) $('wordsBtn').onclick = async () => { $('wordsBtn').disabled = true; $('wordsBtn').textContent = 'Timing…'; try { await api(`/api/videos/${id}/words`, { method: 'POST', body: {} }); toast('Timing every word. This takes a few seconds.'); } catch (e) { toast(e.message); } };
+  if ($('applyBtn')) $('applyBtn').onclick = async () => { try { await api(`/api/videos/${id}/edits/apply`, { method: 'POST', body: {} }); toast('Applying edits…'); vm.stage = 'Applying edits 0%'; lastKey = ''; render(); } catch (e) { toast(e.message); } };
+  if ($('undoBtn')) $('undoBtn').onclick = async () => { try { vm = await api(`/api/videos/${id}/edits/undo`, { method: 'POST', body: {} }); an = null; anFor = ''; loaded = false; lastKey = ''; render(); toast('Undone'); } catch (e) { toast(e.message); } };
+  if ($('promoX')) $('promoX').onclick = () => { promoShut = true; lastKey = ''; render(); };
+  const gen = () => go('generate'); if ($('tryNow')) $('tryNow').onclick = gen; $('genDoc').onclick = gen;
+}
+
+// ---- Activity: comments (and, for the owner, who watched) ----
+function commentHTML(c) { return `<div class="cm ${''}" data-cid="${c.id}"><span class="avatar">${esc(UI.initials(c.author))}</span><div><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div></div>`; }
+function renderActivity(p, bind) {
+  // U14: when only new comments arrived, append them with a short fade instead of rebuilding the list (keeps scroll and hover)
+  const shown = p.dataset.k === 'activity' ? new Set([...p.querySelectorAll('.cm[data-cid]')].map((x) => x.dataset.cid)) : null;
+  if (shown && shown.size && vm.comments.some((c) => !shown.has(c.id)) && [...shown].every((cid) => vm.comments.some((c) => c.id === cid)) && !p.querySelector('.owner-sec')) {
+    vm.comments.filter((c) => !shown.has(c.id)).forEach((c) => p.insertAdjacentHTML('beforeend', commentHTML(c).replace('class="cm "', 'class="cm fade"'))); bind(); return;
+  }
+  p.dataset.k = 'activity';
+  const vs = (vm.viewers || []).filter((x) => !x.owner), uniq = new Set(vs.map((x) => x.email || x.name)).size;
+  const avg = vs.length && vm.duration ? Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) : 0, heat = vm.heat || [], mx = Math.max(1, ...heat);
+  p.innerHTML = (vm.comments.length ? vm.comments.map(commentHTML).join('') : '<div class="empty">No comments yet. Be the first!</div>') +
+    (me.owner ? `<div class="owner-sec"><div class="sub">Insights</div><div class="stats"><div><b>${vs.length}</b><span>views</span></div><div><b>${uniq}</b><span>people</span></div><div><b>${avg}%</b><span>avg. watched</span></div></div>
+    <div class="heat" id="heat">${heat.map((h, k) => `<i data-at="${k}" style="height:${Math.max(4, (h / mx) * 100)}%" title="${fmt(k)}: ${h}"></i>`).join('') || '<span class="chip">Nobody has watched yet.</span>'}</div>
+    <div class="ghead"><b style="font-size:14px;flex:1">Who watched</b><a class="btn sm" href="/api/videos/${id}/viewers.csv">Export CSV</a></div>
+    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--mute)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>
+    <div class="sub">Activity log</div>${(vm.activity || []).map((a) => `<div class="act">${esc(a.event)}<small>${esc(a.who || '')} · ${new Date(a.at).toLocaleString()}</small></div>`).join('') || '<div class="empty">No activity yet.</div>'}</div>` : '');
+  bind(); p.querySelectorAll('#heat i').forEach((h) => (h.onclick = () => seek(+h.dataset.at)));
+}
+
+// ---- Generate: the AI crew's work (summary, chapters, action items, guide) and the crew itself ----
+function renderGenerate(p, bind) {
+  p.dataset.k = 'generate';
+  const sec = [], busy = vm.stage && vm.stage !== 'done';
+  if (vm.summary) sec.push(`<div class="card2"><h4>Summary</h4><p>${esc(vm.summary)}</p></div>`);
+  if (vm.tags?.length) sec.push(`<div class="chips" style="margin-bottom:14px">${vm.tags.map((t) => `<span class="chip2 tag">#${esc(t)}</span>`).join('')}</div>`);
+  if (vm.chapters?.length) sec.push(`<div class="card2"><h4>Chapters</h4><div class="chips">${vm.chapters.map((c) => `<button class="chip2" data-at="${c.start}"><b>${fmt(c.start)}</b>${esc(c.title)}</button>`).join('')}</div></div>`);
+  if (vm.tasks?.length) sec.push(`<div class="card2"><h4>Action items</h4><ul class="tasks">${vm.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`);
+  if (vm.guide) sec.push(guideHTML());
+  else sec.push(`<div class="empty" style="margin:18px 0">${busy ? 'The AI crew is working on this recording…' : 'Nothing was generated for this recording.'}</div>`);
+  if (me.owner) sec.push(`<div class="sub">AI crew</div>` + (vm.crew || []).map((c) => `<div class="crew"><span class="dot ${c.status}"></span><div><b>${esc(c.name)}</b>${c.ms ? `<span class="chip"> · ${(c.ms / 1000).toFixed(1)}s</span>` : ''}<small>${esc(c.role)}</small>${c.detail ? `<div class="d">${esc(c.detail)}</div>` : ''}</div></div>`).join('') +
+    `<p class="chip" style="margin-top:14px">Everything runs on this computer: Whisper, OCR and a local Ollama model.</p><button class="btn" id="rerun">Re-run AI notes</button>`);
+  p.innerHTML = sec.join(''); bind();
+  if ($('gmd')) { $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); copied($('gmd')); }; $('ghtml').onclick = exportGuideHtml; }
+  if ($('rerun')) $('rerun').onclick = async () => { await fetch(`/api/videos/${id}/rerun`, { method: 'POST' }); toast('AI crew restarted'); };
+}
+function guideHTML() {
   const g = vm.guide;
-  if (!g) { p.innerHTML = '<div class="empty">' + (vm.stage && vm.stage !== 'done' ? 'The Guide Writer is drafting…' : 'No guide for this recording.') + '</div>'; return; }
-  p.innerHTML = `<div class="ghead"><span class="badge">${esc(g.label)}</span><button class="btn sm" id="gmd">Copy markdown</button><button class="btn sm" id="ghtml">Export HTML</button></div>
-    <h3 style="margin:0 0 6px">${esc(g.title)}</h3><p style="margin:0 0 16px;color:var(--mute);font-size:13.5px;line-height:1.5">${esc(g.intro)}</p>` +
+  return `<div class="sub" style="margin-top:8px">Guide</div><div class="ghead"><span class="badge">${esc(g.label)}</span><button class="btn sm" id="gmd">Copy markdown</button><button class="btn sm" id="ghtml">Export HTML</button></div>
+    <h3 style="margin:0 0 6px">${esc(g.title)}</h3><p style="margin:0 0 16px;color:var(--mute);font-size:14.5px;line-height:1.5">${esc(g.intro)}</p>` +
     g.steps.map((st) => `<div class="step"><h5><i>${st.n}</i>${esc(st.title)}</h5><p>${esc(st.detail)}</p>${st.image ? `<img src="/media/${id}/guide/${st.image}" data-at="${st.at}" title="Jump to ${fmt(st.at)}">` : ''}</div>`).join('') +
-    `<p style="font-size:13.5px;line-height:1.5">${esc(g.closing)}</p>` + (g.revisions ? `<p class="chip" style="margin-top:12px">The Critic sent the first draft back once${g.criticOk ? ' and approved the revision' : '; it still left notes'}.</p>` : '');
-  bind(); $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); copied($('gmd')); }; $('ghtml').onclick = exportGuideHtml;
+    `<p style="font-size:14.5px;line-height:1.5">${esc(g.closing)}</p>` + (g.revisions ? `<p class="chip" style="margin-top:12px">The Critic sent the first draft back once${g.criticOk ? ' and approved the revision' : '; it still left notes'}.</p>` : '');
 }
 const guideMd = () => { const g = vm.guide; return `# ${g.title}\n\n${g.intro}\n\n` + g.steps.map((s) => `## ${s.n}. ${s.title}\n${s.detail}\n${s.image ? `\n![Step ${s.n}](${location.origin}/media/${id}/guide/${s.image})\n` : ''}`).join('\n') + `\n${g.closing}\n`; };
 async function exportGuideHtml() {
   const g = vm.guide, imgs = await Promise.all(g.steps.map(async (s) => { if (!s.image) return ''; const b = await (await fetch(`/media/${id}/guide/${s.image}`)).blob(); return new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); }));
-  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#231942"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, i) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[i] ? `<img src="${imgs[i]}" style="width:100%;border-radius:8px;border:1px solid #e6e2f4">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
+  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#292a2e"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, k) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[k] ? `<img src="${imgs[k]}" style="width:100%;border-radius:8px;border:1px solid #ddd">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = g.title.replace(/[^\w -]/g, '') + '.html'; a.click();
 }
-function renderCrew(p) {
-  p.innerHTML = (vm.crew || []).map((c) => `<div class="crew"><span class="dot ${c.status}"></span><div><b>${esc(c.name)}</b>${c.ms ? `<span class="chip"> · ${(c.ms / 1000).toFixed(1)}s</span>` : ''}<small>${esc(c.role)}</small>${c.detail ? `<div class="d">${esc(c.detail)}</div>` : ''}</div></div>`).join('') +
-    `<p class="chip" style="margin-top:14px">Everything runs on this computer: Whisper, OCR and a local Ollama model.</p><button class="btn" id="rerun" style="margin-top:6px">Re-run AI notes</button>`;
-  $('rerun').onclick = async () => { await fetch(`/api/videos/${id}/rerun`, { method: 'POST' }); toast('AI crew restarted'); };
-}
-function renderInsights(p) {
-  const vs = (vm.viewers || []).filter((x) => !x.owner), uniq = new Set(vs.map((x) => x.email || x.name)).size;
-  const avg = vs.length && vm.duration ? Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) : 0;
-  const heat = vm.heat || [], mx = Math.max(1, ...heat);
-  p.innerHTML = `<div class="stats"><div><b>${vs.length}</b><span>views</span></div><div><b>${uniq}</b><span>people</span></div><div><b>${avg}%</b><span>avg. watched</span></div></div>
-    <b style="font-size:13px">Engagement</b><div class="heat" id="heat">${heat.map((h, i) => `<i data-at="${i}" style="height:${Math.max(4, (h / mx) * 100)}%" title="${fmt(i)}: ${h}"></i>`).join('') || '<span class="chip">Nobody has watched yet.</span>'}</div>
-    <div class="ghead"><b style="font-size:13px;flex:1">Who watched</b><a class="btn sm" href="/api/videos/${id}/viewers.csv">Export CSV</a></div>
-    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--mute)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>`;
-  p.querySelectorAll('#heat i').forEach((h) => (h.onclick = () => seek(+h.dataset.at)));
-}
-function renderActions(p) { p.innerHTML = '<div class="empty">AI actions load here.</div>'; if (window.loadActions) window.loadActions(p); }
 
-// ---- comments / title / header buttons ----
+// ---- Settings (owner): playback effects, where it lives, link and download rules ----
+let orgLoaded = null;
+async function renderSettings(p) {
+  p.dataset.k = 'settings';
+  if (!orgLoaded) { orgLoaded = Promise.all([api('/api/folders'), api('/api/spaces')]).then(([f, s]) => ({ f, s })); }
+  const { f: folders, s: spaces } = await orgLoaded; if (tab !== 'settings') return;
+  const pr = vm.privacy || {}, exp = pr.expiresAt ? new Date(pr.expiresAt).toISOString().slice(0, 10) : '';
+  const sw = (k, label, sub, on) => `<div class="set"><div class="lab">${label}${sub ? `<small>${sub}</small>` : ''}</div><input type="checkbox" class="sw" data-k="${k}" ${on ? 'checked' : ''} aria-label="${esc(label)}"></div>`;
+  p.innerHTML = `<div class="sub" style="margin-top:0">Playback</div>${vm.track ? sw('cursorFx', 'Cursor highlight and click ripples', 'Drawn by the player from the recorded cursor', vm.cursorFx !== false) + sw('autoZoom', 'Auto-zoom on clicks', 'Eases in on each click and back out', vm.autoZoom) : '<div class="set"><div class="lab"><small>Cursor effects are only available for recordings made with Spool.</small></div></div>'}
+    <div class="sub">Organise</div>
+    <div class="set"><div class="lab">Folder</div><select class="field" id="s-folder"><option value="">No folder</option>${folders.map((x) => `<option value="${x.id}" ${vm.folder === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+    <div class="set"><div class="lab">Tags<small>Comma separated</small></div><input class="field" id="s-tags" value="${esc((vm.tags || []).join(', '))}"></div>
+    ${spaces.length ? `<div class="set"><div class="lab">Spaces</div><div class="seg2">${spaces.map((sp) => `<label><input type="checkbox" class="s-sp" value="${sp.id}" ${(vm.spaces || []).includes(sp.id) ? 'checked' : ''}>${esc(sp.name)}</label>`).join('')}</div></div>` : ''}
+    <div class="sub">Link</div>
+    ${sw('allowDownload', 'Allow downloads', 'Viewers can save the file', pr.allowDownload !== false)}
+    <div class="set"><div class="lab">Link expires<small>Leave empty for never</small></div><input class="field" type="date" id="s-exp" value="${exp}"></div>
+    <div class="sub">This video</div>
+    <div class="ghead"><a class="btn" href="/media/${id}/download">${I('download')}Download</a><a class="btn" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">${I('eye')}Preview as viewer</a><button class="btn danger" id="del">${I('trash')}Delete</button></div>`;
+  p.querySelectorAll('.sw[data-k]').forEach((s) => (s.onchange = () => (s.dataset.k === 'allowDownload' ? patch({ privacy: { allowDownload: s.checked } }) : patch({ [s.dataset.k]: s.checked }))));
+  $('s-folder').onchange = () => patch({ folder: $('s-folder').value || null });
+  $('s-tags').onchange = () => patch({ tags: $('s-tags').value.split(',').map((t) => t.trim()).filter(Boolean) });
+  p.querySelectorAll('.s-sp').forEach((c) => (c.onchange = () => patch({ spaces: [...p.querySelectorAll('.s-sp:checked')].map((x) => x.value) })));
+  $('s-exp').onchange = () => patch({ privacy: { expiresAt: $('s-exp').value ? new Date($('s-exp').value + 'T23:59:59').getTime() : 0 } });
+  $('del').onclick = deleteVideo;
+}
+async function deleteVideo() { if (confirm('Delete this video for good?')) { await fetch(`/api/videos/${id}`, { method: 'DELETE' }); location.href = '/'; } }
+
+// ---- comments / title / header ----
 $('form').onsubmit = async (e) => { e.preventDefault(); const text = $('ctext').value.trim(); if (!text) return; if (!me.owner && !viewer().name) { const n = prompt('Your name for comments?') || 'Guest'; setViewer({ ...viewer(), name: n }); } $('ctext').value = '';
   vm = await api(`/api/v/${id}/comments`, { body: { text, at: now(), name: me.owner ? me.name : viewer().name } }); lastKey = ''; render(); };
 $('title').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { title: $('title').value } }); };
 $('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
-$('fx-cursor').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { cursorFx: $('fx-cursor').checked } }); ctl?.setVM(vm); };
-$('fx-zoom').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { autoZoom: $('fx-zoom').checked } }); ctl?.setVM(vm); };
 $('speed').onchange = () => { if ($('v')) $('v').playbackRate = +$('speed').value; };
-$('later').onclick = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { watchLater: !vm.watchLater } }); render(); };
-$('dl').onclick = () => (location.href = `/media/${id}/download`);
-$('del').onclick = async () => { if (confirm('Delete this video for good?')) { await fetch(`/api/videos/${id}`, { method: 'DELETE' }); location.href = '/'; } };
-$('share').onclick = () => { if (!me.owner) { navigator.clipboard.writeText(location.href); toast('Link copied'); } else openShare(); };
+$('later').onclick = () => patch({ watchLater: !vm.watchLater });
+const copyLink = async (btn) => { await navigator.clipboard.writeText(location.href.split('?')[0]); toast('Link copied'); };
+$('vcopy').onclick = copyLink; $('copy').onclick = copyLink;
+$('share').onclick = () => openShare();
+$('moreBtn').onclick = () => popover($('moreBtn'), `<a class="mi" href="/edit/${id}">${I('scissors')}Edit video</a><a class="mi" href="/media/${id}/download">${I('download')}Download</a><button class="mi" id="mLater">${I('bookmark')}Watch later</button><a class="mi" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">${I('eye')}Preview as viewer</a><button class="mi danger" id="mDel">${I('trash')}Delete</button>`,
+  (pp, close) => { pp.querySelector('#mLater').onclick = () => { close(); patch({ watchLater: !vm.watchLater }); }; pp.querySelector('#mDel').onclick = () => { close(); deleteVideo(); }; }, 'down', true);
 
-// ---- share / privacy / CTA / organise ----
+// ---- share (reference: share-modal.webp): people, general access, then Copy link · Share at time · Set password · Share ----
+const ACCESS = { link: ['Public', 'Anyone can find and view', 'globe'], email: ['Ask for email', 'Viewers enter their email to watch', 'mail'], password: ['Password', 'Viewers need the password', 'lock'], private: ['Only me', 'Nobody else can open it', 'lock'] };
 async function openShare() {
-  const folders = await api('/api/folders'), spaces = await api('/api/spaces'), s = await api('/api/settings');
-  const base = s.lan && s.lanIp ? `http://${s.lanIp}:${s.port}` : location.origin, link = `${base}/v/${id}`, p = vm.privacy || {};
-  const exp = p.expiresAt ? new Date(p.expiresAt).toISOString().slice(0, 10) : '';
+  const [spaces, s] = await Promise.all([api('/api/spaces'), api('/api/settings')]);
+  const base = s.lan && s.lanIp ? `http://${s.lanIp}:${s.port}` : location.origin, p0 = vm.privacy || {}, t0 = Math.floor(now());
+  const st = { mode: p0.mode || 'link', pw: '', people: [], spaces: new Set(vm.spaces || []), startedSpaces: new Set(vm.spaces || []), withTime: false, panel: null };
+  const link = () => `${base}/v/${id}${st.withTime && t0 ? `?t=${t0}` : ''}`;
   const m = $('modal'); m.hidden = false;
-  m.innerHTML = `<div class="box"><h3>Share</h3>
-  <label>Link ${s.lan ? '' : '<span style="text-transform:none;font-weight:400">(works on this computer. Turn on "People on my network" in Settings to share on your Wi-Fi.)</span>'}</label>
-  <div class="rowf"><code class="b" style="flex:1;margin:0">${esc(link)}</code><button class="btn" id="m-copy">Copy</button></div>
-  <div class="rowf" style="margin-top:8px"><a class="btn" href="mailto:?subject=${encodeURIComponent(vm.title)}&body=${encodeURIComponent('Watch: ' + link)}">Email</a><a class="btn" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">Preview as viewer</a></div>
-  <label>Embed (Notion, Zendesk, Intercom, Confluence, any site)</label><code class="b">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code>
-  <label>Who can watch</label><div class="seg2" id="m-mode">${[['link', 'Anyone with the link'], ['password', 'Password'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<label><input type="radio" name="mode" value="${k}" ${p.mode === k ? 'checked' : ''}>${l}</label>`).join('')}</div>
-  <div id="m-pw" ${p.mode === 'password' ? '' : 'hidden'}><label>Password ${p.hasPassword ? '(leave empty to keep the current one)' : ''}</label><input id="m-pwv" type="password" placeholder="Choose a password"></div>
-  <div class="rowf"><div><label>Link expires</label><input id="m-exp" type="date" value="${exp}"></div><div><label>Downloads</label><select id="m-dl"><option value="1" ${p.allowDownload ? 'selected' : ''}>Allowed</option><option value="0" ${!p.allowDownload ? 'selected' : ''}>Blocked</option></select></div></div>
-  <label>Call to action button</label><div class="rowf"><input id="m-ctat" placeholder="Button text, e.g. Book a call" value="${esc(vm.cta?.text || '')}"><input id="m-ctau" placeholder="https://…" value="${esc(vm.cta?.url || '')}"></div>
-  <label>Organise</label><div class="rowf"><select id="m-folder"><option value="">No folder</option>${folders.map((f) => `<option value="${f.id}" ${vm.folder === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select><input id="m-tags" placeholder="tags, comma separated" value="${esc((vm.tags || []).join(', '))}"></div>
-  ${spaces.length ? `<div class="seg2" style="margin-top:8px">${spaces.map((sp) => `<label><input type="checkbox" class="m-sp" value="${sp.id}" ${(vm.spaces || []).includes(sp.id) ? 'checked' : ''}>Space: ${esc(sp.name)}</label>`).join('')}</div>` : ''}
-  <div class="rowf" style="margin-top:18px;justify-content:flex-end"><button class="btn" id="m-cancel">Cancel</button><button class="btn pri" id="m-save">Save</button></div></div>`;
-  document.querySelectorAll('input[name=mode]').forEach((r) => (r.onchange = () => ($('m-pw').hidden = r.value !== 'password')));
-  $('m-copy').onclick = () => { navigator.clipboard.writeText(link); copied($('m-copy')); };
+  const dirty = () => st.people.length || [...st.spaces].some((x) => !st.startedSpaces.has(x)) || [...st.startedSpaces].some((x) => !st.spaces.has(x)) || st.mode !== (p0.mode || 'link') || !!st.pw;
+  const draw = () => {
+    const a = ACCESS[st.mode], lockd = st.mode !== 'link';
+    m.innerHTML = `<div class="box sm" role="dialog" aria-modal="true" aria-label="Share"><div class="hd"><h3>Share</h3><button class="lk ${st.panel === 'social' ? 'on' : ''}" data-p="social">${I('megaphone')}Social</button><button class="lk ${st.panel === 'embed' ? 'on' : ''}" data-p="embed">${I('embed')}Embed</button><button class="iconbtn" id="m-x" title="Close">${I('x')}</button></div>
+    <div class="to"><input class="field" id="m-to" placeholder="Add names, emails, or Space" autocomplete="off"></div>
+    ${st.people.length || st.spaces.size ? `<div class="got">${st.people.map((x, k) => `<span>${esc(x)}<button data-rp="${k}" title="Remove">${I('x')}</button></span>`).join('')}${spaces.filter((sp) => st.spaces.has(sp.id)).map((sp) => `<span>${I('users')}${esc(sp.name)}<button data-rs="${sp.id}" title="Remove">${I('x')}</button></span>`).join('')}</div>` : ''}
+    ${spaces.filter((sp) => !st.spaces.has(sp.id)).length ? `<div class="sug">${spaces.filter((sp) => !st.spaces.has(sp.id)).map((sp) => `<button data-as="${sp.id}">${I('plus')}${esc(sp.name)}</button>`).join('')}</div>` : ''}
+    <h5>General access</h5><div class="acc"><span class="tile ${lockd ? 'lockd' : ''}">${I(a[2])}</span><div><b id="m-acc">${a[0]}${I('down')}</b><small>${a[1]}</small></div></div>
+    ${st.mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="m-pw" placeholder="${p0.hasPassword ? 'Leave empty to keep the current password' : 'Choose a password'}" value="${esc(st.pw)}"></div>` : ''}
+    ${st.panel === 'embed' ? `<div class="more"><b style="font-size:14px">Embed in Notion, Zendesk, Intercom, Confluence or any site</b><code class="b" style="margin-top:10px">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code><button class="btn sm" id="m-ecopy" style="margin-top:10px">Copy embed code</button></div>` : ''}
+    ${st.panel === 'social' ? `<div class="more"><div class="rowf" style="flex-wrap:wrap"><a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/tweet?url=${encodeURIComponent(link())}&text=${encodeURIComponent(vm.title)}">Post on X</a><a class="btn" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link())}">LinkedIn</a><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(vm.title + ' ' + link())}">WhatsApp</a></div>${s.lan ? '' : '<p class="note" style="margin:10px 0 0;color:var(--mute);font-size:13px">This link opens on this computer only. Turn on “People on my network” in Settings to share on your Wi-Fi.</p>'}</div>` : ''}
+    <div class="ft"><button class="t" id="m-copy">${I('link')}Copy link</button><label class="t"><input type="checkbox" id="m-time" ${st.withTime ? 'checked' : ''}>Share video at ${fmt(t0)}</label><button class="t" id="m-lock">${I('lock')}Set password</button><button class="btn go ${dirty() ? 'pri' : ''}" id="m-go" ${dirty() ? '' : 'disabled'}>Share</button></div></div>`;
+    wire();
+  };
   const close = () => { m.hidden = true; document.removeEventListener('keydown', trap, true); opener?.focus(); };
   const opener = document.activeElement;
   const trap = (e) => { // U16: Esc closes, Tab stays inside the dialog
@@ -271,15 +394,36 @@ async function openShare() {
     const first = f[0], last = f[f.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   };
-  document.addEventListener('keydown', trap, true); m.querySelector('.box').setAttribute('role', 'dialog'); m.querySelector('.box').setAttribute('aria-modal', 'true'); $('m-copy').focus();
-  $('m-cancel').onclick = () => close(); m.onclick = (e) => { if (e.target === m) close(); };
-  $('m-save').onclick = async () => {
-    const mode = document.querySelector('input[name=mode]:checked')?.value || 'link', pw = $('m-pwv').value;
-    const body = { privacy: { mode, password: pw || undefined, expiresAt: $('m-exp').value ? new Date($('m-exp').value + 'T23:59:59').getTime() : 0, allowDownload: $('m-dl').value === '1' },
-      cta: $('m-ctau').value ? { text: $('m-ctat').value || 'Learn more', url: $('m-ctau').value } : null, folder: $('m-folder').value || null,
-      tags: $('m-tags').value.split(',').map((t) => t.trim()).filter(Boolean), spaces: [...document.querySelectorAll('.m-sp:checked')].map((c) => c.value) };
-    try { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); close(); lastKey = ''; render(); toast('Saved'); } catch (e) { toast(e.message); }
+  const addPerson = (txt) => {
+    const t = txt.trim().replace(/,$/, ''); if (!t) return false;
+    const sp = spaces.find((x) => x.name.toLowerCase() === t.toLowerCase()); if (sp) { st.spaces.add(sp.id); return true; }
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t)) { if (!st.people.includes(t)) st.people.push(t); return true; }
+    toast('Type an email address or the name of a Space'); return false;
   };
+  function wire() {
+    m.querySelector('#m-x').onclick = close; m.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { st.panel = st.panel === b.dataset.p ? null : b.dataset.p; draw(); }));
+    const to = m.querySelector('#m-to'); to.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ',') && to.value.trim()) { e.preventDefault(); if (addPerson(to.value)) { draw(); m.querySelector('#m-to').focus(); } } }; to.onblur = () => { if (to.value.trim() && addPerson(to.value)) draw(); };
+    m.querySelectorAll('[data-rp]').forEach((b) => (b.onclick = () => { st.people.splice(+b.dataset.rp, 1); draw(); }));
+    m.querySelectorAll('[data-rs]').forEach((b) => (b.onclick = () => { st.spaces.delete(b.dataset.rs); draw(); }));
+    m.querySelectorAll('[data-as]').forEach((b) => (b.onclick = () => { st.spaces.add(b.dataset.as); draw(); }));
+    m.querySelector('#m-acc').onclick = () => popover(m.querySelector('#m-acc'), Object.entries(ACCESS).map(([k, [n, d, ic]]) => `<button class="mi" data-m="${k}">${I(ic)}<span><b style="font-weight:600">${n}</b><br><small style="color:var(--mute)">${d}</small></span></button>`).join(''), (pp, c) => pp.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => { c(); st.mode = b.dataset.m; draw(); })));
+    const pw = m.querySelector('#m-pw'); if (pw) pw.oninput = () => { st.pw = pw.value; m.querySelector('#m-go').disabled = !dirty(); m.querySelector('#m-go').classList.toggle('pri', dirty()); };
+    m.querySelector('#m-copy').onclick = async (e) => { await navigator.clipboard.writeText(link()); copied(e.currentTarget); };
+    m.querySelector('#m-time').onchange = (e) => { st.withTime = e.target.checked; };
+    m.querySelector('#m-lock').onclick = () => { st.mode = 'password'; draw(); setTimeout(() => m.querySelector('#m-pw')?.focus(), 30); };
+    if (m.querySelector('#m-ecopy')) m.querySelector('#m-ecopy').onclick = async (e) => { await navigator.clipboard.writeText(m.querySelector('code.b').textContent); copied(e.currentTarget); };
+    m.querySelector('#m-go').onclick = async () => {
+      if (to.value.trim()) addPerson(to.value);
+      try {
+        const body = { privacy: { mode: st.mode, password: st.pw || undefined }, spaces: [...st.spaces] };
+        vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm);
+        if (st.people.length) window.open(`mailto:${st.people.join(',')}?subject=${encodeURIComponent(vm.title)}&body=${encodeURIComponent('Watch: ' + link())}`, '_self');
+        close(); lastKey = ''; render(); toast('Shared');
+      } catch (e) { toast(e.message); }
+    };
+  }
+  m.onclick = (e) => { if (e.target === m) close(); };
+  document.addEventListener('keydown', trap, true); draw(); m.querySelector('#m-to').focus();
 }
 boot();
 </script></body></html>

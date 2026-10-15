@@ -1,13 +1,23 @@
-/* 3-2-1 over a dimmed screen. The ring drains once per second; a click or Space skips; the whole overlay fades out over 120 ms. */
+/* 3-2-1 over a dimmed screen: a blue disc with the number, ✕ to cancel on its left, ⏭ to start now on its right, a tip line under it (as in the reference).
+   The thin ring around the disc drains once per second; the whole overlay fades out over 120 ms. */
 html, body { height: 100%; overflow: hidden; }
-body { display: grid; place-items: center; background: var(--scrim); cursor: pointer; animation: in var(--t-pop) var(--ease); }
+body { display: grid; place-items: center; align-content: center; gap: 22px; background: var(--scrim); visibility: hidden; }
+body.go { visibility: visible; }
+body.go #stage { animation: pop var(--t-pop) var(--ease); }
 body.out { opacity: 0; transition: opacity 120ms var(--ease); }
-@keyframes in { from { opacity: 0; } to { opacity: 1; } }
-#wrap { position: relative; width: 240px; height: 240px; display: grid; place-items: center; }
+@keyframes pop { from { opacity: .4; transform: scale(.94); } to { opacity: 1; transform: none; } }
+#stage { display: flex; align-items: center; gap: 44px; }
+#wrap { position: relative; width: 280px; height: 280px; display: grid; place-items: center; }
 #ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-#ring circle { fill: none; stroke-width: 3; }
-#ring .track { stroke: color-mix(in srgb, var(--ink-strong), transparent 82%); }
+#ring circle { fill: none; stroke-width: 1.4; }
+#ring .track { stroke: var(--countdown-ring); }
 #ring .arc { stroke: var(--ink-strong); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 0; animation: drain 1s linear forwards; }
 @keyframes drain { to { stroke-dashoffset: 100; } }
-#n { font: 800 128px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--ink-strong); text-shadow: var(--text-shadow); }
-#skip { position: absolute; bottom: 14%; margin: 0; font: 500 13px/1 var(--font); color: var(--ink); opacity: .8; }
+#disc { width: 264px; height: 264px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); box-shadow: var(--text-shadow); }
+#n { font: 700 168px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--ink-strong); }
+.side { width: 138px; height: 138px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-strong); border: 2px solid color-mix(in srgb, var(--ink-strong), transparent 35%);
+  background: transparent; transition: background var(--t-hover) var(--ease), transform var(--t-hover) var(--ease); }
+.side:hover { background: color-mix(in srgb, var(--ink-strong), transparent 85%); }
+.side:active { transform: scale(.96); }
+.side .i { width: 56px; height: 56px; stroke-width: 2.4; }
+.tip { margin: 0; padding: 10px 16px; border-radius: var(--r-row); background: var(--bar); color: var(--ink); font: 600 17px/1.2 var(--font); box-shadow: var(--shadow-pop); }

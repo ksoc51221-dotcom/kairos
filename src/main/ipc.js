@@ -44,6 +44,10 @@ function register() {
   on('bubble:action', session.bubbleAction);
   on('controls:layout', session.controlsLayout);
   on('countdown:done', session.countdownDone);
+  on('countdown:skip', session.countdownSkip);
+  on('countdown:painted', session.countdownPainted);
+  on('countdown:cancel', session.cancelStart);
+  on('preview:set', session.previewSet);   // B27: the launcher asks for the camera preview bubble
 
   // area picker + screenshots
   handle('area:pick', ({ sourceId }) => screenshot.pickCrop(sourceId));

@@ -21,6 +21,7 @@
     pause: '<rect x="6.5" y="5" width="3.6" height="14" rx="1" class="f"/><rect x="13.9" y="5" width="3.6" height="14" rx="1" class="f"/>',
     play: '<path d="M7.5 5v14l11-7z" class="f"/>',
     restart: '<path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3"/><path d="M3.5 4v5h5"/>',
+    skip: '<path d="M5.5 5.5 14 12l-8.5 6.5z"/><path d="M18.5 5v14"/>',
     rewind: '<path d="M11 17 6 12l5-5M18 17l-5-5 5-5"/>',
     pen: '<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="m14 6 3 3"/>',
     target: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/>',

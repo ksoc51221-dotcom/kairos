@@ -40,6 +40,11 @@ const SCENARIOS = {
   pipeline: { config: { mode: 'screen-cam', seconds: 24, quality: '1080p', patch: true, secrets: true }, expected: 24.0, screen: true, pipeline: true, informational: true },
 };
 
+// B28: the frontmost app must be the same before and after a run (Spool never takes focus unless the user opens one of its windows).
+// `lsappinfo` needs no Automation permission, unlike System Events.
+const { execFileSync } = require('child_process');
+const frontApp = () => { try { const asn = execFileSync('lsappinfo', ['front']).toString().trim(); return execFileSync('lsappinfo', ['info', '-only', 'name', asn]).toString().trim(); } catch { return null; } };
+
 const results = [];
 const f = (x, d = 2) => (x == null || Number.isNaN(x) ? 'n/a' : (+x).toFixed(d));
 function check(name, ok, detail = '') { results.push({ name, ok }); console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`); }
@@ -61,11 +66,17 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
 
 async function acceptance(name, scenario, dataDir) {
   console.log(`\n== ${name}: ${JSON.stringify(scenario.config)}`);
+  const frontBefore = frontApp(), seen = new Set(), poll = setInterval(() => { const a = frontApp(); if (a) seen.add(a); }, 100); // every app that was frontmost during the run
   if (scenario.pipeline) { // reuse the models the real app already downloaded and the compiled Vision tool, instead of fetching 150 MB into a throwaway folder
     const real = path.join(os.homedir(), 'Library', 'Application Support', 'spool', 'models');
     fs.mkdirSync(dataDir, { recursive: true }); if (fs.existsSync(real)) fs.symlinkSync(real, path.join(dataDir, 'models'));
   }
   const r = await runApp(scenario, dataDir);
+  clearInterval(poll); const frontAfter = frontApp();
+  // The pass condition is that Spool itself never became the frontmost app. (Comparing before/after alone also fails when the user, or another
+  // session, switches apps while the run is going: that is not Spool taking focus.)
+  const mine = [...seen].filter((n) => /spool|electron/i.test(n));
+  if (frontBefore && frontAfter) check(`B28: Spool never became the frontmost app during the run`, mine.length === 0, `frontmost during the run: ${[...seen].map((n) => n.replace(/^"LSDisplayName"=/, '')).join(', ') || 'n/a'}; before ${frontBefore}, after ${frontAfter}`);
   const dir = r.dir, tl = r.timeline, scale = r.display.scaleFactor, expected = scenario.expected;
   console.log(`  display ${r.display.width}x${r.display.height} @${scale}x  mime ${tl.mime}  audio ${tl.audio}  segments ${tl.segments.map((s) => `#${s.n}:${f(s.dur)}s`).join(' ')}`);
 

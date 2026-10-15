@@ -7,10 +7,10 @@ const extras = require('./extras');
 const { pub } = require('./util');
 const { processVideo } = require('../agents/orchestrator');
 
-const routes = ['viewer', 'library', 'media', 'owner', 'settings'].map((n) => require(`./routes/${n}`));
+const routes = ['viewer', 'library', 'media', 'owner', 'settings', 'editor'].map((n) => require(`./routes/${n}`));
 
 // port 0 picks a free port (tests). `ready` resolves once the server is listening, with the port it got.
-function startServer({ port, host, models } = {}) {
+function startServer({ port, host, models, openLauncher } = {}) {
   const app = express();
   let server, current = port;
   app.use(express.json({ limit: '4mb' }));
@@ -23,7 +23,7 @@ function startServer({ port, host, models } = {}) {
   app.use(security.guardWrites); // B5: cross-site writes never reach a route
   app.use('/static', express.static(pub));
 
-  const ctx = { models, get port() { return current; }, relisten: () => setTimeout(listen, 150) };
+  const ctx = { models, openLauncher, get port() { return current; }, relisten: () => setTimeout(listen, 150) };
   routes.forEach((r) => r.mount(app, ctx));
 
   let resolveReady; const ready = new Promise((r) => { resolveReady = r; });

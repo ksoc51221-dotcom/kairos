@@ -270,6 +270,9 @@ function onEvents(batch) {
   }
 }
 
+// A start was cancelled during the countdown: release whatever prepare() had opened, without touching the library.
+window.__cancel = () => { finishing = true; clearInterval(tickTimer); stopStreams(); tl = null; live = null; return true; };
+window.__live = () => !!(screenStream || camStream);
 window.__prepare = prepare;
 window.__begin = begin;
 window.__stats = () => ({ ...stats, segments: tl ? tl.segments.length : 0, live: !!live, paused });

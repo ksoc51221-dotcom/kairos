@@ -142,7 +142,96 @@ async function runRecording(t) {
   });
 }
 
+// ---- B26 / B27: countdown and camera preview, driven through the real launcher (no screen content is read) ----
+//   {"preview":true,"fakeCam":true,"countdown":true}   launcher open -> preview bubble -> toggles -> hide -> Start -> same window reused -> discard
+//   {"cancel":true,"fakeCam":true,"countdown":true}    launcher -> Start -> click the countdown's cancel -> nothing left behind
+const fs_ = fs;
+const windowsNow = () => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed()).map((w) => ({ id: w.id, title: w.getTitle(), visible: w.isVisible() }));
+const named = (n) => windowsNow().filter((w) => w.title === n);
+const until = async (fn, ms = 4000, step = 25) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await fn()) return Date.now() - t0; await wait(step); } return null; };
+const inLauncher = (js) => W.launcher.webContents.executeJavaScript(js);
+const clickStart = () => inLauncher('document.getElementById("start").click()');
+const BUBBLE = 'Spool camera', COUNTDOWN = 'Spool countdown';
+const videoCount = () => store.list().length;
+const dirsOnDisk = () => { try { return fs_.readdirSync(path.join(store.videoDir('x'), '..')).filter((n) => n !== 'x').length; } catch { return 0; } };
+
+async function seedLauncher(camOn) {
+  store.setSettings({ prefs: { v: 2, source: 'screen', camOn, micOn: false, cursorFx: false } });
+  win.showLauncher(); await wait(1500);
+}
+
+async function runPreview(t) {
+  const r = { checks: {} }, ok = (k, v, detail) => { r.checks[k] = { ok: !!v, detail }; };
+  const before = videoCount();
+  await seedLauncher(true);
+  const shownMs = await until(() => named(BUBBLE).some((w) => w.visible), 5000);
+  const id1 = named(BUBBLE)[0]?.id;
+  ok('bubble preview appears while the launcher is open in Screen + Cam', shownMs != null && named(BUBBLE).length === 1, `${shownMs} ms after the launcher was shown`);
+  const b1 = W.bubble?.getBounds();
+  ok('preview is at its default or saved position, on a display', !!b1 && screen.getAllDisplays().some((d) => b1.x >= d.bounds.x - 5 && b1.x < d.bounds.x + d.bounds.width), JSON.stringify(b1));
+
+  await inLauncher('document.getElementById("camRow").click()'); await wait(300);
+  await inLauncher('document.querySelector("#camItems .menu-item").click()'); // "No Camera"
+  const goneOff = await until(() => named(BUBBLE).length === 0, 3000);
+  ok('camera turned off in the launcher: preview closes', goneOff != null, `${goneOff} ms`);
+  await inLauncher('document.getElementById("camRow").click()'); await wait(300);
+  await inLauncher('document.querySelectorAll("#camItems .menu-item")[1].click()'); // first camera
+  const backOn = await until(() => named(BUBBLE).length === 1, 3000);
+  ok('camera turned on again: preview returns', backOn != null, `${backOn} ms`);
+
+  win.hideLauncher();
+  const goneHide = await until(() => named(BUBBLE).length === 0, 3000);
+  ok('launcher closed without recording: preview closes', goneHide != null, `${goneHide} ms`);
+  win.showLauncher();
+  await until(() => named(BUBBLE).some((w) => w.visible), 5000);
+  const id2 = named(BUBBLE)[0]?.id;
+  ok('launcher shown again: preview returns', !!id2);
+
+  const startAt = performance.now(); await clickStart();
+  const cdMs = await until(() => named(COUNTDOWN).some((w) => w.visible), 4000, 10);
+  ok('Start: countdown visible', cdMs != null, `${cdMs} ms (polled) after the click`);
+  await wait(600); session.countdownSkip();
+  const live = await until(() => session.getS()?.live, 8000);
+  ok('recording went live after skip', live != null);
+  ok('the same bubble window is used for the recording (not closed and recreated)', named(BUBBLE).length === 1 && named(BUBBLE)[0].id === id2, `window ${id2} before, ${named(BUBBLE).map((w) => w.id)} during`);
+  ok('control bar is up and the countdown window is gone', win.alive(W.controls) && !win.alive(W.countdown));
+  const m = session.getS()?.metrics || {};
+  ok('B26: the countdown is painted < 150 ms after the click on Start', m.sinceClickMs != null && m.sinceClickMs < 150, `${m.sinceClickMs} ms since the click`);
+  r.metrics = m; r.elapsedToLiveMs = Math.round(performance.now() - startAt);
+  session.control('delete'); await until(() => !session.isActive(), 5000); await wait(500);
+  ok('after discard: no bubble, no controls, nothing recorded', named(BUBBLE).length === 0 && !win.alive(W.controls) && videoCount() === before, `${videoCount() - before} new videos`);
+  void id1; console.log('SELFTEST_PREVIEW ' + JSON.stringify(r)); app.quit();
+}
+
+async function runCancel(t) {
+  const r = { checks: {} }, ok = (k, v, detail) => { r.checks[k] = { ok: !!v, detail }; };
+  const before = videoCount(), dirsBefore = dirsOnDisk(), cam = t.camOn !== false; // camOn:false = Screen only: the latency run (no camera prompt, no preview bubble)
+  await seedLauncher(cam);
+  if (cam) await until(() => named(BUBBLE).some((w) => w.visible), 5000);
+  await clickStart();
+  const cd = await until(() => named(COUNTDOWN).some((w) => w.visible), 4000, 10);
+  ok('countdown visible after Start', cd != null, `${cd} ms (polled)`);
+  await wait(150); const m = { ...(session.getS()?.metrics || {}) }; r.metrics = m;
+  ok('B26: the countdown is painted < 150 ms after the click on Start', m.sinceClickMs != null && m.sinceClickMs < 150, `${m.sinceClickMs} ms since the click (${m.countdownPaintedMs} ms since start() was entered, window shown at ${m.countdownShownMs} ms)`);
+  const midRecord = videoCount() - before;
+  await wait(700);
+  await W.countdown.webContents.executeJavaScript('document.getElementById("cancel").click()');
+  const settled = await until(() => !session.isActive() && named(COUNTDOWN).length === 0, 6000);
+  ok('cancel: the session ends and the countdown closes', settled != null, `${settled} ms after the click`);
+  await wait(800);
+  const stray = ['controls', 'outline', 'ring', 'draw', 'countdown', 'notes'].filter((n) => win.alive(W[n]) && (n !== 'countdown' || W[n].isVisible())) // the launcher has prepared the next countdown window, hidden;
+  ok('cancel: no control bar, outline, ring, pen or countdown left', stray.length === 0, stray.join(', ') || 'none');
+  ok('cancel: the empty record and its folder are gone', videoCount() === before && dirsOnDisk() === dirsBefore, `records ${videoCount() - before} (was ${midRecord} while counting), folders ${dirsOnDisk() - dirsBefore}`);
+  const live = await W.recorder.webContents.executeJavaScript('window.__live()');
+  ok('cancel: the recorder released its screen and camera streams', live === false, `streams open: ${live}`);
+  ok('cancel: the launcher is back and usable', W.launcher.isVisible() && (await inLauncher('!document.getElementById("start").classList.contains("busy") && !document.getElementById("start").disabled')), 'visible, Start enabled');
+  ok(cam ? 'cancel: the camera preview is back with the launcher' : 'cancel: no camera preview in Screen only mode', named(BUBBLE).length === (cam ? 1 : 0));
+  console.log('SELFTEST_CANCEL ' + JSON.stringify(r)); app.quit();
+}
+
 async function run(t) {
+  if (t.preview) return runPreview(t);
+  if (t.cancel) return runCancel(t);
   if (t.snapshots) return runSnapshots(t.snapshots, t);
   return runRecording(t);
 }

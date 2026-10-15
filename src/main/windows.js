@@ -31,10 +31,10 @@ function load(name, rel, opts) {
 const holders = new Set();
 let dockIcon = null;
 function holdOverlay(key) { if (holders.has(key)) return; holders.add(key); if (holders.size === 1) app.dock?.hide(); }
-function releaseOverlay(key) {
-  if (!holders.delete(key) || holders.size) return;
-  Promise.resolve(app.dock?.show()).then(() => { if (dockIcon) app.dock.setIcon(dockIcon); }).catch(() => {});
-}
+// B28: the Dock icon is NOT shown again when the last overlay goes. app.dock.show() turns the process back into a foreground app, which activates
+// Spool and switches the user to its Space or pulls it in front of the app they were using, after every recording. Once a Spool window has been
+// up, Spool stays a menu-bar app (tray icon and ⌥⇧R open the launcher); the Dock icon is only there at launch, before the first overlay.
+function releaseOverlay(key) { holders.delete(key); }
 const setDockIcon = (img) => { dockIcon = img; };
 const floatTop = (w) => { w.setAlwaysOnTop(true, 'screen-saver'); w.setVisibleOnAllWorkspaces(true, { visibleInFullScreen: true, skipTransformProcessType: true }); };
 const showWhenReady = (w) => w.once('ready-to-show', () => w.showInactive());
@@ -77,7 +77,7 @@ function showLauncher() {
   if (!alive(W.launcher)) {
     const w = load('launcher', 'launcher/index.html', { width: LAUNCHER_W, height: 470, alwaysOnTop: true });
     w.on('close', (e) => { if (!quitting) { e.preventDefault(); w.hide(); } }); // closing only hides; the Dock icon brings it back
-    w.on('show', () => { holdOverlay('launcher'); w.webContents.send('launcher:shown'); }); w.on('hide', () => releaseOverlay('launcher'));
+    w.on('show', () => { holdOverlay('launcher'); w.webContents.send('launcher:shown'); prepareCountdown(); }); w.on('hide', () => { releaseOverlay('launcher'); require('./session').launcherHidden(); });
     w.on('moved', rememberLauncher);
   }
   placeLauncher();
@@ -107,10 +107,24 @@ function createControls(bounds) {
   const w = load('controls', 'controls/index.html', { ...bounds, alwaysOnTop: true, focusable: false });
   floatTop(w); w.setContentProtection(true); showWhenReady(w); return w;
 }
-// Clickable and focusable on purpose: a click or Space skips the countdown. Content-protected, so it is never in the recording.
+// Clickable (✕ and ⏭ work on the first click) but never focused, so showing it cannot pull the user out of the app they are in (B28).
+// Content-protected, so it is never in the recording.
+// B26/U7: creating and loading a full-display window took about 90 ms of the 150 ms budget, so it is made hidden while the launcher is open
+// (prepareCountdown) and beginCountdown only moves it onto the display, shows it and tells the page to start.
 function createCountdown(d) {
-  const w = load('countdown', 'countdown/index.html', { x: d.x, y: d.y, width: d.width, height: d.height, alwaysOnTop: true, hasShadow: false });
-  floatTop(w); w.setContentProtection(true); w.once('ready-to-show', () => { w.show(); w.focus(); }); return w;
+  const w = load('countdown', 'countdown/index.html', { x: d.x, y: d.y, width: d.width, height: d.height, alwaysOnTop: true, hasShadow: false, acceptFirstMouse: true });
+  floatTop(w); w.setContentProtection(true);
+  w._loaded = new Promise((res) => w.webContents.once('did-finish-load', () => { w._isLoaded = true; res(); }));
+  return w;
+}
+const prepareCountdown = () => { if (!alive(W.countdown)) createCountdown(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).bounds); };
+async function beginCountdown(d) {
+  const t0 = performance.now(), prepared = alive(W.countdown), w = prepared ? W.countdown : createCountdown(d), wasLoaded = !!w._isLoaded;
+  w.setBounds({ x: d.x, y: d.y, width: d.width, height: d.height }); const t1 = performance.now();
+  await w._loaded;
+  if (!alive(w)) return null;
+  const t2 = performance.now(); w.showInactive(); w.webContents.send('countdown:begin'); w._t = { prepared, wasLoaded, boundsMs: +(t1 - t0).toFixed(1), loadWaitMs: +(t2 - t1).toFixed(1), showMs: +(performance.now() - t2).toFixed(1) }; // B28: never takes focus; acceptFirstMouse makes the first click on ✕ or ⏭ count
+  return w;
 }
 function createOutline(b) {
   const w = load('outline', 'outline/index.html', { ...b, alwaysOnTop: true, focusable: false, hasShadow: false });
@@ -147,5 +161,5 @@ function createAnnotator(d) {
 
 module.exports = {
   W, alive, send, load, baseWin, floatTop, easeBounds, holdOverlay, releaseOverlay, setDockIcon, setQuitting, displayFor,
-  showLauncher, hideLauncher, toggleLauncher, sizeLauncher, createRecorder, createBubble, createControls, createCountdown, createOutline, createDraw, createRing, createNotes, createArea, createAnnotator,
+  showLauncher, hideLauncher, toggleLauncher, sizeLauncher, createRecorder, createBubble, createControls, createCountdown, prepareCountdown, beginCountdown, createOutline, createDraw, createRing, createNotes, createArea, createAnnotator,
 };

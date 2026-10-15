@@ -1,0 +1,338 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Edit · Spool</title><link rel="stylesheet" href="/static/app.css"><style>
+/* The editor (owner only). Non-destructive: everything below changes a draft edit list that is saved as you go; "Apply edits" renders a new
+   video.mp4 once, with one level of undo. Preview skips the cut ranges, so what you hear is what Apply will make. */
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.top { position: static; flex: none; gap: 10px; }
+.top .ttl { font: 600 17px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; } .top .st { color: var(--mute); font-size: 14px; white-space: nowrap; }
+.work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 430px; }
+@media (max-width: 980px) { .work { grid-template-columns: 1fr; grid-template-rows: auto 420px; overflow: auto; } }
+.left { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 14px 20px 12px; gap: 10px; overflow: auto; }
+.stagebox { flex: 1; min-height: 160px; display: grid; place-items: center; }
+.stagebox .stage { max-height: 100%; width: auto; max-width: 100%; height: 100%; aspect-ratio: 16/9; margin: 0 auto; }
+.stagebox .stage { height: auto; max-height: 100%; width: min(100%, calc((100vh - 470px) * 16 / 9)); }
+.bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bar .time { font: 500 15px/1 var(--font); font-variant-numeric: tabular-nums; min-width: 150px; } .bar .res { color: var(--mute); font-size: 14px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.bar input[type=range] { accent-color: var(--accent); width: 120px; }
+.tlwrap { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--card); overflow: hidden; flex: none; touch-action: none; }
+#tl { display: block; width: 100%; height: 150px; cursor: crosshair; }
+.right { border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.right .tabs { border-bottom: 1px solid var(--line-soft); padding: 0 20px; gap: 18px; flex: none; } .right .tabs button { font-size: 15px; padding: 14px 0 11px; }
+.panel { flex: 1; overflow: auto; padding: 18px 20px 28px; }
+.sub { font: 600 13px/1 var(--font); letter-spacing: .05em; text-transform: uppercase; color: var(--mute); margin: 22px 0 10px; } .sub:first-child { margin-top: 0; }
+.hint { color: var(--mute); font-size: 14px; line-height: 1.5; margin: 0 0 12px; }
+.words { font-size: 17px; line-height: 2; user-select: none; -webkit-user-select: none; cursor: text; }
+.words span { padding: 2px 1px; border-radius: 4px; cursor: pointer; } .words span:hover { background: var(--wash); }
+.words span.now { background: var(--accent-soft); color: var(--accent); } .words span.sel { background: var(--accent); color: #fff; }
+.words span.cut { text-decoration: line-through; color: var(--danger); background: color-mix(in srgb, var(--danger), transparent 90%); }
+.selbar { position: sticky; top: -18px; z-index: 2; display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 8px 10px 8px 16px; margin: -4px 0 12px; font-size: 14px; } .selbar .btn { min-height: 32px; }
+.prop { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); font-size: 14.5px; cursor: pointer; } .prop:hover { background: var(--wash); }
+.prop input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; } .prop .tm { font-variant-numeric: tabular-nums; color: var(--mute); min-width: 92px; } .prop .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .prop .added { color: var(--good); font-size: 13px; font-weight: 600; }
+.sect { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; } .sect h4 { margin: 0 0 4px; font: 600 16px var(--font); display: flex; align-items: center; gap: 10px; } .sect .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.lib { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); } .lib .nm { flex: 1; min-width: 0; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lib small { color: var(--mute); }
+.lib img { width: 72px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; background: var(--wash); }
+.ov { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; cursor: pointer; } .ov.on { border-color: var(--accent); background: var(--accent-soft); } .ov .nm { flex: 1; min-width: 0; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ov small { color: var(--mute); }
+.addrow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.frm { display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; align-items: center; margin-top: 12px; font-size: 14px; } .frm label { color: var(--mute); } .frm .field { padding: 8px 10px; font-size: 14px; }
+.frm .two { display: flex; gap: 6px; align-items: center; } .frm .two .field { min-width: 0; }
+.sw-row { display: flex; gap: 8px; flex-wrap: wrap; } .colorb { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; } .colorb.on { box-shadow: 0 0 0 2px var(--accent); }
+.cap-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .cap-g button { height: 64px; border-radius: 10px; border: 2px solid var(--line); background: #3b3d42; cursor: pointer; display: grid; place-items: center; font-size: 15px; } .cap-g button.on { border-color: var(--accent); }
+.bg-g { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; } .bg-g button { aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--line); cursor: pointer; padding: 0; } .bg-g button.on { border-color: var(--accent); }
+.set { display: flex; align-items: center; gap: 14px; padding: 8px 0; font-size: 15px; } .set .lab { flex: 1; }
+.thumbs { display: flex; gap: 12px; align-items: flex-start; } .thumbs img { width: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: var(--wash); border: 1px solid var(--line); }
+.eb { position: absolute; border: 2px dashed var(--accent); pointer-events: auto; cursor: move; box-sizing: border-box; touch-action: none; }
+.eb i { position: absolute; width: 11px; height: 11px; background: #fff; border: 2px solid var(--accent); border-radius: 3px; } .eb i.nw { left: -7px; top: -7px; cursor: nwse-resize; } .eb i.ne { right: -7px; top: -7px; cursor: nesw-resize; } .eb i.sw { left: -7px; bottom: -7px; cursor: nesw-resize; } .eb i.se { right: -7px; bottom: -7px; cursor: nwse-resize; }
+#eov { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.prog { height: 4px; background: var(--wash); border-radius: 4px; overflow: hidden; width: 160px; } .prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 300ms; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 11px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; z-index: 99; } #toast.on { opacity: 1; }
+kbd { font: 500 12px var(--font); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--wash); }
+</style></head><body>
+<header class="top"><a class="iconbtn" id="back" href="/" title="Back to the video" data-i="left"></a><span class="ttl" id="ttl"></span><span class="st" id="st"></span><div class="grow"></div>
+  <span id="prog" hidden style="display:flex;gap:10px;align-items:center"><span class="prog"><i id="progbar"></i></span><span class="st" id="progtxt"></span></span>
+  <button class="btn" id="undoApply" hidden><span data-i="undo"></span>Undo last apply</button><button class="btn" id="discard" hidden>Discard draft</button><button class="btn pri" id="apply" disabled>Apply edits</button></header>
+<div class="work"><section class="left">
+  <div class="stagebox"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" playsinline crossorigin="anonymous"></video><div id="ov"></div><div id="eov"></div></div><div id="cap"></div><a id="cta" hidden></a></div></div>
+  <div class="bar"><button class="btn sm" id="play" data-i="play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (⌫)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
+  <div class="tlwrap"><canvas id="tl"></canvas></div>
+  <div class="bar"><span class="chip">Zoom</span><input type="range" id="zoom" min="0" max="100" value="0" aria-label="Zoom"><span class="chip" id="zl">1×</span><span class="chip" style="margin-left:auto">Drag on the waveform to select · <kbd>Space</kbd> play · <kbd>S</kbd> split · <kbd>⌫</kbd> delete · <kbd>⌘Z</kbd> undo</span></div>
+</section>
+<aside class="right"><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></div>
+<div id="toast"></div>
+<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
+<script>
+const { $, fmt, esc, api, attach, CAPTION_STYLES, BACKGROUNDS } = SP, { i: I } = UI;
+const id = location.pathname.split('/').pop(), put = (u, b) => api(u, { method: 'PUT', body: b }), post = (u, b = {}) => api(u, { method: 'POST', body: b });
+const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 2200); };
+const mmss = (t, d = 1) => { const s = Math.max(0, t), m = Math.floor(s / 60); return `${m}:${(s % 60).toFixed(d).padStart(d ? d + 3 : 2, '0')}`; };
+const rid = () => Math.random().toString(36).slice(2, 7), round3 = (x) => Math.round(x * 1000) / 1000, MIN = 0.02;
+let vm, ctl, D = { cuts: [], inserts: [] }, hist = [], dur = 0, peaks = null, tab = 'transcript', sel = null, selWords = null, splits = [], ovSel = null, prop = { silence: null, filler: null, rambles: null, busyRamble: false }, saveT = null, applying = false;
+
+// ---------- the edit list: merging, history, saving ----------
+function merged() { const a = D.cuts.map((c) => ({ start: Math.max(0, c.start), end: Math.min(dur, c.end) })).filter((c) => c.end - c.start >= MIN).sort((x, y) => x.start - y.start), o = []; for (const c of a) { const l = o[o.length - 1]; if (l && c.start <= l.end + 1e-6) l.end = Math.max(l.end, c.end); else o.push({ ...c }); } return o; }
+const cutLen = () => merged().reduce((s, c) => s + c.end - c.start, 0), insLen = () => D.inserts.reduce((s, x) => s + (x.end - x.start), 0);
+const inCut = (t) => merged().find((c) => t >= c.start && t < c.end);
+function commit(next, quiet) {
+  hist.push(JSON.stringify(D)); if (hist.length > 60) hist.shift(); D = next; clearTimeout(saveT); $('st').textContent = 'Saving…';
+  saveT = setTimeout(async () => { try { await put(`/api/videos/${id}/edits`, D); $('st').textContent = 'Draft saved'; } catch (e) { $('st').textContent = 'Not saved'; toast(e.message); } }, 400);
+  refresh(quiet);
+}
+function undoDraft() { if (!hist.length) return; D = JSON.parse(hist.pop()); clearTimeout(saveT); put(`/api/videos/${id}/edits`, D).then(() => ($('st').textContent = 'Draft saved')).catch(() => {}); refresh(); }
+const addCuts = (list, kind) => { const next = { ...D, cuts: [...D.cuts] }; for (const c of list) { const s = round3(Math.max(0, c.start)), e = round3(Math.min(dur, c.end)); if (e - s >= MIN) next.cuts.push({ start: s, end: e, kind: c.kind || kind || 'manual' }); } commit(next); };
+const removeCutsIn = (a, b) => commit({ ...D, cuts: D.cuts.filter((c) => !(c.end > a && c.start < b)) });
+function refresh(quiet) {
+  $('apply').disabled = applying || vm.busy || !(D.cuts.length || D.inserts.length); $('discard').hidden = !(D.cuts.length || D.inserts.length); $('undoApply').hidden = !vm.canUndo;
+  const n = D.cuts.length + D.inserts.length; $('apply').textContent = n ? `Apply ${merged().length} cut${merged().length === 1 ? '' : 's'}${D.inserts.length ? ` + ${D.inserts.length} insert${D.inserts.length === 1 ? '' : 's'}` : ''}` : 'Apply edits';
+  const result = dur - cutLen() + insLen(); $('res').textContent = n ? `Result ${mmss(result)}  (${result - dur >= 0 ? '+' : '−'}${mmss(Math.abs(result - dur))})` : '';
+  $('del').disabled = !sel; const over = sel && D.cuts.some((c) => c.end > sel.a && c.start < sel.b); $('restore').hidden = !over; draw(); if (!quiet) renderPanel();
+}
+
+// ---------- boot ----------
+async function load(keepTab) {
+  vm = await api(`/api/videos/${id}/editor`);
+  dur = vm.duration; D = { cuts: (vm.edits?.cuts || []).map((c) => ({ ...c })), inserts: (vm.edits?.inserts || []).map((x) => ({ ...x })) };
+  $('ttl').textContent = vm.title; document.title = `Edit · ${vm.title}`; $('back').href = `/v/${id}`;
+  if (!keepTab) { UI.fill(document); }
+  peaks = null; api(`/api/videos/${id}/peaks`).then((p) => { peaks = p; draw(); }).catch(() => {});
+}
+async function boot() {
+  const me = await api('/api/me'); UI.brand(me.brand);
+  try { await load(); } catch (e) { document.body.innerHTML = `<div class="gate"><h2>Can't edit this</h2><p>${esc(e.message)}</p><a class="btn pri" href="/">Back to the library</a></div>`; return; }
+  const v = $('v'); v.src = `/media/${id}/video.mp4?v=${Date.now()}`; v.poster = `/media/${id}/thumb.jpg`;
+  ctl = attach({ stage: $('stage'), video: v, vm: { ...vm, autoZoom: false }, noStats: true }); // no zoom in the editor: overlay handles need a still frame
+  if (vm.segments?.length) ctl.setCaptions('original').catch(() => {});
+  renderTabs(); refresh(); listen(); requestAnimationFrame(tick);
+}
+function listen() { // progress and completion of Apply, and word timing finishing
+  const es = new EventSource(`/api/events?video=${id}`); es.addEventListener('video', async () => {
+    const was = applying; const nv = await api(`/api/videos/${id}/editor`).catch(() => null); if (!nv) return;
+    const m = /^Applying edits (\d+)%/.exec(nv.stage || '');
+    if (m) { $('prog').hidden = false; $('progbar').style.width = m[1] + '%'; $('progtxt').textContent = `Applying edits ${m[1]}%`; applying = true; $('apply').disabled = true; return; }
+    if (was && !m && !nv.busy) { applying = false; $('prog').hidden = true; if (nv.editError) toast(nv.editError); else { toast('Edits applied'); await reloadAfter(); } return; }
+    if (was && !m) return; // queued: not started yet
+    if (/^Timing every word/.test(nv.stage || '')) { $('st').textContent = 'Timing every word…'; return; }
+    if (!vm.words && nv.words) { vm = { ...vm, ...nv }; $('st').textContent = ''; if (tab === 'transcript' || tab === 'cleanup') { prop.filler = null; renderPanel(); } }
+  });
+}
+async function reloadAfter() { sel = null; selWords = null; splits = []; hist = []; prop = { silence: null, filler: null, rambles: null, busyRamble: false }; await load(true); $('v').src = `/media/${id}/video.mp4?v=${Date.now()}`; ctl.setVM({ ...vm, autoZoom: false }); refresh(); }
+
+// ---------- timeline ----------
+const cv = $('tl'), g = cv.getContext('2d'), tlv = { zoom: 1, t0: 0 };
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const spanT = () => Math.max(0.05, dur / tlv.zoom), W = () => cv.clientWidth, x2t = (x) => tlv.t0 + (x / W()) * spanT(), t2x = (t) => ((t - tlv.t0) / spanT()) * W();
+const clampView = () => { tlv.t0 = Math.max(0, Math.min(dur - spanT(), tlv.t0)); };
+function trims() { const m = merged(), a = m[0] && m[0].start <= 0.001 ? m[0].end : 0, last = m[m.length - 1], b = last && last.end >= dur - 0.001 ? last.start : dur; return { a, b }; }
+function draw() {
+  if (!dur) return;
+  const dpr = Math.min(2, devicePixelRatio || 1), w = W(), h = 150; if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = h * dpr; } g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const acc = css('--accent'), ink = css('--ink'), mute = css('--mute'), bad = css('--danger'), line = css('--line'), wash = css('--wash');
+  g.font = '11px Inter, system-ui, sans-serif'; g.textBaseline = 'top';
+  const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600], step = steps.find((s) => (s / spanT()) * w >= 80) || 600;
+  g.fillStyle = mute; g.strokeStyle = line; g.lineWidth = 1;
+  for (let t = Math.ceil(tlv.t0 / step) * step; t <= tlv.t0 + spanT(); t += step) { const x = Math.round(t2x(t)) + .5; g.beginPath(); g.moveTo(x, 16); g.lineTo(x, 24); g.stroke(); g.fillText(mmss(t, step < 1 ? 2 : step < 1 ? 1 : 0), x + 4, 3); }
+  const top = 28, mid = (top + h - 8) / 2, amp = (h - 8 - top) / 2;
+  if (peaks) { const r = peaks.rate; g.fillStyle = ink; g.globalAlpha = .55; for (let x = 0; x < w; x++) { const a = Math.floor(x2t(x) * r), b = Math.max(a + 1, Math.ceil(x2t(x + 1) * r)); let m = 0; for (let k = a; k < b && k < peaks.peaks.length; k++) if (peaks.peaks[k] > m) m = peaks.peaks[k]; const hh = Math.max(1, (m / 127) * amp); g.fillRect(x, mid - hh, 1, hh * 2); } g.globalAlpha = 1; }
+  else { g.fillStyle = mute; g.fillText('Reading the sound…', 10, mid); }
+  for (const c of merged()) { const x1 = t2x(c.start), x2 = t2x(c.end); if (x2 < 0 || x1 > w) continue; g.fillStyle = wash; g.globalAlpha = .82; g.fillRect(x1, top, x2 - x1, h - top - 8); g.globalAlpha = 1; g.strokeStyle = bad; g.lineWidth = 1; g.save(); g.beginPath(); g.rect(x1, top, x2 - x1, h - top - 8); g.clip(); for (let x = x1 - 150; x < x2 + 150; x += 8) { g.beginPath(); g.moveTo(x, h - 8); g.lineTo(x + 150, top); g.globalAlpha = .28; g.stroke(); } g.restore(); g.globalAlpha = 1; g.fillStyle = bad; g.fillRect(x1, top, 2, h - top - 8); g.fillRect(x2 - 2, top, 2, h - top - 8); }
+  for (const s of splits) { const x = t2x(s); g.strokeStyle = ink; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x, top); g.lineTo(x, h - 8); g.stroke(); g.setLineDash([]); }
+  for (const ins of D.inserts) { const x = t2x(ins.at); g.fillStyle = acc; g.fillRect(x - 1, top, 3, h - top - 8); g.beginPath(); g.moveTo(x - 6, top); g.lineTo(x + 7, top); g.lineTo(x + .5, top + 10); g.fill(); }
+  const tr = trims(); for (const [t, left] of [[tr.a, true], [tr.b, false]]) { const x = t2x(t); g.fillStyle = acc; g.fillRect(left ? x - 8 : x, 16, 8, 12); g.fillRect(x - 1, 16, 2, h - 24); }
+  if (sel) { const x1 = t2x(sel.a), x2 = t2x(sel.b); g.fillStyle = acc; g.globalAlpha = .22; g.fillRect(x1, top, x2 - x1, h - top - 8); g.globalAlpha = 1; g.fillRect(x1 - 2, top, 5, h - top - 8); g.fillRect(x2 - 3, top, 5, h - top - 8); }
+  const px = t2x($('v').currentTime || 0); g.strokeStyle = bad; g.lineWidth = 2; g.beginPath(); g.moveTo(px, 0); g.lineTo(px, h); g.stroke(); g.fillStyle = bad; g.beginPath(); g.moveTo(px - 6, 0); g.lineTo(px + 6, 0); g.lineTo(px, 9); g.fill();
+}
+let drag = null;
+cv.addEventListener('pointerdown', (e) => {
+  cv.setPointerCapture(e.pointerId); const r = cv.getBoundingClientRect(), x = e.clientX - r.left, t = x2t(x), tr = trims(); drag = { x0: x, t0: t, moved: false };
+  if (Math.abs(x - t2x(tr.a)) < 9 && e.offsetY < 40) drag.kind = 'trimA'; else if (Math.abs(x - t2x(tr.b)) < 9 && e.offsetY < 40) drag.kind = 'trimB';
+  else if (sel && Math.abs(x - t2x(sel.a)) < 8) drag = { ...drag, kind: 'selA' }; else if (sel && Math.abs(x - t2x(sel.b)) < 8) drag = { ...drag, kind: 'selB' };
+  else drag.kind = e.offsetY < 26 ? 'seek' : 'new';
+});
+cv.addEventListener('pointermove', (e) => {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, t = Math.max(0, Math.min(dur, x2t(x)));
+  if (!drag) { cv.title = mmss(t, 2); return; }
+  if (Math.abs(x - drag.x0) > 3) drag.moved = true; if (!drag.moved) return;
+  if (drag.kind === 'new') sel = { a: Math.min(drag.t0, t), b: Math.max(drag.t0, t) };
+  else if (drag.kind === 'selA') sel.a = Math.min(t, sel.b - 0.05); else if (drag.kind === 'selB') sel.b = Math.max(t, sel.a + 0.05);
+  else if (drag.kind === 'seek') $('v').currentTime = t;
+  else if (drag.kind === 'trimA' || drag.kind === 'trimB') drag.trim = t;
+  if (drag.kind.startsWith('trim')) draw(); else refresh(true);
+});
+cv.addEventListener('pointerup', (e) => {
+  const d = drag; drag = null; if (!d) return; const r = cv.getBoundingClientRect(), t = Math.max(0, Math.min(dur, x2t(e.clientX - r.left)));
+  if (d.kind === 'trimA' || d.kind === 'trimB') { if (!d.moved) return; const cuts = D.cuts.filter((c) => !(d.kind === 'trimA' ? c.start <= 0.001 : c.end >= dur - 0.001)); if (d.kind === 'trimA' && t > MIN) cuts.push({ start: 0, end: round3(t), kind: 'manual' }); if (d.kind === 'trimB' && dur - t > MIN) cuts.push({ start: round3(t), end: dur, kind: 'manual' }); commit({ ...D, cuts }); return; }
+  if (!d.moved) { // a click: seek, and pick a cut or a split clip if one is under the pointer
+    $('v').currentTime = t; const c = merged().find((m) => t >= m.start && t <= m.end);
+    if (c) sel = { a: c.start, b: c.end }; else if (splits.length) { const pts = [0, ...splits.slice().sort((a, b) => a - b), dur]; for (let k = 0; k < pts.length - 1; k++) if (t >= pts[k] && t <= pts[k + 1]) sel = { a: pts[k], b: pts[k + 1] }; } else sel = null;
+    refresh(true); return;
+  }
+  if (sel && sel.b - sel.a < 0.05) sel = null; refresh(true); if (sel) $('v').currentTime = sel.a;
+});
+cv.addEventListener('wheel', (e) => {
+  e.preventDefault(); const x = e.clientX - cv.getBoundingClientRect().left, t = x2t(x);
+  if (e.ctrlKey || e.metaKey) { setZoom(tlv.zoom * Math.exp(-e.deltaY * 0.01), t, x); } else { tlv.t0 += ((Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / W()) * spanT(); clampView(); draw(); }
+}, { passive: false });
+function setZoom(z, anchorT, anchorX) { tlv.zoom = Math.max(1, Math.min(50, z)); if (anchorT !== undefined) tlv.t0 = anchorT - (anchorX / W()) * spanT(); clampView(); $('zoom').value = Math.round((Math.log(tlv.zoom) / Math.log(50)) * 100); $('zl').textContent = tlv.zoom < 10 ? tlv.zoom.toFixed(1) + '×' : Math.round(tlv.zoom) + '×'; draw(); }
+$('zoom').oninput = () => { const t = ($('v').currentTime || 0); const z = Math.pow(50, $('zoom').value / 100); setZoom(z, t, Math.max(0, Math.min(W(), t2x(t)))); };
+addEventListener('resize', draw);
+
+// ---------- playback: the preview skips what is cut ----------
+function tick() {
+  const v = $('v'), t = v.currentTime;
+  if (!v.paused) { const c = inCut(t); if (c) v.currentTime = c.end >= dur - 0.02 ? (v.pause(), dur) : c.end; if (tlv.zoom > 1 && (t < tlv.t0 || t > tlv.t0 + spanT() * 0.9)) { tlv.t0 = t - spanT() * 0.1; clampView(); } }
+  $('time').textContent = `${mmss(t)} / ${mmss(dur)}`; $('play').lastChild.textContent = ''; if (document.activeElement !== v) draw(); markWords(t); ovFrame();
+  requestAnimationFrame(tick);
+}
+$('play').onclick = () => { const v = $('v'); v.paused ? v.play() : v.pause(); };
+$('v').addEventListener('play', () => { $('play').innerHTML = `${I('pause') || ''}Pause`; }); $('v').addEventListener('pause', () => { $('play').innerHTML = `${I('play')}Play`; });
+$('split').onclick = () => { const t = round3($('v').currentTime); if (t > 0.05 && t < dur - 0.05 && !splits.includes(t)) { splits.push(t); draw(); } };
+$('del').onclick = () => { if (sel) { addCuts([{ start: sel.a, end: sel.b }], 'manual'); sel = null; refresh(); } };
+$('restore').onclick = () => { if (sel) { removeCutsIn(sel.a, sel.b); sel = null; } };
+$('discard').onclick = () => { if (confirm('Throw away the draft edits?')) { commit({ cuts: [], inserts: [] }); sel = null; } };
+$('undoApply').onclick = async () => { if (!confirm('Undo the last applied edit? The video goes back to how it was before.')) return; try { await post(`/api/videos/${id}/edits/undo`); toast('Undone'); await reloadAfter(); } catch (e) { toast(e.message); } };
+$('apply').onclick = async () => { try { applying = true; $('apply').disabled = true; $('prog').hidden = false; $('progtxt').textContent = 'Starting…'; clearTimeout(saveT); await put(`/api/videos/${id}/edits`, D); await post(`/api/videos/${id}/edits/apply`); } catch (e) { applying = false; $('prog').hidden = true; toast(e.message); refresh(); } };
+addEventListener('keydown', (e) => {
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.altKey) return;
+  if (e.key === ' ') { e.preventDefault(); $('play').click(); } else if (e.key === 's' && !e.metaKey && !e.ctrlKey) $('split').click();
+  else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); if (selWords?.length) deleteWords(); else $('del').click(); }
+  else if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undoDraft(); }
+  else if (e.key === 'ArrowLeft') $('v').currentTime = Math.max(0, $('v').currentTime - (e.shiftKey ? 1 : 0.1)); else if (e.key === 'ArrowRight') $('v').currentTime = Math.min(dur, $('v').currentTime + (e.shiftKey ? 1 : 0.1));
+  else if (e.key === 'Escape') { sel = null; selWords = null; ovSel = null; refresh(); }
+});
+
+// ---------- panel ----------
+const TABS = [['transcript', 'Transcript'], ['cleanup', 'Clean up'], ['insert', 'Insert'], ['overlays', 'Overlays'], ['style', 'Style']];
+function renderTabs() { $('tabs').innerHTML = TABS.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('') + '<i class="ind"></i>'; $('tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { tab = b.dataset.t; renderTabs(); renderPanel(); })); const on = $('tabs').querySelector('.on'); if (on) { const ind = $('tabs').querySelector('.ind'); ind.style.width = on.offsetWidth + 'px'; ind.style.transform = `translateX(${on.offsetLeft}px)`; } }
+function renderPanel() { const p = $('panel'); ({ transcript: tTranscript, cleanup: tCleanup, insert: tInsert, overlays: tOverlays, style: tStyle })[tab](p); ovRender(); }
+const wordCut = (w) => { const m = merged(); let o = 0; for (const c of m) o += Math.max(0, Math.min(w.e, c.end) - Math.max(w.s, c.start)); return o >= (w.e - w.s) * 0.5 && o > 0; };
+
+// ----- transcript -----
+function tTranscript(p) {
+  if (!vm.words) { p.innerHTML = `<p class="hint">Edit by transcript: select words and delete them, and the video is cut at exactly those words. This needs a timestamp for every word.</p>${vm.segments?.length || true ? `<button class="btn pri" id="tw">Time every word</button>` : ''} ${vm.wordsError ? `<p class="err">${esc(vm.wordsError)}</p>` : ''}`; if ($('tw')) $('tw').onclick = async () => { $('tw').disabled = true; $('tw').textContent = 'Timing…'; try { await post(`/api/videos/${id}/words`); $('st').textContent = 'Timing every word…'; } catch (e) { toast(e.message); } }; return; }
+  p.innerHTML = `<div id="selbar"></div><p class="hint">Click a word to jump there. Drag across words to select them, then press <kbd>⌫</kbd>. Struck-through words are cut.</p><div class="words" id="wd">${vm.words.map((w, k) => `<span data-k="${k}" class="${wordCut(w) ? 'cut' : ''}">${esc(w.w)}</span> `).join('')}</div>`;
+  const wd = $('wd'); let a = null, moved = false;
+  wd.onpointerdown = (e) => { const s = e.target.closest('span[data-k]'); if (!s) return; a = +s.dataset.k; moved = false; selWords = [a]; paintSel(); };
+  wd.onpointerover = (e) => { if (a === null || e.buttons !== 1) return; const s = e.target.closest('span[data-k]'); if (!s) return; const b = +s.dataset.k; if (b !== a) moved = true; selWords = range(a, b); paintSel(); };
+  addEventListener('pointerup', function up() { removeEventListener('pointerup', up); if (a !== null && !moved) { $('v').currentTime = vm.words[a].s; selWords = null; sel = null; paintSel(); } a = null; refresh(true); });
+  paintSel();
+}
+const range = (a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); return Array.from({ length: hi - lo + 1 }, (_, k) => lo + k); };
+function paintSel() {
+  const bar = $('selbar'); document.querySelectorAll('#wd span.sel').forEach((s) => s.classList.remove('sel')); (selWords || []).forEach((k) => document.querySelector(`#wd span[data-k="${k}"]`)?.classList.add('sel'));
+  if (!bar) return; bar.className = selWords?.length ? 'selbar' : ''; bar.innerHTML = selWords?.length ? `<span style="flex:1">${selWords.length} word${selWords.length === 1 ? '' : 's'} selected</span><button class="btn sm" id="wdel">Delete</button><button class="btn sm ghost" id="wclr" style="color:inherit">Clear</button>` : '';
+  if ($('wdel')) { $('wdel').onclick = deleteWords; $('wclr').onclick = () => { selWords = null; paintSel(); }; }
+  if (selWords?.length) { const w = vm.words; sel = { a: w[selWords[0]].s, b: w[selWords[selWords.length - 1]].e }; draw(); }
+}
+function deleteWords() { // neighbouring selected words become one cut; the cut is exactly from the first word's start to the last word's end
+  const idx = [...new Set(selWords)].sort((a, b) => a - b), out = []; for (const i of idx) { const w = vm.words[i], l = out[out.length - 1]; if (l && l.last === i - 1) { l.end = w.e; l.last = i; } else out.push({ start: w.s, end: w.e, last: i }); }
+  addCuts(out.map(({ start, end }) => ({ start, end, kind: 'transcript' }))); selWords = null; sel = null; refresh();
+}
+let lastNow = -1; function markWords(t) { if (tab !== 'transcript' || !vm.words) return; let lo = 0, hi = vm.words.length - 1, k = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (vm.words[m].s <= t) { k = m; lo = m + 1; } else hi = m - 1; } if (k === lastNow) return; document.querySelector('#wd span.now')?.classList.remove('now'); lastNow = k; if (k >= 0) { const s = document.querySelector(`#wd span[data-k="${k}"]`); if (s) { s.classList.add('now'); if (!$('v').paused) s.scrollIntoView({ block: 'nearest' }); } } }
+
+// ----- clean up: silences, filler words, rambles (each a reviewable list) -----
+const exists = (c) => D.cuts.some((x) => Math.abs(x.start - c.start) < 0.01 && Math.abs(x.end - c.end) < 0.01);
+async function analyze() { try { const r = await post(`/api/videos/${id}/analyze`); prop.silence = r.silence; prop.filler = r.filler; if (!vm.words && r.wordsReady) vm.words = true; } catch (e) { prop.silence = []; prop.filler = vm.words ? [] : null; toast(e.message); } if (tab === 'cleanup') renderPanel(); }
+function tCleanup(p) {
+  if (prop.silence === null) { p.innerHTML = '<div class="skeleton" style="height:60px"></div><div class="skeleton" style="height:60px;margin-top:12px"></div>'; analyze(); return; }
+  const list = (key, items, empty, label) => items.length ? items.map((c, k) => `<label class="prop" data-k="${k}" data-g="${key}"><input type="checkbox" ${exists(c) ? 'checked disabled' : (c.on !== false ? 'checked' : '')}><span class="tm">${mmss(c.start, 1)}–${mmss(c.end, 1)}</span><span class="tx">${esc(label(c))}</span>${exists(c) ? '<span class="added">added</span>' : ''}</label>`).join('') : `<p class="hint">${empty}</p>`;
+  const sect = (key, icon, title, desc, items, empty, label, extra = '') => { const open = (items || []).filter((c) => !exists(c)); return `<div class="sect"><h4>${I(icon)}${title}${items ? `<span class="pill">${items.length}</span>` : ''}</h4><p class="hint" style="margin:4px 0 8px">${desc}</p>${items ? list(key, items, empty, label) : extra}${items && open.length ? `<div class="actions"><button class="btn pri sm" data-add="${key}">Add selected to cuts</button><span class="chip" style="align-self:center">${open.length} not added yet</span></div>` : ''}</div>`; };
+  p.innerHTML = `<p class="hint">Proposals only: nothing is cut until you add it, and nothing is applied until you press <b>Apply edits</b>.</p>` +
+    sect('silence', 'silence', 'Silences', 'Pauses longer than 0.8 s. Each cut leaves a 0.3 s breath so speech does not run together.', prop.silence, 'No long silences.', (c) => `${(c.end - c.start + 0.3).toFixed(1)} s of silence`) +
+    sect('filler', 'filler', 'Filler words', 'um, uh, “you know,” and “like” when it is set apart by a comma or a pause.', vm.words ? prop.filler || [] : null, 'No filler words found.', (c) => `“${c.text}”`, `<button class="btn" id="tw">Time every word first</button>`) +
+    sect('rambles', 'wand', 'Rambles', 'The local model suggests sentences that repeat what you said or wander off. Check each one before adding it.', prop.rambles, 'The model found nothing to cut.', (c) => c.reason || 'ramble', prop.busyRamble ? '<div class="skeleton" style="height:48px"></div><p class="hint" style="margin-top:8px">Reading the transcript… this can take a minute.</p>' : `<button class="btn" id="findr">Look for rambles</button>${vm.segments?.length ? '' : '<p class="hint" style="margin-top:8px">There is no transcript yet.</p>'}`);
+  p.querySelectorAll('.prop').forEach((r) => { const items = prop[r.dataset.g], c = items[+r.dataset.k]; r.onclick = (e) => { if (e.target.tagName !== 'INPUT') { $('v').currentTime = c.start; sel = { a: c.start, b: c.end }; refresh(true); e.preventDefault(); } }; r.querySelector('input').onchange = (e) => { c.on = e.target.checked; }; });
+  p.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => { const key = b.dataset.add, items = prop[key].filter((c) => !exists(c) && c.on !== false); if (!items.length) return toast('Nothing selected'); addCuts(items.map((c) => ({ start: c.start, end: c.end, kind: key === 'rambles' ? 'ramble' : key })), key); toast(`${items.length} added to the cuts`); }));
+  if ($('tw')) $('tw').onclick = async () => { await post(`/api/videos/${id}/words`); toast('Timing every word…'); };
+  if ($('findr')) $('findr').onclick = async () => { prop.busyRamble = true; renderPanel(); try { prop.rambles = (await post(`/api/videos/${id}/rambles`)).rambles.map((c) => ({ ...c, on: false })); } catch (e) { toast(e.message); prop.rambles = []; } prop.busyRamble = false; renderPanel(); };
+  if (prop.rambles === null && false) renderPanel();
+}
+
+// ----- insert: another library video, or a new recording -----
+function tInsert(p) {
+  const at = round3($('v').currentTime), ins = D.inserts;
+  p.innerHTML = `<p class="hint">Splice another video into this one. “At playhead” puts it where the red line is now (${mmss(at)}).</p>
+    ${ins.length ? `<div class="sub">In this edit</div>${ins.map((x, k) => { const o = vm.library.find((l) => l.id === x.videoId); return `<div class="lib"><div class="nm">${esc(o?.title || x.videoId)}<br><small>at ${mmss(x.at)} · ${mmss(x.end - x.start)}</small></div><button class="btn sm" data-rm="${k}">Remove</button></div>`; }).join('')}` : ''}
+    <div class="sub">Your videos</div>
+    ${vm.library.map((o) => `<div class="lib"><img src="/media/${o.id}/thumb.jpg" alt=""><div class="nm">${esc(o.title)}<br><small>${mmss(o.duration, 0)}</small></div><button class="btn sm" data-at="${o.id}" data-d="${o.duration}">At playhead</button><button class="btn sm" data-end="${o.id}" data-d="${o.duration}">At the end</button></div>`).join('') || '<p class="hint">No other videos yet.</p>'}
+    <div class="sub">A new recording</div><p class="hint">Record a clip with Spool; when it has finished processing it appears in the list above.</p><button class="btn" id="rec">${I('video')}Record a new clip</button>`;
+  const add = (vid, d, where) => { const next = { ...D, inserts: [...D.inserts, { videoId: vid, at: where, start: 0, end: round3(+d), duration: round3(+d) }] }; commit(next); toast('Inserted. Apply the edits to render it.'); };
+  p.querySelectorAll('[data-at]').forEach((b) => (b.onclick = () => add(b.dataset.at, b.dataset.d, round3($('v').currentTime))));
+  p.querySelectorAll('[data-end]').forEach((b) => (b.onclick = () => add(b.dataset.end, b.dataset.d, dur)));
+  p.querySelectorAll('[data-rm]').forEach((b) => (b.onclick = () => commit({ ...D, inserts: D.inserts.filter((_, k) => k !== +b.dataset.rm) })));
+  $('rec').onclick = async () => { try { await post('/api/launcher/open'); toast('Spool is open: record your clip'); setTimeout(async () => { vm.library = (await api(`/api/videos/${id}/editor`)).library; if (tab === 'insert') renderPanel(); }, 8000); } catch (e) { toast(e.message); } };
+}
+
+// ----- overlays: text, arrow, box, blur, with start and end; {{variables}} -----
+const PALETTE = ['#ff3b5c', '#ffb020', '#22c08a', '#3267d4', '#ffffff', '#111111'];
+const OV_NAME = { text: 'Text', arrow: 'Arrow', box: 'Box', blur: 'Blur' };
+function ovList() { return vm.overlays || []; }
+async function saveOverlays() { try { const r = await api(`/api/videos/${id}`, { method: 'PATCH', body: { overlays: ovList() } }); vm = { ...vm, ...r, words: vm.words, library: vm.library }; ctl.setVM({ ...vm, autoZoom: false }); } catch (e) { toast(e.message); } }
+const saveSoon = (() => { let t; return () => { clearTimeout(t); t = setTimeout(saveOverlays, 450); }; })();
+function addOverlay(type) {
+  const t = round3($('v').currentTime), o = { id: rid(), type, start: t, end: round3(Math.min(dur, t + 3)), color: type === 'text' ? '#ffffff' : '#ff3b5c', x: 0.3, y: 0.38, w: type === 'arrow' ? 0.18 : 0.4, h: type === 'text' ? 0.12 : type === 'arrow' ? 0.18 : 0.22 };
+  if (type === 'text') Object.assign(o, { text: 'Your text, {{name}}', size: 4, bg: '#3267d4' });
+  vm.overlays = [...ovList(), o]; ovSel = o.id; saveSoon(); ctl.setVM({ ...vm, autoZoom: false }); renderPanel();
+}
+function tOverlays(p) {
+  const list = ovList(), o = list.find((x) => x.id === ovSel), vars = [...new Set([...list.map((x) => x.text || ''), vm.cta?.text || '', vm.cta?.url || ''].join(' ').matchAll(/\{\{\s*(\w+)\s*\}\}/g).map((m) => m[1]))];
+  p.innerHTML = `<div class="addrow"><button class="btn sm" data-add="text">${I('text')}Text</button><button class="btn sm" data-add="arrow">${I('arrow')}Arrow</button><button class="btn sm" data-add="box">${I('box')}Box</button><button class="btn sm" data-add="blur">${I('blur')}Blur box</button></div>
+    ${list.map((x) => `<div class="ov ${x.id === ovSel ? 'on' : ''}" data-id="${x.id}"><span class="tile" style="width:34px;height:34px;border-radius:9px">${I({ text: 'text', arrow: 'arrow', box: 'box', blur: 'blur' }[x.type])}</span><div class="nm">${esc(x.type === 'text' ? x.text : OV_NAME[x.type])}<br><small>${mmss(x.start)}–${mmss(x.end)}</small></div></div>`).join('') || '<p class="hint">Add text, an arrow, a box or a blur over part of the video, from a start time to an end time. Drag it on the picture to place it.</p>'}
+    ${o ? `<div class="frm">${o.type === 'text' ? `<label>Text</label><input class="field" id="o-text" value="${esc(o.text)}"><label>Size</label><input class="field" id="o-size" type="number" min="1" max="12" step="0.5" value="${o.size || 4}"><label>Background</label><div class="sw-row" id="o-bg"><button class="colorb ${!o.bg ? 'on' : ''}" data-c="" title="None" style="background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 50%/10px 10px"></button>${PALETTE.map((c) => `<button class="colorb ${o.bg === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
+      ${o.type !== 'blur' ? `<label>Colour</label><div class="sw-row" id="o-col">${PALETTE.map((c) => `<button class="colorb ${o.color === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
+      <label>Shows</label><div class="two"><input class="field" id="o-s" type="number" min="0" max="${dur}" step="0.1" value="${o.start}"><span>to</span><input class="field" id="o-e" type="number" min="0" max="${dur}" step="0.1" value="${o.end}"></div>
+      <label></label><div class="two"><button class="btn sm" id="o-sp">Start = playhead</button><button class="btn sm" id="o-ep">End = playhead</button></div></div>
+      <div class="actions" style="display:flex;gap:8px;margin-top:14px"><button class="btn sm danger" id="o-del">Delete this ${OV_NAME[o.type].toLowerCase()}</button></div>` : ''}
+    ${vars.length ? `<div class="sub">Variables</div><p class="hint">Words in {{double braces}} are filled in from the link: add <code>?name=Ada</code> to a link and {{name}} reads “Ada”. These are the fallbacks.</p><div class="frm">${vars.map((v) => `<label>{{${esc(v)}}}</label><input class="field" data-var="${esc(v)}" value="${esc((vm.variables || {})[v] || '')}" placeholder="fallback">`).join('')}</div>` : ''}`;
+  p.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => addOverlay(b.dataset.add)));
+  p.querySelectorAll('.ov').forEach((r) => (r.onclick = () => { ovSel = r.dataset.id; const x = list.find((q) => q.id === ovSel); $('v').currentTime = x.start; renderPanel(); }));
+  const set = (k, v) => { o[k] = v; saveSoon(); ctl.setVM({ ...vm, autoZoom: false }); };
+  if (o) {
+    if ($('o-text')) { $('o-text').oninput = (e) => set('text', e.target.value); $('o-size').oninput = (e) => set('size', +e.target.value || 4); }
+    if ($('o-bg')) $('o-bg').querySelectorAll('button').forEach((b) => (b.onclick = () => { set('bg', b.dataset.c || ''); renderPanel(); }));
+    if ($('o-col')) $('o-col').querySelectorAll('button').forEach((b) => (b.onclick = () => { set('color', b.dataset.c); renderPanel(); }));
+    $('o-s').onchange = (e) => set('start', Math.max(0, +e.target.value)); $('o-e').onchange = (e) => set('end', Math.min(dur, Math.max(o.start + 0.1, +e.target.value)));
+    $('o-sp').onclick = () => { set('start', round3($('v').currentTime)); renderPanel(); }; $('o-ep').onclick = () => { set('end', round3(Math.max($('v').currentTime, o.start + 0.1))); renderPanel(); };
+    $('o-del').onclick = () => { vm.overlays = list.filter((x) => x.id !== o.id); ovSel = null; saveSoon(); ctl.setVM({ ...vm, autoZoom: false }); renderPanel(); };
+  }
+  p.querySelectorAll('[data-var]').forEach((i) => (i.onchange = async () => { const variables = { ...(vm.variables || {}), [i.dataset.var]: i.value }; vm.variables = variables; try { await api(`/api/videos/${id}`, { method: 'PATCH', body: { variables } }); ctl.setVM({ ...vm, autoZoom: false }); } catch (e) { toast(e.message); } }));
+}
+// the handles drawn over the picture for the selected overlay
+function ovRender() { const box = $('eov'); box.innerHTML = ''; if (tab !== 'overlays') return; const o = ovList().find((x) => x.id === ovSel); if (!o) return; const el = document.createElement('div'); el.className = 'eb'; el.dataset.id = o.id; el.innerHTML = '<i class="nw"></i><i class="ne"></i><i class="sw"></i><i class="se"></i>'; box.appendChild(el); ovPlace(el, o); ovWire(el, o); }
+function ovPlace(el, o) { Object.assign(el.style, { left: o.x * 100 + '%', top: o.y * 100 + '%', width: o.w * 100 + '%', height: o.h * 100 + '%' }); el.style.display = ($('v').currentTime >= o.start - 0.05 && $('v').currentTime <= o.end + 0.05) ? '' : 'none'; }
+function ovFrame() { const el = document.querySelector('#eov .eb'); if (el) { const o = ovList().find((x) => x.id === el.dataset.id); if (o) el.style.display = ($('v').currentTime >= o.start - 0.05 && $('v').currentTime <= o.end + 0.05) || $('v').paused ? '' : 'none'; } }
+function ovWire(el, o) {
+  el.onpointerdown = (e) => {
+    e.preventDefault(); const h = e.target.closest('i')?.className || 'move', r = $('zoomwrap').getBoundingClientRect(), s = { x: e.clientX, y: e.clientY, ...o }; el.setPointerCapture(e.pointerId);
+    el.onpointermove = (m) => {
+      const dx = (m.clientX - s.x) / r.width, dy = (m.clientY - s.y) / r.height, c = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+      if (h === 'move') { o.x = c(s.xo + dx, 0, 1 - o.w); o.y = c(s.yo + dy, 0, 1 - o.h); }
+      else { let x1 = s.xo, y1 = s.yo, x2 = s.xo + s.wo, y2 = s.yo + s.ho; if (h.includes('w')) x1 = c(x1 + dx, 0, x2 - 0.03); if (h.includes('e')) x2 = c(x2 + dx, x1 + 0.03, 1); if (h.includes('n')) y1 = c(y1 + dy, 0, y2 - 0.03); if (h.includes('s')) y2 = c(y2 + dy, y1 + 0.03, 1); Object.assign(o, { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }); }
+      ovPlace(el, o); ctl.setVM({ ...vm, autoZoom: false });
+    };
+    s.xo = o.x; s.yo = o.y; s.wo = o.w; s.ho = o.h; el.onpointerup = () => { el.onpointermove = el.onpointerup = null; saveSoon(); };
+  };
+}
+
+// ----- style: captions, background, call-to-action, thumbnail, GIF preview -----
+const patch = async (body) => { try { const r = await api(`/api/videos/${id}`, { method: 'PATCH', body }); vm = { ...vm, ...r, words: vm.words, library: vm.library }; ctl.setVM({ ...vm, autoZoom: false }); } catch (e) { toast(e.message); } };
+const patchSoon = (() => { let t; return (b) => { clearTimeout(t); t = setTimeout(() => patch(b), 450); }; })();
+function tStyle(p) {
+  const cta = vm.cta || { text: '', url: '' };
+  p.innerHTML = `<div class="sub">Captions</div><div class="set"><div class="lab">Show captions from the start<small style="display:block;color:var(--mute)">Viewers can still turn them off</small></div><input type="checkbox" class="sw" id="cp-on" ${vm.captionsDefault ? 'checked' : ''} ${vm.segments?.length ? '' : 'disabled'}></div>
+    <div class="cap-g" id="cap-g">${[['classic', 'Classic'], ['bold', 'Bold'], ['yellow', 'Yellow'], ['minimal', 'Minimal'], ['mint', 'Mint'], ['blue', 'Blue']].map(([k, l]) => `<button data-k="${k}" class="${(vm.captionStyle === 'purple' ? 'blue' : vm.captionStyle || 'classic') === k ? 'on' : ''}"><span style="${CAPTION_STYLES[k]}">${l}</span></button>`).join('')}</div>
+    <div class="sub">Background</div><div class="bg-g" id="bg-g">${[['none', ''], ['blue', ''], ['mint', ''], ['sunset', ''], ['night', ''], ['aurora', '']].map(([k]) => `<button data-k="${k}" class="${(vm.background === 'purple' ? 'blue' : vm.background || 'none') === k ? 'on' : ''}" title="${k}" style="background:${BACKGROUNDS[k] || 'repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 50%/12px 12px'}"></button>`).join('')}</div>
+    <div class="sub">Call-to-action button</div><p class="hint">A button on the player, shown in the last 8 seconds and whenever the video is paused.</p>
+    <div class="frm"><label>Button text</label><input class="field" id="cta-t" value="${esc(cta.text)}" placeholder="Book a call"><label>Link</label><input class="field" id="cta-u" value="${esc(cta.url)}" placeholder="https://…"></div>
+    <div class="actions" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" id="cta-x" ${vm.cta ? '' : 'disabled'}>Remove button</button></div>
+    <div class="sub">Thumbnail</div><div class="thumbs"><img id="thumb" src="/media/${id}/thumb.jpg?v=${Date.now()}" alt=""><div style="display:flex;flex-direction:column;gap:8px"><button class="btn sm" id="th-frame">Use the frame at ${mmss($('v').currentTime)}</button><label class="btn sm" for="th-file" style="cursor:pointer">${I('upload')}Upload a picture</label><input id="th-file" type="file" accept="image/*" hidden><button class="btn sm ghost" id="th-reset">Reset</button></div></div>
+    <div class="sub">GIF preview</div><p class="hint">A 3 second loop that plays when someone hovers the video in the library.</p><div class="thumbs">${vm.hasGif ? `<img id="gif" src="/media/${id}/preview.gif?v=${Date.now()}" alt="">` : ''}<div><button class="btn sm" id="gif-make">Make it from ${mmss($('v').currentTime)}</button></div></div>`;
+  $('cp-on').onchange = (e) => patch({ captionsDefault: e.target.checked, ...(e.target.checked && !vm.captionStyle ? { captionStyle: 'classic' } : {}) });
+  $('cap-g').querySelectorAll('button').forEach((b) => (b.onclick = async () => { await patch({ captionStyle: b.dataset.k, captionsDefault: true }); if (!ctl.caps) await ctl.setCaptions('original').catch(() => {}); tStyle(p); }));
+  $('bg-g').querySelectorAll('button').forEach((b) => (b.onclick = async () => { await patch({ background: b.dataset.k }); toast('The background shows on the watch page'); tStyle(p); }));
+  const saveCta = () => patchSoon({ cta: $('cta-u').value.trim() ? { text: $('cta-t').value.trim() || 'Learn more', url: $('cta-u').value.trim() } : null });
+  $('cta-t').oninput = saveCta; $('cta-u').oninput = saveCta; $('cta-x').onclick = async () => { await patch({ cta: null }); tStyle(p); };
+  $('th-frame').onclick = async () => { try { await post(`/api/videos/${id}/thumbnail`, { at: $('v').currentTime }); toast('Thumbnail set'); tStyle(p); } catch (e) { toast(e.message); } };
+  $('th-file').onchange = async () => { const f = $('th-file').files[0]; if (!f) return; try { const r = await fetch(`/api/videos/${id}/thumbnail`, { method: 'PUT', headers: { 'content-type': f.type }, body: f }); if (!r.ok) throw new Error((await r.json()).error); toast('Thumbnail set'); tStyle(p); } catch (e) { toast(e.message); } };
+  $('th-reset').onclick = async () => { await fetch(`/api/videos/${id}/thumbnail`, { method: 'DELETE' }); toast('Thumbnail reset'); tStyle(p); };
+  $('gif-make').onclick = async () => { $('gif-make').disabled = true; $('gif-make').textContent = 'Making it…'; try { await post(`/api/videos/${id}/gif`, { at: $('v').currentTime }); vm.hasGif = true; toast('GIF preview made'); } catch (e) { toast(e.message); } tStyle(p); };
+}
+boot();
+</script></body></html>

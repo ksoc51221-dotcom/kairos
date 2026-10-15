@@ -28,6 +28,10 @@
   --ink-off: color-mix(in srgb, var(--ink-2), transparent 45%);
   /* accents */
   --blue: color(display-p3 0.4510 0.6118 0.9216);             /* selected tab icon, focus, teleprompter marker */
+  --accent: color(display-p3 0.1961 0.4039 0.8314);           /* Loom's current blue (re-sampled 2026-10-15 from the watch page, library and countdown references) */
+  --rec: color(display-p3 0.9255 0.3686 0.2314);              /* the stop key while recording */
+  --accent-hover: color-mix(in srgb, var(--accent), white 10%);
+  --countdown-ring: color-mix(in srgb, #fff, transparent 78%);
   --red: color(display-p3 0.9098 0.4745 0.4314);              /* camera-off icon, recording dot */
   --cta: color(display-p3 0.7373 0.2196 0.1098);              /* Start Recording */
   --cta-hover: color-mix(in srgb, var(--cta), white 8%);

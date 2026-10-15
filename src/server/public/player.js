@@ -4,8 +4,8 @@
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const LANGS = ['Arabic', 'Bengali', 'Bulgarian', 'Chinese', 'Croatian', 'Czech', 'Danish', 'Dutch', 'Estonian', 'Filipino', 'Finnish', 'French', 'German', 'Greek', 'Hebrew', 'Hindi', 'Hungarian', 'Indonesian', 'Italian', 'Japanese', 'Korean', 'Latvian', 'Lithuanian', 'Malay', 'Norwegian', 'Persian', 'Polish', 'Portuguese', 'Romanian', 'Russian', 'Serbian', 'Slovak', 'Slovenian', 'Spanish', 'Swahili', 'Swedish', 'Tamil', 'Thai', 'Turkish', 'Ukrainian', 'Urdu', 'Vietnamese', 'Afrikaans', 'Catalan', 'Icelandic', 'Irish', 'Maltese', 'Welsh', 'Albanian', 'Armenian', 'Basque', 'Georgian'];
-  const CAPTION_STYLES = { classic: 'background:rgba(0,0,0,.72);color:#fff;padding:6px 14px;border-radius:8px;font-weight:500', bold: 'color:#fff;font-weight:800;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);font-size:1.25em;letter-spacing:.2px', yellow: 'color:#ffe14d;font-weight:800;text-shadow:0 2px 0 #000,0 0 6px #000;font-size:1.2em', minimal: 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:500', mint: 'background:#22c08a;color:#06281d;padding:6px 14px;border-radius:99px;font-weight:700', purple: 'background:#7b5cf0;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700' };
-  const BACKGROUNDS = { none: '', purple: 'linear-gradient(135deg,#7b5cf0,#b39dff)', mint: 'linear-gradient(135deg,#22c08a,#8ff0c9)', sunset: 'linear-gradient(135deg,#ff8a5c,#7b5cf0)', night: 'linear-gradient(135deg,#150f27,#3a2a7a)', aurora: 'linear-gradient(135deg,#7b5cf0,#22c08a)' };
+  const CAPTION_STYLES = { classic: 'background:rgba(0,0,0,.72);color:#fff;padding:6px 14px;border-radius:8px;font-weight:500', bold: 'color:#fff;font-weight:800;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);font-size:1.25em;letter-spacing:.2px', yellow: 'color:#ffe14d;font-weight:800;text-shadow:0 2px 0 #000,0 0 6px #000;font-size:1.2em', minimal: 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:500', mint: 'background:#22c08a;color:#06281d;padding:6px 14px;border-radius:99px;font-weight:700', blue: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700', purple: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700' }; // `purple` is the old name of `blue`
+  const BACKGROUNDS = { none: '', blue: 'linear-gradient(135deg,#3267d4,#9bb8f2)', purple: 'linear-gradient(135deg,#3267d4,#9bb8f2)', mint: 'linear-gradient(135deg,#22c08a,#8ff0c9)', sunset: 'linear-gradient(135deg,#ff8a5c,#3267d4)', night: 'linear-gradient(135deg,#14161a,#2a3a6a)', aurora: 'linear-gradient(135deg,#3267d4,#22c08a)' }; // `purple` is the old name of `blue`
 
   const viewer = () => { try { return JSON.parse(localStorage.getItem('spool_viewer') || '{}'); } catch { return {}; } };
   const setViewer = (v) => { try { localStorage.setItem('spool_viewer', JSON.stringify(v)); } catch {} };
@@ -38,14 +38,14 @@
   }
 
   // attaches overlays, captions, CTA, zoom, heartbeat and floating reactions to a <video>
-  function attach({ stage, video, vm, embed }) {
+  function attach({ stage, video, vm, embed, noStats }) { // noStats: the editor's preview counts no views and sends no heartbeats
     const st = { vm, caps: null, capLang: null, track: null, sid: null };
     const wrap = $('zoomwrap'), ov = $('ov'), cap = $('cap'), cta = $('cta');
     const rect = () => wrap.getBoundingClientRect();
     if (vm.background && vm.background !== 'none') { stage.style.background = BACKGROUNDS[vm.background] || vm.background; stage.classList.add('bg'); }
     function renderOverlays(t) {
       const list = (st.vm.overlays || []).filter((o) => t >= o.start && t <= o.end);
-      const key = list.map((o) => o.id).join(',') + '|' + JSON.stringify(vars());
+      const key = JSON.stringify(list) + '|' + JSON.stringify(vars()) + '|' + JSON.stringify(st.vm.variables || {});
       if (ov.dataset.k !== key) {
         ov.dataset.k = key;
         ov.innerHTML = list.map((o) => {
@@ -77,9 +77,9 @@
     // analytics: one view per page load, heartbeat each second while playing
     let counted = false;
     video.addEventListener('play', async () => {
-      if (!counted) { counted = true; try { st.sid = (await api(`/api/v/${vm.id}/view`, { body: {} })).sid; } catch {} }
+      if (!counted && !noStats) { counted = true; try { st.sid = (await api(`/api/v/${vm.id}/view`, { body: {} })).sid; } catch {} }
     });
-    setInterval(() => { if (!video.paused && st.sid) api(`/api/v/${vm.id}/heartbeat`, { body: { sid: st.sid, t: video.currentTime } }).catch(() => {}); }, 1000);
+    setInterval(() => { if (!noStats && !video.paused && st.sid) api(`/api/v/${vm.id}/heartbeat`, { body: { sid: st.sid, t: video.currentTime } }).catch(() => {}); }, 1000);
     // floating reactions
     // U15: a normal reaction floats up as one DOM node; a super reaction is a confetti burst on ONE canvas (it used to be nine DOM nodes)
     function floatReaction(emoji, big) {

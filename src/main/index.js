@@ -37,7 +37,7 @@ app.whenReady().then(async () => {
   // A recording that was still being written when the app stopped keeps its files but is marked, instead of showing "Recording…" forever.
   for (const v of store.list()) if (v.status === C.LIBRARY_STATUS.RECORDING) store.update(v.id, { status: C.LIBRARY_STATUS.FAILED, stage: 'Recording was interrupted (files kept)' });
   orchestrator.init(dataDir, { log, isBusy: () => session.isActive() });
-  startServer({ port: config.PORT, models: path.join(dataDir, 'models') });
+  startServer({ port: config.PORT, models: path.join(dataDir, 'models'), openLauncher: win.showLauncher });
   electronSession.defaultSession.setDisplayMediaRequestHandler(async (_req, callback) => {
     const S = session.getS(), srcs = await desktopCapturer.getSources({ types: ['screen', 'window'] });
     const pick = srcs.find((s) => s.id === S?.opts.sourceId) || srcs.find((s) => s.id.startsWith('screen:')) || srcs[0];
@@ -58,7 +58,8 @@ app.whenReady().then(async () => {
   const ico = path.join(__dirname, '..', '..', 'assets', 'icon.png');
   if (app.dock && fs.existsSync(ico)) { const img = nativeImage.createFromPath(ico); app.dock.setIcon(img); win.setDockIcon(img); }
   if (config.SELFTEST) { setTimeout(() => require('./selftest').run(config.SELFTEST), 1500); return; }
-  win.showLauncher();
+  // B28: started by the system at login, Spool stays quiet in the menu bar; opened by the user, it shows the launcher
+  if (!app.getLoginItemSettings().wasOpenedAtLogin) win.showLauncher();
 });
 app.on('window-all-closed', (e) => e.preventDefault());
 app.on('activate', () => win.showLauncher()); // clicking the Dock icon always brings the launcher back

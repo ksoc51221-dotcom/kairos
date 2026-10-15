@@ -50,8 +50,15 @@ function openNotes(mode) {
 const closeNotes = () => { if (alive(W.notes)) W.notes.close(); };
 
 // ---------------- camera bubble ----------------
+// B27: the bubble is a preview before it is part of a recording. While the launcher is open in Screen + Cam or Cam mode the launcher keeps it up
+// (previewSet), showing the camera at its saved position; start() then reuses this same window (no close and recreate, which also removes a
+// window creation from the start path). It closes when the launcher closes without recording, when the mode drops the camera, or when the camera is off.
+// PB is the bubble's style while no session exists; a session copies it into S.bubble.
+const PB = { on: false, size: 200, shape: 'circle', filter: 'none', frame: 'ring', camOn: true, camId: '' };
+const bs = () => (S ? S.bubble : PB);
+const bubbleDisplay = () => (S ? S.display : alive(W.bubble) ? screen.getDisplayMatching(W.bubble.getBounds()) : screen.getPrimaryDisplay());
 function bubbleRect() {
-  const b = W.bubble.getBounds(), [w, h] = C.bubbleDims(S.bubble.shape, S.bubble.size);
+  const b = W.bubble.getBounds(), [w, h] = C.bubbleDims(bs().shape, bs().size);
   return { x: b.x + PAD, y: b.y + TOP, w, h };
 }
 // Every move, resize, style change and camera toggle becomes a keyframe in timeline.json (throttled while dragging).
@@ -62,36 +69,65 @@ function pushBubble() {
   emit(['b', epoch(), { x: (r.x - d.x) / d.width, y: (r.y - d.y) / d.height, w: r.w / d.width, h: r.h / d.height, shape: b.shape, filter: b.filter, frame: b.frame, visible: b.camOn !== false }]);
   S.bubbleTimer = setTimeout(() => { if (!S) return; S.bubbleTimer = null; if (S.bubbleDirty) { S.bubbleDirty = false; pushBubble(); } }, BUBBLE_THROTTLE_MS);
 }
+const bubbleStyle = () => { const b = bs(), [w, h] = C.bubbleDims(b.shape, b.size); return { w, h, shape: b.shape, filter: b.filter, frame: b.frame }; };
 function resizeBubble() {
-  const [w, h] = C.bubbleDims(S.bubble.shape, S.bubble.size), b = W.bubble.getBounds(), oldH = b.height;
-  const nw = w + PAD * 2, nh = h + TOP + PAD;
+  const st = bubbleStyle(), b = W.bubble.getBounds(), oldH = b.height;
+  const nw = st.w + PAD * 2, nh = st.h + TOP + PAD;
   win.easeBounds(W.bubble, { x: b.x, y: b.y + oldH - nh, width: nw, height: nh }, 140); // eased (U10), but never with the blocking animated setBounds
-  send('bubble', 'bubble:style', { w, h, shape: S.bubble.shape, filter: S.bubble.filter, frame: S.bubble.frame });
+  send('bubble', 'bubble:style', st);
   pushBubble();
 }
 function snapBubble() { // edge snapping
-  if (!S || !alive(W.bubble)) return;
-  const r = bubbleRect(), wa = S.display.workArea, m = 20, t = 48; let { x, y } = r;
+  if (!alive(W.bubble)) return;
+  const r = bubbleRect(), wa = bubbleDisplay().workArea, m = 20, t = 48; let { x, y } = r;
   if (Math.abs(x - wa.x) < t) x = wa.x + m; else if (Math.abs(x + r.w - (wa.x + wa.width)) < t) x = wa.x + wa.width - r.w - m;
   if (Math.abs(y - wa.y) < t) y = wa.y + m; else if (Math.abs(y + r.h - (wa.y + wa.height)) < t) y = wa.y + wa.height - r.h - m;
   if (x !== r.x || y !== r.y) { const b = W.bubble.getBounds(); win.easeBounds(W.bubble, { ...b, x: x - PAD, y: y - TOP }, 120); }
 }
-function createBubble() {
-  const wa = S.display.workArea, [w, h] = C.bubbleDims(S.bubble.shape, S.bubble.size);
-  const win_ = win.createBubble({ width: w + PAD * 2, height: h + TOP + PAD, x: wa.x + 20, y: wa.y + wa.height - (h + TOP + PAD) - 20 });
+// Default and remembered position: the saved spot when it is still on a screen, otherwise the bottom-left corner of the work area.
+const bubbleHome = (display, w, h) => {
+  const saved = store.getSettings().bubblePos, wa = display.workArea;
+  if (saved && saved.x >= wa.x - 40 && saved.x <= wa.x + wa.width - 60 && saved.y >= wa.y - 8 && saved.y <= wa.y + wa.height - 60) return saved;
+  return { x: wa.x + 20, y: wa.y + wa.height - (h + TOP + PAD) - 20 };
+};
+let bubbleSaveTimer;
+function createBubble(display, fake) {
+  const st = bubbleStyle(), width = st.w + PAD * 2, height = st.h + TOP + PAD, pos = bubbleHome(display, st.w, st.h);
+  const win_ = win.createBubble({ width, height, x: pos.x, y: pos.y });
   win_.webContents.once('did-finish-load', () => {
-    win_.webContents.send('bubble:init', { camId: S.opts.camId, fake: !!S.opts.fakeCam });
-    send('bubble', 'bubble:style', { w, h, shape: S.bubble.shape, filter: S.bubble.filter, frame: S.bubble.frame });
+    win_.webContents.send('bubble:init', { camId: bs().camId, fake: !!fake });
+    send('bubble', 'bubble:style', bubbleStyle());
     pushBubble();
   });
   let snapT;
-  win_.on('move', () => { pushBubble(); clearTimeout(snapT); snapT = setTimeout(snapBubble, 220); });
+  win_.on('move', () => {
+    pushBubble(); clearTimeout(snapT); snapT = setTimeout(snapBubble, 220);
+    clearTimeout(bubbleSaveTimer); bubbleSaveTimer = setTimeout(() => { if (alive(W.bubble)) { const b = W.bubble.getBounds(); store.setSettings({ bubblePos: { x: b.x, y: b.y } }); } }, 600);
+  });
+  return win_;
+}
+const closeBubble = () => { if (alive(W.bubble)) W.bubble.close(); };
+// The launcher reports what it wants: { on, camId, size, shape, filter, frame }. `on` = a camera is part of this mode.
+function previewSet(p = {}) {
+  if (S) return; // while a session exists the session owns the bubble
+  Object.assign(PB, { size: p.size ?? PB.size, shape: p.shape ?? PB.shape, filter: p.filter ?? PB.filter, frame: p.frame ?? PB.frame });
+  const camChanged = p.camId !== undefined && p.camId !== PB.camId; if (p.camId !== undefined) PB.camId = p.camId;
+  PB.on = !!p.on;
+  if (!PB.on) return closeBubble();
+  const fake = !!(config.SELFTEST && config.SELFTEST.fakeCam);
+  if (!alive(W.bubble)) { const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()); createBubble(d, fake); return; }
+  const st = bubbleStyle(), b = W.bubble.getBounds(), nw = st.w + PAD * 2, nh = st.h + TOP + PAD;
+  if (nw !== b.width || nh !== b.height) win.easeBounds(W.bubble, { x: b.x, y: b.y + b.height - nh, width: nw, height: nh }, 140);
+  send('bubble', 'bubble:style', st);
+  if (camChanged) send('bubble', 'bubble:init', { camId: PB.camId, fake });
 }
 function bubbleAction(a, v) {
-  if (!S || !alive(W.bubble)) return;
-  if (a === 'size') S.bubble.size = +v; else if (a === 'shape') S.bubble.shape = cycle(C.SHAPES, S.bubble.shape);
-  else if (a === 'filter') S.bubble.filter = cycle(C.FILTER_KEYS, S.bubble.filter); else if (a === 'frame') S.bubble.frame = cycle(C.FRAME_KEYS, S.bubble.frame);
+  if (!alive(W.bubble)) return;
+  const b = bs();
+  if (a === 'size') b.size = +v; else if (a === 'shape') b.shape = cycle(C.SHAPES, b.shape);
+  else if (a === 'filter') b.filter = cycle(C.FILTER_KEYS, b.filter); else if (a === 'frame') b.frame = cycle(C.FRAME_KEYS, b.frame);
   resizeBubble();
+  if (!S) send('launcher', 'preview:style', { size: b.size, shape: b.shape, filter: b.filter, frame: b.frame }); // keep the launcher's choices in step with the toolbar
 }
 
 // ---------------- control bar, countdown, outline ----------------
@@ -113,14 +149,32 @@ function controlsLayout({ height, panel } = {}) {
   else if (h !== b.height) W.controls.setBounds({ ...b, height: h });
 }
 
+// The countdown has three endings: it runs out or is skipped (⏭, Space, Enter) and the recording starts; or it is cancelled (✕, Esc) and the start is undone.
 let countdownResolve = null;
 function runCountdown() {
   return new Promise((resolve) => {
-    const w = win.createCountdown(S.display.bounds);
-    countdownResolve = () => { countdownResolve = null; if (alive(w)) w.close(); resolve(); };
+    let w = null;
+    countdownResolve = (how) => { countdownResolve = null; if (alive(w || W.countdown)) (w || W.countdown).close(); resolve(how || 'done'); };
+    win.beginCountdown(S.display.bounds).then((cw) => { w = cw; if (S) { S.metrics.countdownShownMs = +(performance.now() - S.t0).toFixed(1); S.metrics.cd = cw && cw._t; } });
   });
 }
-const countdownDone = () => countdownResolve?.();
+// The page reports its first painted frame after `countdown:begin`: that, not the window's show event, is when the user can see it (U7/B26).
+function countdownPainted() {
+  if (!S) return; S.metrics.countdownPaintedMs = +(performance.now() - S.t0).toFixed(1);
+  if (S.opts.clickAt) S.metrics.sinceClickMs = +(epoch() - S.opts.clickAt).toFixed(1);
+  log('record:countdown-visible', S.metrics);
+}
+const countdownDone = (how) => countdownResolve?.(typeof how === 'string' ? how : 'done');
+const countdownSkip = () => countdownResolve?.('skip');
+const CANCELLED = Symbol('cancelled');
+// ✕ on the countdown: close the overlays now (the camera preview stays: it belongs to the launcher, which comes back), then start() sees the
+// answer once the streams it was opening have settled, stops them, deletes the empty record and shows the launcher again.
+function cancelStart() {
+  if (!S || S.live || S.cancelled) return;
+  S.cancelled = true;
+  for (const n of ['controls', 'outline', 'ring', 'draw', 'notes']) if (alive(W[n])) W[n].close();
+  countdownDone('cancel');
+}
 
 function createOutline(crop) {
   const d = S.display.bounds;
@@ -232,16 +286,20 @@ async function overlaysReady() {
 
 async function start(opts) {
   if (S) return false;
+  const t0 = performance.now();
   opts = { ...opts, quality: opts.quality || C.DEFAULT_QUALITY };
   log('record:start', { mode: opts.mode, area: opts.crop ? 'custom' : opts.windowSource ? 'window' : 'screen', quality: opts.quality, perms: permissions.report() });
   const ok = await permissions.ensure({ cam: opts.mode !== 'screen' && !opts.fakeCam, screen: opts.mode !== 'cam', quiet: !!config.SELFTEST }); // B7: cam-only needs no screen permission
+  const ensureMs = +(performance.now() - t0).toFixed(1);
   if (!ok) return false;
   const display = opts.mode === 'cam' ? screen.getPrimaryDisplay() : win.displayFor(opts.sourceId);
   S = {
     opts, display, bubble: { size: 200, shape: 'circle', filter: 'none', frame: 'ring', camOn: true, ...(opts.bubble || {}) }, pen: false, cursorOn: false,
     events: [], flushTimer: null, writers: new Map(), id: null, dir: null, ext: null, info: null, cursor: null,
     trackCursor: opts.mode !== 'cam' && !opts.windowSource, // a window recording has no screen position to follow
+    t0, metrics: { ensureMs }, cancelled: false,
   };
+  S.bubble.camId = opts.camId || '';
   win.holdOverlay('session'); win.hideLauncher();
   // The library record exists from the first chunk on, so a crash leaves a visible "interrupted" video with its files, not orphan files.
   const v = store.create({ title: `Recording ${new Date().toLocaleString()}`, titleAuto: true, mode: opts.mode, status: C.LIBRARY_STATUS.RECORDING, stage: 'Recording' });
@@ -251,9 +309,14 @@ async function start(opts) {
     if (!crop && opts.hideMenuBar && opts.mode !== 'cam' && !opts.windowSource) {
       const top = (display.workArea.y - display.bounds.y) / display.bounds.height; if (top > 0) crop = { x: 0, y: top, w: 1, h: 1 - top };
     }
+    // The countdown shows at once and the streams open while it counts, as in Loom. Waiting for them first delayed it by however long the
+    // camera took to wake up (often 1–2 s, varying run to run).
+    S.metrics.setupMs = +(performance.now() - t0).toFixed(1); // permission check + library record + launcher hidden, before the countdown is asked for
+    const countdown = config.SELFTEST && !config.SELFTEST.countdown ? null : runCountdown();
     // Every overlay exists, and has painted, before capture begins: creating a window mid-recording stalls the compositor for a moment,
     // which showed up as one long gap in the frames and in the cursor feed.
-    if (opts.mode === 'screen-cam') createBubble();
+    if (opts.mode === 'screen') closeBubble(); // a stale preview (the camera was switched off after it opened)
+    if (alive(W.bubble)) reuseBubble(); else if (opts.mode === 'screen-cam') createBubble(S.display, !!opts.fakeCam);
     if (opts.crop) createOutline(opts.crop);
     createControls();
     if (opts.cursorFx) { S.cursorOn = true; ensureRing(); }
@@ -262,10 +325,12 @@ async function start(opts) {
       mode: opts.mode, sourceId: opts.sourceId, windowSource: !!opts.windowSource, systemAudio: !!opts.systemAudio, micOn: opts.micOn !== false, micId: opts.micId, camId: opts.camId,
       quality: opts.quality, crop: crop || null, fakeCam: !!opts.fakeCam, fakeMic: !!opts.fakeMic, display: displayInfo(display),
     };
-    S.info = await W.recorder.webContents.executeJavaScript(`window.__prepare(${JSON.stringify(cfg)})`, true);
-    S.ext = S.info.ext; log('record:prepared', S.info);
+    try { S.info = await W.recorder.webContents.executeJavaScript(`window.__prepare(${JSON.stringify(cfg)})`, true); }
+    catch (e) { countdownDone(); throw e; }
+    if (S.cancelled) throw CANCELLED;
+    S.ext = S.info.ext; S.metrics.preparedMs = +(performance.now() - S.t0).toFixed(1); log('record:prepared', S.info);
     pushBubble();
-    if (!config.SELFTEST) await runCountdown();
+    if ((await countdown) === 'cancel' || S.cancelled) throw CANCELLED;
     await overlaysReady();
     if (opts.beforeBegin) await opts.beforeBegin(); // test hook (in-process only): place helper windows once the overlays are in place
     await W.recorder.webContents.executeJavaScript('window.__begin()', true);
@@ -276,20 +341,33 @@ async function start(opts) {
     S.live = true; // capture has begun (the launcher-driven self-test waits for this)
     return true;
   } catch (e) {
-    log('record:start failed', e); const id = S?.id; abort(); if (id) store.remove(id);
+    const cancelled = e === CANCELLED || !!S?.cancelled, id = S?.id;
+    try { await W.recorder.webContents.executeJavaScript('window.__cancel && window.__cancel()', true); } catch {} // stop whatever prepare had already opened
+    if (cancelled) { log('record:cancelled during countdown'); abort({ keepBubble: true }); if (id) store.remove(id); win.showLauncher(); return false; }
+    log('record:start failed', e); abort(); if (id) store.remove(id);
     if (!config.SELFTEST) dialog.showErrorBox('Could not start recording', String(e.message || e)); return false;
   }
 }
 
+// The preview bubble becomes the recording's bubble: same window, same camera stream. It only moves when it sits on a different display.
+function reuseBubble() {
+  const st = bubbleStyle(), b = W.bubble.getBounds(), nw = st.w + PAD * 2, nh = st.h + TOP + PAD, d = S.display.bounds, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  const here = cx >= d.x && cx <= d.x + d.width && cy >= d.y && cy <= d.y + d.height, home = bubbleHome(S.display, st.w, st.h);
+  W.bubble.setBounds(here ? { x: b.x, y: b.y + b.height - nh, width: nw, height: nh } : { x: home.x, y: home.y, width: nw, height: nh });
+  send('bubble', 'bubble:style', st);
+  if ((S.opts.camId || '') !== PB.camId) send('bubble', 'bubble:init', { camId: S.opts.camId || '', fake: !!S.opts.fakeCam });
+}
+
 // Closes every overlay and stops the feeds. Returns the cursor sampler's numbers.
-function end() {
+// `keepBubble`: the start was cancelled and the launcher is coming back, so its camera preview stays up (with the style this session had).
+function end({ keepBubble = false } = {}) {
   const cursor = stopCursor(); shortcuts.unregisterSession();
-  for (const n of ['bubble', 'controls', 'countdown', 'outline', 'draw', 'ring', 'notes']) if (alive(W[n])) W[n].close();
-  if (S) { clearTimeout(S.flushTimer); clearTimeout(S.bubbleTimer); }
+  for (const n of ['bubble', 'controls', 'countdown', 'outline', 'draw', 'ring', 'notes']) if (alive(W[n]) && !(keepBubble && n === 'bubble')) W[n].close();
+  if (S) { clearTimeout(S.flushTimer); clearTimeout(S.bubbleTimer); if (keepBubble) Object.assign(PB, { size: S.bubble.size, shape: S.bubble.shape, filter: S.bubble.filter, frame: S.bubble.frame }); }
   S = null; win.releaseOverlay('session');
   return cursor;
 }
-function abort() { const s = S; if (!s) return; end(); closeWriters(s).catch(() => {}); }
+function abort(o) { const s = S; if (!s) return; end(o); closeWriters(s).catch(() => {}); }
 
 // The recorder hands over the finished recording: the timeline (the segment files are already on disk).
 async function finish({ timeline, stats } = {}) {
@@ -321,10 +399,12 @@ async function discard() {
 // control messages from the control bar, shortcuts and tests go straight to the recorder, which owns the state
 const control = (a, arg) => send('recorder', 'rec:control', a, arg);
 const recorderError = (msg) => log('recorder error', msg);
+// The launcher went away. Unless that is because recording is starting, its camera preview goes with it.
+function launcherHidden() { if (!S) { closeBubble(); if (alive(W.countdown)) W.countdown.close(); } }
 const currentBubbleRect = () => (S && alive(W.bubble) ? bubbleRect() : null); // for tests
 
 module.exports = {
-  events, isActive, getS, listSources, start, end, finish, discard, control, toggleTool, bubbleAction, controlsLayout, countdownDone, openNotes, closeNotes, broadcastTools,
+  events, isActive, getS, listSources, start, end, finish, discard, control, toggleTool, bubbleAction, previewSet, launcherHidden, controlsLayout, countdownDone, countdownSkip, countdownPainted, cancelStart, openNotes, closeNotes, broadcastTools,
   chunk, segmentEnd, dropSegments, resetSegments, recorderError, bubbleRect: currentBubbleRect,
   tick: (t) => send('controls', 'rec:tick', t), paused: (p, t) => send('controls', 'rec:paused', p, t), mic: (on) => send('controls', 'rec:mic', on),
 };

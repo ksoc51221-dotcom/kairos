@@ -51,5 +51,18 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Share over LAN (owner/viewer separation) | ✅ |
 | SSO/SCIM, SOC 2, ISO 27001, hosted regions | ❌ (local-first; stated honestly in Settings) |
 
+## Editing (Phase 3)
+| Feature | Status | Notes |
+|---|---|---|
+| Timeline with waveform, zoom to 50×, trim, split, delete range | ✅ | Non-destructive draft; Apply renders once, one level of undo. Checked in headless Chrome and with real ffmpeg |
+| Edit by transcript | ✅ | Word timestamps from Whisper; 3 words cut = their length within ±50 ms (measured 0.480 of 0.500 s) |
+| Remove filler words, silences > 0.8 s, rambles | ✅ / 🟡 | Reviewable proposals. Fillers and silences measured; the rambles list needs the local model and was not run here |
+| Stitch / insert another video or a new recording | 🟡 | Insert and render are tested; "record a new clip" opens the launcher and the clip appears in the list when processed |
+| Overlays: text, arrow, box, blur, with start/end and `{{name}}` | ✅ | Placed by dragging on the picture |
+| Caption style, background, CTA button, custom thumbnail, 3 s GIF | ✅ | CTA shown in the last 8 s and when paused |
+| Undo after Apply | ✅ | Restores the file and all time-keyed data |
+| Burn cursor effects / zoom into the file | ⏳ | Player only |
+| Custom player controls + hover thumbnails (U13) | ⏳ | Not started |
+
 ## Editing, AI, integrations
-Tracked in the next batches: trim/stitch/insert, edit by transcript, filler/silence/ramble removal, overlays + variables, captions style, backgrounds, thumbnails/GIF, auto-zoom, AI voice, AI workflows (SOP, PR, issue, email), meeting notes, Confluence export, MCP server, Record-for-agents action plan, Slack/GitHub/Linear/Jira, SDK, bug-report mode.
+Tracked in the next batches: auto-zoom, AI voice, AI workflows (SOP, PR, issue, email), meeting notes, Confluence export, MCP server, Record-for-agents action plan, Slack/GitHub/Linear/Jira, SDK, bug-report mode.

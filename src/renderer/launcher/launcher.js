@@ -33,6 +33,12 @@ function save() {
   const keys = ['source', 'camOn', 'micOn', 'camId', 'camName', 'micId', 'micName', 'shape', 'size', 'filter', 'frame', 'quality', 'sysAudio', 'hideMenu', 'cursorFx', 'clickFx'];
   const prefs = { v: 2 }; for (const k of keys) prefs[k] = st[k];
   spool.invoke('settings:set', { prefs, privacyGuard: st.pg });
+  syncPreview();
+}
+// B27: tell the main process what camera preview to show behind the launcher (it closes it again when `on` is false or the launcher hides)
+function syncPreview() {
+  const on = mode() !== 'screen' && devices.cams.length > 0;
+  spool.send('preview:set', { on, camId: st.camId, size: st.size, shape: st.shape, filter: st.filter, frame: st.frame });
 }
 const mode = () => (st.source === 'camera' ? 'cam' : st.camOn ? 'screen-cam' : 'screen');
 
@@ -128,7 +134,7 @@ async function enumerate() {
   devices.cams = devs.filter((d) => d.kind === 'videoinput'); devices.mics = devs.filter((d) => d.kind === 'audioinput');
   const cam = devices.cams.find((d) => d.deviceId === st.camId) || (st.camId ? null : devices.cams[0]), mic = devices.mics.find((d) => d.deviceId === st.micId) || (st.micId ? null : devices.mics[0]);
   if (cam && cam.label) st.camName = cam.label; if (mic && mic.label) st.micName = mic.label;
-  paintRows(); paintCamMenu(); paintMicMenu();
+  paintRows(); paintCamMenu(); paintMicMenu(); syncPreview();
 }
 async function unlock(kind) {
   const list = kind === 'cam' ? devices.cams : devices.mics;
@@ -173,6 +179,9 @@ function renderPanel() {
   }
 }
 
+// the bubble's own toolbar (size, shape, filter, frame) changed the style: follow it
+spool.on('preview:style', (p) => { Object.assign(st, p); save(); if (openPanel === 'effects') renderPanel(); paintSummary(); });
+
 // ---------- permission box ----------
 async function checkPerm() {
   const p = await spool.invoke('perm:status'), bad = p.screen !== 'granted' && mode() !== 'cam';
@@ -183,8 +192,9 @@ async function checkPerm() {
 // ---------- start ----------
 let starting = false;
 function busy(on, text) { starting = on; $('start').classList.toggle('busy', on); $('startSpin').hidden = !on; $('startLabel').textContent = text || 'Start Recording'; }
+let clickT = 0;
 async function start() {
-  if (starting) return;
+  if (starting) return; clickT = performance.now();
   busy(true, 'Preparing…'); // U7: feedback in the same frame as the click
   const m = mode();
   try {
@@ -193,15 +203,18 @@ async function start() {
     let sourceId = st.sourceId, crop = null;
     if (m !== 'cam') {
       if (st.source === 'window' && !sourceId) { busy(false); flash('Pick a window first'); if (!openMenu) toggleMenu('src'); return; }
-      const srcs = await spool.invoke('sources:list', { screens: st.source !== 'window' });
-      if (!sourceId || st.source !== 'window') sourceId = (srcs.find((s) => s.id === st.sourceId) || srcs.find((s) => s.isScreen) || srcs[0])?.id;
-      if (!sourceId) { busy(false); flash('No screen to record'); return; }
+      if (st.source !== 'window' && sourceId && displays.some((d) => d.id === sourceId)) { /* the display is already known from refreshScreens(): no round trip */ }
+      else {
+        const srcs = await spool.invoke('sources:list', { screens: st.source !== 'window' });
+        if (!sourceId || st.source !== 'window') sourceId = (srcs.find((s) => s.id === st.sourceId) || srcs.find((s) => s.isScreen) || srcs[0])?.id;
+        if (!sourceId) { busy(false); flash('No screen to record'); return; }
+      }
       if (st.source === 'custom') { const r = await spool.invoke('area:pick', { sourceId }); if (!r) { busy(false); return; } crop = r.crop; sourceId = r.sourceId; }
     }
     const ok = await spool.invoke('record:start', {
       mode: m, sourceId, crop, camId: st.camId, micId: st.micId, micOn: st.micOn && devices.mics.length > 0,
       windowSource: st.source === 'window', quality: st.quality, systemAudio: st.sysAudio, hideMenuBar: st.hideMenu && m !== 'cam',
-      cursorFx: st.cursorFx, clickFx: st.clickFx, bubble: { size: st.size, shape: st.shape, filter: st.filter, frame: st.frame },
+      clickAt: performance.timeOrigin + clickT, cursorFx: st.cursorFx, clickFx: st.clickFx, bubble: { size: st.size, shape: st.shape, filter: st.filter, frame: st.frame },
     });
     if (ok === false) busy(false); // the launcher is hidden when recording really starts; stay usable if it did not
   } catch (e) { console.error(e); busy(false); flash('Could not start'); }
@@ -220,7 +233,7 @@ document.querySelectorAll('#tools button').forEach((b) => (b.onclick = () => tog
 $('permopen').onclick = () => spool.invoke('perm:open', 'screen'); $('permre').onclick = () => spool.invoke('app:relaunch');
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (openMenu) closeMenus(); else if (openPanel) togglePanel(openPanel); else spool.send('launcher:close'); } });
 // U4: every time the window is shown it fades in and slides up 8 px; and the main process is told the card's height so the window fits it
-spool.on('launcher:shown', () => { const c = $('card'); c.classList.remove('enter'); void c.offsetWidth; c.classList.add('enter'); busy(false); checkPerm(); refreshScreens(); });
+spool.on('launcher:shown', () => { const c = $('card'); c.classList.remove('enter'); void c.offsetWidth; c.classList.add('enter'); busy(false); checkPerm(); refreshScreens(); syncPreview(); });
 new ResizeObserver(() => spool.send('launcher:size', Math.ceil($('card').getBoundingClientRect().height) + MARGIN * 2)).observe($('card'));
 
 async function refreshScreens() {
@@ -237,5 +250,5 @@ async function refreshScreens() {
   $('card').classList.add('enter');
   await enumerate();
   if (st.micOn) unlock('mic'); if (st.camOn || st.source === 'camera') unlock('cam');
-  checkPerm(); refreshScreens();
+  checkPerm(); refreshScreens(); syncPreview();
 })();

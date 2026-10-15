@@ -15,13 +15,13 @@ function modelStatus(cacheDir) {
 }
 
 // Agent 1 — Transcriber: local Whisper via transformers.js, in a child process.
-async function transcribe(videoPath, workDir, cacheDir, onStatus = () => {}, existingAudio = null) {
+async function transcribe(videoPath, workDir, cacheDir, onStatus = () => {}, existingAudio = null, { words = false } = {}) {
   const audio = existingAudio || path.join(workDir, 'audio.f32');
   if (!existingAudio) await extractAudio(videoPath, audio);
   const worker = path.join(__dirname, 'whisper-worker.mjs');
   return new Promise((resolve, reject) => {
     const p = spawn(process.execPath, [worker, audio, cacheDir, MODEL], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, cwd: path.join(__dirname, '..', '..'),
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...(words ? { SPOOL_WORDS: '1' } : {}) }, cwd: path.join(__dirname, '..', '..'),
     });
     let buf = '', result = null, errTail = '';
     p.stdout.on('data', (d) => {
