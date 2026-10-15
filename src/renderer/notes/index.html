@@ -1,0 +1,10 @@
+<!doctype html>
+<html data-skin="loom"><head><meta charset="utf-8"><title>Spool notes</title>
+<link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="notes.css"></head>
+<body><div id="card" class="card">
+<header><b id="title">Speaker notes</b><button id="dict" class="chip" title="Dictate with local Whisper">Dictate</button><button id="save" class="chip on">Save</button><button id="close" class="icon-btn" data-icon="x" title="Close"></button></header>
+<textarea id="ta" placeholder="Type or dictate your notes. They stay on this computer and never appear in your recording."></textarea>
+<div id="prompt" class="hide"><div id="mark"></div><div id="scroll"></div></div>
+<footer id="foot" class="hide"><button id="play" class="chip on">Scroll</button><button id="slow" class="chip">−</button><span id="spd">speed 2</span><button id="fast" class="chip">+</button><span class="grow"></span><button id="smaller" class="chip">A−</button><button id="bigger" class="chip">A+</button></footer>
+</div>
+<script src="../../shared/icons.js"></script><script src="notes.js"></script></body></html>

@@ -109,6 +109,51 @@ This is the heaviest phase. Run it as two sessions: **1a** = restructure + B1/B2
 - No ring, bubble or controls visible in any screen-track frame (check one frame visually, then delete it: it contains the user's screen).
 - Unit tests pass (`node --test tests/unit`).
 
+#### Phase 1 results (executed 2026-10-15, display 1440×900 @2x, so native = 2880×1800)
+Status: **all checks pass** (`node tests/e2e/run.js all`: 59/59 = acceptance 27, idle 8, cam 6, window 11, ui 7; unit tests 70/70). Numbers are from one run; the range over the last runs is shown where it moved.
+
+| Acceptance check | Target | Measured |
+|---|---|---|
+| Screen intermediate size | native | 2880×1800 (every segment) |
+| Avg fps, screen track | ≥ 55 | 58.0 and 57.6 (runs ranged 57.3–58.0) |
+| Bitrate, screen track | ≥ 12 Mb/s | 49.1 and 48.6 Mb/s (noise patch on screen; see caveat 1) |
+| Frame pacing, pts-delta std | < 4 ms | 0.64 ms and 1.43 ms (range since the warm-up fix 0.61–1.48) |
+| Duration, 10 s script (3 + 1 + 2 s kept, rewind at 6 s) | 6.0 ± 0.15 s | timeline 5.974 s, raw media 5.973 s, published 5.980 s |
+| Overlays absent from screen track | none | controls, bubble and ring guard windows 99.7–99.9 % flat green, with the overlay confirmed on screen over each guard |
+| Published video at Source | native, 60 fps | 2880×1800, 60.0 fps, 35.9 Mb/s, AAC |
+| 1080p / 720p re-composite | even width, same length | 1728×1080 (2.0 s to composite, 12.5 Mb/s), 1152×720 (1.3 s, 12.5 Mb/s) |
+| Bubble composited where it was live | skin colour | mean rgb 244,203,158 vs skin 242,201,160 |
+| Cursor feed | ~60 Hz | 60 Hz over 601 ticks, worst gap 35.9 ms, 2 late (18.8 ms and 0 late in the run before) |
+| Streamed chunks (B3) | on disk as recorded | 13 chunks, 54.9 MB |
+| `cam` (camera only), 3 s | | 1920×1080, 3.007 s timeline, 3.000 s published, 60 fps, AAC |
+| `idle` (real desktop, no test content), 5 s | informational | raw track 57.0 fps; **2.1 Mb/s in one run, 30 Mb/s in this one** (depends on what is on your screen); published 60 fps, 10.5 and 29.2 Mb/s |
+| `window` (one window source), 4 s | | native 960×540, bubble bottom-left, no cursor feed, 3.506 s against 3.5 s |
+| `ui` (started through the launcher, 1080p preset, mic off) | | mode screen, 1728×1080, 60 fps, 3.07 s |
+
+**How I read the checks (decisions, so you can overrule them)**
+- "No ring, bubble or controls in any frame" is checked **numerically**, not by looking: flat-green guard windows are placed exactly under the three overlays, and the track must show green there. Looking would have put your screen in front of me.
+- "Rewind to 2 s" = a rewind issued at 6 s of the script; the kept length is 2.0 + 4.0 = 6.0 s.
+- `ffprobe` is not available (ffmpeg-static only), so `tests/e2e/probe.js` reads frame timestamps through ffmpeg instead.
+- On Node 24, `node --test tests/unit` no longer expands a directory. Use `npm test` or `node tests/unit/index.js`.
+
+**Caveats (read these)**
+1. **The ≥ 12 Mb/s check only holds for demanding content.** The hardware encoder spends bits where the picture changes. With a noisy patch on screen it writes 48 Mb/s (it overshoots the 25 Mbps target); on a quiet desktop the raw track was **2.1 Mb/s** in one run (30 Mb/s in another, with more happening on screen). That is not a defect, but "12 Mb/s" is therefore a statement about the encoder settings, not about every recording. The published file is re-encoded at 12/20/35 Mb/s targets by height.
+2. **Variable frame rate in raw tracks.** A static screen produces fewer frames (57 fps average, max gap 51 ms when idle). The composite step re-times to a constant 60 fps, so the published file is 60.0 fps.
+3. **Raw tracks are deleted after a successful composite** (privacy and disk) unless `SPOOL_KEEP_RAW` is set. Tests set it.
+4. **Mid-recording pen/notes use still costs a short capture hiccup.** In the `window` scenario, turning the pen on and the notes window on/off produces one gap of about 50–130 ms in the screen track and the cursor feed, varying run to run (it was about 325 ms before). I removed the largest part: macOS `setBounds(..., animate)` blocks the whole main process for its duration, so all window resizing is now a timer-driven ease (`windows.easeBounds`). The rest is not attributed. The acceptance run (no pen use) is unaffected. Open item for Phase 2.
+5. **B20 is "created hidden before capture, shown on first pen use"**, not lazy creation. Lazy creation froze capture by about 330 ms when measured.
+6. **Probe findings that shaped the code:** a fresh MediaRecorder's first 2–3 frames arrive late, so each recording does a 400 ms throwaway warm-up (this took pacing std from up to 4.5 ms to under 1.5 ms); creating or showing a window mid-capture stalls it, so every overlay is created and painted before `__begin`; `track.getSettings()` is wrong for window capture (reported 7680×4320), so the real size is measured from a frame; Chromium lists only layer-0 windows as capture sources.
+7. **Colour:** the Loom reference PNGs carry a Display P3 profile (`cICP`), so sampled colours are stored as `color(display-p3 …)` in `shared/ui.css`. Writing the same numbers as sRGB hex washed the red button out (174,66,41 instead of 188,56,28).
+
+**Interim composite bridge (until Phase 2).** `pipeline/composite.js` is a pure function from `timeline.json` plus segment files to one ffmpeg command: concat, crop, lanczos downscale (never upscale), 60 fps, shape-masked camera bubble following the recorded keyframes, one hardware encode. Not yet baked in: camera filters and frames, cursor highlight and click ripples, zoom, speed. Those are recorded in the timeline and visible live, but **absent from the published video until Phase 2**.
+
+**UI (§3d) status.** Done to the Loom reference: launcher and control bar (tokens sampled from `design/loom-ref/`, living only in `shared/ui.css`). **No reference exists** for the camera bubble, countdown, speaker notes, area picker or annotator, so they were moved onto the tokens and keep their old layout and functions. Send references before Phase 2 if you want them restyled. Deliberate deviations from Loom: a one-line summary under the launcher rows; the launcher's Effects/Quality/Notes/More replace Loom's Blur/Public slots; control-bar tooltips are native `title` tooltips.
+
+**Behaviour changes to know about**
+- The Dock icon is hidden while any recording overlay is up (B25), and returns afterwards.
+- Source quality is the default and big: published 35.9 Mb/s on busy content (about 270 MB/min), 10.5 Mb/s on a quiet desktop (about 80 MB/min). This bears on decision 2 in section 5.
+- **Do not rebuild `Spool.app`** until Phase 5: an ad-hoc-signed rebuild resets Screen Recording permission. Phase 1 did not rebuild it. Run the new code with `npm start`.
+
 ### Phase 2: Fast pipeline (composite, publish, AI in the background) · Oct 16
 **Also in this phase:** bugs B4, B6, B11, B12, B15–B19, B22 and UI items U3, U11, U12, U14–U19.
 
@@ -210,6 +255,7 @@ Fix each bug in the phase shown. Each fix gets a unit test or a self-test where 
 | B22 | `server.js` viewer POSTs | No rate limit on comments, reactions and heartbeats from LAN viewers. | Simple per-IP token bucket (20 writes per 10 s). | 2 |
 | B23 | `notes/index.html` | Dictation uses the deprecated `ScriptProcessorNode`. | AudioWorklet (tiny inline module). | 3 |
 | B24 | All windows | Self-test code ships inside `main.js`. | Move to `main/selftest.js`, loaded only when `SPOOL_SELFTEST` is set. | 1 |
+| B25 | Overlays and the Dock | Found in Phase 1: a regular (Dock) app cannot show windows over another app's full-screen Space. | The app runs as an accessory (Dock icon hidden) while any overlay is up, via `holdOverlay`/`releaseOverlay` plus `skipTransformProcessType`. Verified by the guard windows in the acceptance run. | 1 ✅ |
 
 ---
 
@@ -219,7 +265,7 @@ The goal: nothing flickers, nothing jumps, every interaction answers within 100 
 
 ### Global
 - **U1 Motion tokens** in `shared/ui.css`, imported by every window: `--ease: cubic-bezier(.2,.8,.2,1)`, durations 120 ms (hover), 180 ms (popover/modal), 240 ms (panel). Everything respects `@media (prefers-reduced-motion: reduce)` by turning off transforms. *(Phase 1)*
-- **U2 One design system**: the launcher, control bar, bubble toolbar, notes and annotator share colour, radius, shadow and focus-ring tokens. The launcher gets a dark mode (it's the only window still light-only). *(Phase 1)*
+- **U2 One design system**: the launcher, control bar, bubble toolbar, notes and annotator share colour, radius, shadow and focus-ring tokens. The launcher gets a dark mode (it's the only window still light-only). **The token values follow the Loom skin in §3d, not the old green/purple theme.** *(Phase 1)*
 - **U3 No polling re-renders.** Replace the watch page's 3 s poll and the library's 5 s poll with **Server-Sent Events** (`GET /api/events?video=:id`), driven by `store.events` (B2). Re-render only the part that changed. Today every poll rebuilds the tabs, reactions and the whole grid, which causes flicker and lost hover and scroll position. *(Phase 2)*
 
 ### Launcher
@@ -253,6 +299,37 @@ The goal: nothing flickers, nothing jumps, every interaction answers within 100 
 ### How to verify smoothness
 - Chrome DevTools Performance: record a 10 s interaction on the watch page and the library. No long tasks over 50 ms, and no layout shifts (CLS = 0).
 - Electron windows: `--enable-gpu-rasterization` stays on. Check the control bar and bubble with the FPS meter (`webContents.openDevTools` → Rendering → Frame rendering stats) during a recording.
+
+---
+
+## 3d. Loom-fidelity UI (decided by the user, 2026-10-15)
+
+**Direction:** Phases 1–3 build a Loom clone first. Copy Loom's layout, screen flow, wording, spacing, component behaviour and colours as closely as possible. This **replaces** the green/purple theme. Spool's own AI features come after parity.
+
+**Copy freely:** layout, information architecture, button labels and microcopy, spacing, radii, shadows, colour values, animation timing and keyboard shortcuts.
+
+**Never copy (trademark and copyright; the repo is public and graded):**
+- the Loom name and logo, Loom's app icon, and Loom's illustrations or empty-state art
+- Loom's licensed font. Use Inter or the system font instead.
+- Loom screenshots in the repo or README
+
+Keep the name **Spool** and its own logo. For icons, use inline SVGs drawn in the same style, such as copies of MIT-licensed Lucide icons. Lucide is not a dependency.
+
+**References:** `design/loom-ref/` holds screenshots from the user's Loom account. Add `design/loom-ref/` to `.gitignore`. Sample every colour from these screenshots, never guess hex values. If a screen has no reference, ask the user for one before styling it.
+
+**Skin tokens:** put every colour, font, radius and shadow in `shared/ui.css` under `:root[data-skin="loom"]`, which is the default. A later `data-skin="spool"` can bring back a brand look by swapping one block. Nothing outside that file may hard-code a colour.
+
+**Screens, in order, each with a side-by-side check against the reference at the same window size.** Write the visible differences in a list, then fix them.
+1. Recorder menu (the launcher): mode tabs, source picker, camera and mic dropdowns, toggles, Start button. *(Phase 1)*
+2. Control bar, camera bubble, countdown. *(Phase 1)*
+3. Watch page: header, player, title row, reactions bar, the transcript and comments side panel, share modal. *(Phase 2)*
+4. Library: left nav (Home, My Library, Spaces, Watch Later, History, Settings…), video grid cards, folder view. *(Phase 2)*
+5. Editor and Settings. *(Phase 3)*
+
+**Own AI features during Phases 1–3:**
+- Privacy Guard, Auto-Guide, Insights and Planner stay in the code and keep running in the background. They never block publishing.
+- No new UI for them until Phase 4.
+- Where they already have UI, put it where Loom puts its own AI features (summary, chapters, AI title) so it looks native to the clone.
 
 ---
 

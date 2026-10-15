@@ -2,11 +2,13 @@
   "name": "spool",
   "version": "0.1.0",
   "description": "Spool - local-first screen recorder with an AI agent crew (Loom-style clone)",
-  "main": "src/main.js",
+  "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
     "app": "npm run build:mac && open dist/Spool-darwin-arm64/Spool.app",
-    "build:mac": "electron-packager . Spool --platform=darwin --arch=arm64 --out=dist --overwrite --no-asar --app-bundle-id=com.spool.app --icon=assets/icon.icns --ignore='^/(dist|FEATURES.md)' --extend-info=scripts/Info.extend.plist && codesign --force --deep --sign - dist/Spool-darwin-arm64/Spool.app"
+    "build:mac": "electron-packager . Spool --platform=darwin --arch=arm64 --out=dist --overwrite --no-asar --app-bundle-id=com.spool.app --icon=assets/icon.icns --ignore='^/(dist|FEATURES.md)' --extend-info=scripts/Info.extend.plist && codesign --force --deep --sign - dist/Spool-darwin-arm64/Spool.app",
+    "test": "node --test tests/unit/*.test.js",
+    "test:e2e": "bash tests/e2e/selftest.sh"
   },
   "license": "MIT",
   "dependencies": {

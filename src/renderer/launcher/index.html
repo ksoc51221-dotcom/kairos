@@ -1,0 +1,46 @@
+<!doctype html>
+<html data-skin="loom"><head><meta charset="utf-8"><title>Spool</title>
+<link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="launcher.css"></head>
+<body>
+<main id="card" class="card">
+  <header id="head">
+    <button id="home" class="icon-btn" title="Open library" data-icon="home"></button>
+    <div id="kind" class="seg">
+      <button class="on" data-k="video" title="Video" data-icon="video"></button>
+      <button data-k="shot" title="Screenshot  ⌥⇧A" data-icon="camera"></button>
+    </div>
+    <button id="x" class="icon-btn" title="Close  Esc" data-icon="x"></button>
+  </header>
+
+  <div id="perm" class="warn" hidden><b>Spool can't see your screen yet</b><p id="permtxt"></p><div class="pr"><button id="permopen" class="chip">Open Settings</button><button id="permre" class="chip">Restart Spool</button></div></div>
+
+  <section class="field" id="srcField">
+    <button id="srcRow" class="row" aria-expanded="false"><span id="srcIcon" class="ic"></span><span class="label" id="srcLabel">Full screen</span></button>
+    <div class="collapse" id="srcMenu"><div><div class="menu" id="srcItems"></div><div id="winGrid" hidden></div></div></div>
+  </section>
+
+  <section class="field">
+    <button id="camRow" class="row" aria-expanded="false"><span id="camIcon" class="ic"></span><span class="label" id="camLabel">No Camera</span><span class="badge off" id="camBadge">Off</span></button>
+    <div class="collapse" id="camMenu"><div><div class="menu" id="camItems"></div></div></div>
+  </section>
+
+  <section class="field">
+    <button id="micRow" class="row" aria-expanded="false"><span id="micIcon" class="ic"></span><span class="label" id="micLabel">Microphone</span><span class="badge on" id="micBadge">On</span></button>
+    <div class="collapse" id="micMenu"><div><div class="menu" id="micItems"></div></div></div>
+  </section>
+
+  <button id="start" class="cta"><span id="startSpin" class="spinner" hidden></span><span id="startLabel">Start Recording</span></button>
+
+  <nav id="tools">
+    <button data-p="effects"><span data-icon="palette"></span>Effects</button>
+    <button data-p="quality"><span data-icon="sliders"></span>Quality</button>
+    <button data-p="notes"><span data-icon="notes"></span>Notes</button>
+    <button data-p="more"><span data-icon="more"></span>More</button>
+  </nav>
+  <div class="collapse" id="panel"><div><div id="panelBody"></div></div></div>
+  <p id="summary" class="note"></p>
+</main>
+<script src="../../shared/constants.js"></script>
+<script src="../../shared/icons.js"></script>
+<script src="launcher.js"></script>
+</body></html>

@@ -1,0 +1,5 @@
+/* Presenter-only cursor ring. Content-protected, so it never appears in the recording: the player draws the cursor highlight from timeline.json. */
+html, body { height: 100%; overflow: hidden; }
+#r { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: var(--ring-fill); border: 3px solid var(--ring-line); }
+.ripple { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; border: 4px solid var(--ripple); animation: rip .55s ease-out forwards; }
+@keyframes rip { from { transform: scale(.7); opacity: 1; } to { transform: scale(2.1); opacity: 0; } }

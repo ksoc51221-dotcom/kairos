@@ -1,0 +1,53 @@
+/* Recorder menu. Layout measured from design/loom-ref (2x screenshot, so px here = reference px / 2): a 280 px card, 19 px side padding,
+   48 px header track, 49 px rows 19 px apart, a 62 px Start button 6 px under the last row, then a four-icon toolbar. Colours come from ui.css. */
+#card { width: 280px; margin: 6px; padding: 16px 19px 12px; display: flex; flex-direction: column; }
+#card.enter { animation: enter var(--t-pop) var(--ease); }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+#head { display: flex; align-items: center; justify-content: space-between; -webkit-app-region: drag; }
+#head > * { -webkit-app-region: no-drag; }
+#home { width: 34px; } #x { width: 28px; }
+#kind { width: 140px; }
+#kind button { flex: none; width: 64px; }
+#kind button:active { transform: scale(.96); }
+
+.field { margin-top: 19px; }
+.field .ic { display: grid; place-items: center; width: 22px; }
+.row[aria-expanded="true"] { background: var(--raised-hover); }
+#camIcon.off { color: var(--red); }
+
+/* inline lists: height animates from 0 to content (grid-template-rows trick), no layout jump */
+.collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-panel) var(--ease); }
+.collapse.open { grid-template-rows: 1fr; }
+.collapse > div { overflow: hidden; min-height: 0; }
+.menu { display: flex; flex-direction: column; gap: 2px; padding-top: 6px; }
+
+#winGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 190px; overflow: auto; padding-top: 8px; }
+#winGrid div { border: 2px solid transparent; border-radius: var(--r-cell); overflow: hidden; cursor: pointer; background: var(--surface-inset); font: 500 11px/1.3 var(--font); color: var(--ink); }
+#winGrid div:hover { background: var(--raised); }
+#winGrid div.on { border-color: var(--blue); }
+#winGrid img { width: 100%; display: block; background: var(--surface); }
+#winGrid span { display: block; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#start { margin-top: 6px; }
+#start.busy { background: var(--cta-press); }
+
+#tools { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 18px; }
+#tools button { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 0 6px; border-radius: var(--r-cell); color: var(--ink-2); font: 500 12px/1 var(--font); transition: color var(--t-hover) var(--ease), background var(--t-hover) var(--ease); }
+#tools button .i { width: 22px; height: 22px; color: var(--ink); }
+#tools button:hover { color: var(--ink); background: var(--raised); }
+#tools button.on { color: var(--blue); }
+#tools button.on .i { color: var(--blue); }
+
+#panelBody { padding: 8px 0 4px; display: flex; flex-direction: column; gap: 14px; }
+#panelBody h4 { margin: 0 0 7px; font: 600 11px/1 var(--font); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips .chip { display: inline-flex; align-items: center; gap: 6px; }
+.chips .chip .i { width: 16px; height: 16px; }
+.chips.quality { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
+
+#summary { margin: 6px 0 0; text-align: center; min-height: 16px; font-size: 11.5px; }
+
+#perm { margin-top: 16px; }
+#perm p { margin: 6px 0 10px; }
+#perm .pr { display: flex; gap: 8px; }

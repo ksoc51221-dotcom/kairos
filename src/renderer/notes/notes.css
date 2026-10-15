@@ -1,0 +1,15 @@
+/* Speaker notes editor and teleprompter. Content-protected: never part of the recording. */
+html, body { height: 100%; overflow: hidden; }
+#card { position: absolute; inset: 4px; display: flex; flex-direction: column; overflow: hidden; color: var(--ink); }
+header { display: flex; align-items: center; gap: 6px; padding: 8px 10px 8px 14px; -webkit-app-region: drag; border-bottom: 1px solid var(--line); }
+header b { font: 600 13px/1 var(--font); flex: 1; }
+header > * { -webkit-app-region: no-drag; }
+header .icon-btn { width: 30px; height: 30px; }
+textarea { flex: 1; background: transparent; border: 0; color: var(--ink); font: 15px/1.55 var(--font); padding: 14px; resize: none; outline: none; user-select: text; }
+#prompt { flex: 1; overflow: hidden; position: relative; }
+#scroll { padding: 60px 22px 200px; font-size: 30px; line-height: 1.5; font-weight: 600; white-space: pre-wrap; color: var(--ink-strong); will-change: transform; }
+#mark { position: absolute; left: 0; top: calc(34% + 14px); width: 0; height: 0; border-left: 11px solid var(--blue); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+footer { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); font: 12px/1 var(--font); color: var(--ink-2); }
+.grow { flex: 1; }
+.hide { display: none !important; }
+.chip.rec { border-color: var(--red); color: var(--red); }

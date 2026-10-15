@@ -1,0 +1,117 @@
+/* Shared design tokens and components for every Spool window (U1, U2). Import with <link rel="stylesheet" href="../../shared/ui.css">.
+   The look is the "loom" skin below. Every colour, radius, shadow and font lives in this one block: nothing outside this file may hard-code a
+   colour, so a later skin (data-skin="spool") is one more block here. The Loom values were sampled from design/loom-ref/ (never guessed).
+   That screenshot is tagged Display P3 (cICP 0c0d0001), so they are written as color(display-p3 ...): the same numbers reproduce the same
+   colours on screen. Authoring them as sRGB hex would wash the saturated ones out (the Start button came out as 174,66,41 instead of 188,56,28). */
+:root, :root[data-skin="loom"] {
+  /* motion (U1) */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --t-hover: 120ms;   /* hover and press feedback */
+  --t-pop: 180ms;     /* popovers, fades */
+  --t-panel: 240ms;   /* panels that expand */
+  /* type: Inter where installed, the system font otherwise (Loom's own font is licensed) */
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  /* surfaces */
+  --surface: color(display-p3 0.1216 0.1216 0.1294);          /* window card */
+  --surface-inset: color(display-p3 0.1686 0.1686 0.1804);    /* tracks: segmented control, sliders */
+  --raised: color(display-p3 0.1882 0.1922 0.2039);           /* rows and buttons sitting on the card */
+  --raised-hover: color-mix(in srgb, var(--raised), white 7%);
+  --raised-press: color-mix(in srgb, var(--raised), black 12%);
+  --line: color(display-p3 0.2157 0.2157 0.2275);             /* hairlines and borders */
+  --bar: color(display-p3 0.1608 0.1647 0.1804);              /* floating control bar */
+  --key: color(display-p3 0.2510 0.2549 0.2745);              /* the stop key on the bar */
+  --key-ink: color(display-p3 0.4157 0.4196 0.4471);          /* the square inside it */
+  /* ink */
+  --ink: color(display-p3 0.8078 0.8118 0.8235);
+  --ink-2: color(display-p3 0.5922 0.6000 0.6196);
+  --ink-strong: #ffffff;
+  --ink-off: color-mix(in srgb, var(--ink-2), transparent 45%);
+  /* accents */
+  --blue: color(display-p3 0.4510 0.6118 0.9216);             /* selected tab icon, focus, teleprompter marker */
+  --red: color(display-p3 0.9098 0.4745 0.4314);              /* camera-off icon, recording dot */
+  --cta: color(display-p3 0.7373 0.2196 0.1098);              /* Start Recording */
+  --cta-hover: color-mix(in srgb, var(--cta), white 8%);
+  --cta-press: color-mix(in srgb, var(--cta), black 12%);
+  --cta-ink: #ffffff;
+  --on-bg: color(display-p3 0.2275 0.2784 0.1412); --on-line: color(display-p3 0.3255 0.4157 0.1686); --on-ink: color(display-p3 0.8510 0.9412 0.6863);
+  --off-bg: color(display-p3 0.3373 0.1373 0.1137); --off-line: color(display-p3 0.3765 0.1765 0.1529); --off-ink: color(display-p3 0.9725 0.8431 0.8275);
+  --warn-bg: #3a2c0a; --warn-line: #6b5314; --warn-ink: #ffd685;
+  --focus: 0 0 0 2px color-mix(in srgb, var(--blue), transparent 35%);
+  /* shape */
+  --r-card: 12px; --r-row: 10px; --r-seg: 9px; --r-cell: 7px; --r-badge: 4px; --r-pill: 999px; --r-bar: 28px;
+  --shadow-card: 0 14px 36px rgba(0, 0, 0, .5), 0 0 0 1px var(--line);
+  --shadow-bar: 0 8px 26px rgba(0, 0, 0, .5), 0 0 0 1px var(--line);
+  --shadow-pop: 0 6px 18px rgba(0, 0, 0, .45);
+  --text-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+  /* things drawn over the user's screen */
+  --scrim: rgba(0, 0, 0, .55);        /* area picker and countdown dimming */
+  --outline: #34e0a1;                 /* recording-area outline and picker selection */
+  --ring-fill: rgba(255, 214, 64, .28); --ring-line: rgba(255, 196, 0, .85); --ripple: #34e0a1;   /* presenter cursor ring */
+  --stroke-shadow: rgba(0, 0, 0, .35); /* soft shadow under pen strokes so they read on any background */
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: transparent; font-family: var(--font); color: var(--ink); -webkit-user-select: none; user-select: none; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+:focus-visible { outline: none; box-shadow: var(--focus); }
+[hidden] { display: none !important; }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg.i .f { fill: currentColor; stroke: none; }
+
+/* ---- components ---- */
+.card { background: var(--surface); border-radius: var(--r-card); box-shadow: var(--shadow-card); }
+
+.row { display: flex; align-items: center; gap: 14px; width: 100%; height: 49px; padding: 0 14px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-row);
+  font: 600 14px/1 var(--font); color: var(--ink); text-align: left; transition: background var(--t-hover) var(--ease); }
+.row:hover { background: var(--raised-hover); }
+.row:active { background: var(--raised-press); }
+.row .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .i { width: 22px; height: 22px; }
+
+.badge { flex: none; font: 600 12px/1 var(--font); padding: 4px 7px; border-radius: var(--r-badge); border: 1px solid; }
+.badge.on { background: var(--on-bg); border-color: var(--on-line); color: var(--on-ink); }
+.badge.off { background: var(--off-bg); border-color: var(--off-line); color: var(--off-ink); }
+
+.seg { display: flex; gap: 4px; padding: 4px; background: var(--surface-inset); border-radius: var(--r-seg); }
+.seg button { flex: 1; display: grid; place-items: center; height: 40px; border-radius: var(--r-cell); color: var(--ink-2); transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease); }
+.seg button:hover { color: var(--ink); }
+.seg button.on { background: var(--surface); color: var(--blue); }
+
+.icon-btn { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-cell); color: var(--ink); transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease); }
+.icon-btn:hover { background: var(--raised); }
+.icon-btn:active { background: var(--raised-press); }
+
+.cta { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 62px; border-radius: var(--r-row); background: var(--cta); color: var(--cta-ink); font: 700 14px/1 var(--font);
+  border: 1px solid color-mix(in srgb, var(--cta), black 25%); transition: background var(--t-hover) var(--ease); }
+.cta:hover { background: var(--cta-hover); }
+.cta:active { background: var(--cta-press); }
+.cta:disabled { opacity: .5; cursor: default; }
+
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor, transparent 70%); border-top-color: currentColor; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 32px; font: 500 13px/1.3 var(--font); color: var(--ink); cursor: pointer; }
+.toggle input { appearance: none; flex: none; width: 34px; height: 20px; margin: 0; border-radius: var(--r-pill); background: var(--surface-inset); border: 1px solid var(--line); position: relative; cursor: pointer; transition: background var(--t-hover) var(--ease); }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink-2); transition: transform var(--t-hover) var(--ease), background var(--t-hover) var(--ease); }
+.toggle input:checked { background: var(--on-bg); border-color: var(--on-line); }
+.toggle input:checked::after { transform: translateX(14px); background: var(--on-ink); }
+
+.chip { padding: 7px 10px; border-radius: var(--r-cell); background: var(--raised); border: 1px solid var(--line); color: var(--ink); font: 600 12px/1 var(--font); transition: background var(--t-hover) var(--ease); }
+.chip:hover { background: var(--raised-hover); }
+.chip.on { border-color: var(--blue); color: var(--blue); }
+
+.menu-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 8px 12px; border-radius: var(--r-cell); font: 500 13px/1.25 var(--font); color: var(--ink); text-align: left; }
+.menu-item:hover { background: var(--raised); }
+.menu-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-item .i { width: 18px; height: 18px; color: var(--ink-2); }
+.menu-item.on { color: var(--blue); }
+.menu-item.on .i { color: var(--blue); }
+
+.note { font: 400 12px/1.4 var(--font); color: var(--ink-2); }
+.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); border-radius: var(--r-row); padding: 12px 14px; font: 400 12.5px/1.45 var(--font); }
+
+/* Everything respects reduced motion: no transforms, no transitions, no keyframe animation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .spinner { animation: none !important; border-top-color: currentColor; }
+}

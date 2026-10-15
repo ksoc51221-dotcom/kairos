@@ -1,0 +1,4 @@
+/* Full-screen pen overlay. The one overlay that IS captured on purpose: strokes appear in the video. */
+html, body { height: 100%; overflow: hidden; }
+canvas { position: absolute; inset: 0; }
+body.on { cursor: crosshair; }

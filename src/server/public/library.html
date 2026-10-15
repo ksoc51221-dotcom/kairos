@@ -37,6 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:8px 6px;b
 </style></head><body>
 <div class="top"><a class="brand" href="/"><span class="logo"></span><span id="bn">Spool</span></a><input id="q" placeholder="Search titles, transcripts, tags, people…"><div class="grow"></div><label class="btn" for="file">⬆ Upload video</label><input id="file" type="file" accept="video/*,.mkv,.avi,.mov" hidden></div>
 <nav id="nav"></nav><main id="main"></main><div id="drop">Drop a video to add it to your library</div><div id="modal" class="modal" hidden></div>
+<script src="/static/csrf.js"></script>
 <script>
 const $ = (i) => document.getElementById(i), esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;

@@ -1,0 +1,11 @@
+/* Screenshot annotator. The toolbar clears the macOS traffic lights (hiddenInset title bar) on the left. */
+html, body { height: 100%; overflow: hidden; background: var(--surface); }
+#bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 14px 10px 80px; background: var(--surface); border-bottom: 1px solid var(--line); -webkit-app-region: drag; }
+#bar > * { -webkit-app-region: no-drag; }
+#colors { display: inline-flex; gap: 6px; margin: 0 8px; }
+.sw { display: inline-block; width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; box-shadow: 0 0 0 1px var(--line); cursor: pointer; background-clip: padding-box; }
+.sw.on { border-color: var(--surface); box-shadow: 0 0 0 2px var(--blue); }
+.grow { flex: 1; }
+#stage { position: absolute; top: 58px; bottom: 0; left: 0; right: 0; display: grid; place-items: center; overflow: auto; padding: 16px; background: var(--surface-inset); }
+canvas { max-width: 100%; max-height: 100%; box-shadow: var(--shadow-pop); border-radius: 6px; cursor: crosshair; }
+#txt { position: absolute; display: none; border: 2px dashed var(--blue); background: color-mix(in srgb, var(--surface), transparent 10%); font: 600 22px/1.2 var(--font); padding: 2px 6px; outline: none; min-width: 80px; z-index: 5; user-select: text; }

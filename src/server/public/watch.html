@@ -54,7 +54,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 4px
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
 <div class="top"><a class="brand" href="/" id="brand"><span class="logo" id="logo"></span><span id="brandname">Spool</span></a><div class="grow"></div>
-<span id="ownerBtns" hidden><a class="btn" id="edit" href="#">✂ Edit</a> <button class="btn" id="dl">Download</button> <button class="btn danger" id="del">Delete</button> </span><button class="btn pri" id="share">Share</button></div>
+<span id="ownerBtns" hidden><a class="btn" id="edit" href="#" hidden>✂ Edit</a> <button class="btn" id="dl">Download</button> <button class="btn danger" id="del">Delete</button> </span><button class="btn pri" id="share">Share</button></div>
 <div id="root"><div class="wrap"><div>
   <div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin"></div>Processing…</div></div></div>
   <input id="title" spellcheck="false">
@@ -68,13 +68,17 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 4px
 <aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div>
   <form class="add" id="form"><input id="ctext" placeholder="Add a comment at the current time… use @name to mention" autocomplete="off"><button class="btn pri">Send</button></form></aside></div></div>
 <div id="modal" class="modal" hidden></div><div id="toast"></div>
+<script src="/static/csrf.js"></script>
 <script src="/static/player.js"></script>
 <script>
 const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP;
 const id = location.pathname.split('/').pop(), EMOJI = ['👍', '❤️', '😂', '🎉', '👏', '🔥'];
+// B13: unfinished features stay hidden until they ship (editor: Phase 3, AI Actions: Phase 4)
+const FEATURES = { editor: false, actions: false };
 let me = { owner: false }, vm, ctl, tab = 'comments', loaded = false, lastKey = '', sid = null;
 const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1600); };
-const seek = (t) => { $('v').currentTime = t; $('v').play(); };
+const now = () => $('v')?.currentTime || 0; // B10: screenshots replace #v with an <img>
+const seek = (t) => { const v = $('v'); if (!v) return; v.currentTime = t; v.play(); };
 const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
 
 async function boot() {
@@ -82,7 +86,7 @@ async function boot() {
   document.documentElement.style.setProperty('--accent', me.brand.accent);
   $('brandname').textContent = me.brand.hideBranding ? '' : me.brand.name; if (me.brand.logo) { $('logo').style.cssText = 'background:url(/branding/logo.png) center/cover;border-radius:5px'; } if (me.brand.hideBranding && !me.brand.logo) $('logo').hidden = true;
   if (document.cookie.includes('sp_asviewer=1')) $('viewas').hidden = false;
-  $('ownerBtns').hidden = !me.owner; $('edit').href = `/static/editor.html?id=${id}`; $('later').hidden = !me.owner;
+  $('ownerBtns').hidden = !me.owner; $('edit').href = `/static/editor.html?id=${id}`; $('edit').hidden = !(me.owner && FEATURES.editor); $('later').hidden = !me.owner;
   $('title').readOnly = !me.owner; $('share').textContent = me.owner ? 'Share' : 'Copy link';
   const nm = viewer().name || (me.owner ? me.name : ''); void nm;
   try { vm = await api(`/api/v/${id}`); }
@@ -100,7 +104,7 @@ async function poll() {
   try { vm = await api(`/api/v/${id}`); ctl?.setVM(vm); render(); } catch {}
 }
 
-function tabsFor() { const t = [['comments', 'Comments'], ['transcript', 'Transcript'], ['guide', 'Guide']]; if (me.owner) t.push(['actions', 'AI Actions'], ['insights', 'Insights'], ['crew', 'AI Crew'], ['activity', 'Activity']); return t; }
+function tabsFor() { const t = [['comments', 'Comments'], ['transcript', 'Transcript'], ['guide', 'Guide']]; if (me.owner) { if (FEATURES.actions) t.push(['actions', 'AI Actions']); t.push(['insights', 'Insights'], ['crew', 'AI Crew'], ['activity', 'Activity']); } return t; }
 function renderTabs() {
   const t = tabsFor(); $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
   $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => { tab = b.dataset.t; lastKey = ''; render(); });
@@ -111,7 +115,7 @@ function render() {
   $('meta').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'} · ${new Date(vm.createdAt).toLocaleDateString()}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
   $('later').textContent = vm.watchLater ? '★ Saved' : '☆ Watch later';
   $('react').innerHTML = EMOJI.map((e) => `<button data-e="${e}">${e}<small>${vm.reactions[e] || ''}</small></button>`).join('') + '<span class="hintx">⇧-click = super reaction</span>';
-  $('react').querySelectorAll('button').forEach((b) => b.onclick = async (ev) => { const sup = ev.shiftKey, at = $('v').currentTime || 0; ctl?.floatReaction(b.dataset.e, sup); vm = await api(`/api/v/${id}/reactions`, { body: { emoji: b.dataset.e, at, super: sup } }); render(); });
+  $('react').querySelectorAll('button').forEach((b) => b.onclick = async (ev) => { const sup = ev.shiftKey, at = now(); ctl?.floatReaction(b.dataset.e, sup); vm = await api(`/api/v/${id}/reactions`, { body: { emoji: b.dataset.e, at, super: sup } }); render(); });
   const ready = vm.status === 'ready' || vm.status === undefined;
   $('proc').hidden = ready;
   if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
@@ -179,10 +183,10 @@ function renderActions(p) { p.innerHTML = '<div class="empty">AI actions load he
 
 // ---- comments / title / header buttons ----
 $('form').onsubmit = async (e) => { e.preventDefault(); const text = $('ctext').value.trim(); if (!text) return; if (!me.owner && !viewer().name) { const n = prompt('Your name for comments?') || 'Guest'; setViewer({ ...viewer(), name: n }); } $('ctext').value = '';
-  vm = await api(`/api/v/${id}/comments`, { body: { text, at: $('v').currentTime || 0, name: me.owner ? me.name : viewer().name } }); lastKey = ''; render(); };
+  vm = await api(`/api/v/${id}/comments`, { body: { text, at: now(), name: me.owner ? me.name : viewer().name } }); lastKey = ''; render(); };
 $('title').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { title: $('title').value } }); };
 $('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
-$('speed').onchange = () => ($('v').playbackRate = +$('speed').value);
+$('speed').onchange = () => { if ($('v')) $('v').playbackRate = +$('speed').value; };
 $('later').onclick = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { watchLater: !vm.watchLater } }); render(); };
 $('dl').onclick = () => (location.href = `/media/${id}/download`);
 $('del').onclick = async () => { if (confirm('Delete this video for good?')) { await fetch(`/api/videos/${id}`, { method: 'DELETE' }); location.href = '/'; } };

@@ -1,0 +1,28 @@
+<!doctype html>
+<html data-skin="loom"><head><meta charset="utf-8"><title>Spool controls</title>
+<link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="controls.css"></head>
+<body>
+<div id="bar" class="rec">
+  <button id="stop" class="key" title="Stop  ⌥⇧S" data-icon="stop"></button>
+  <div id="time">0:00</div>
+  <button id="pause" class="icon-btn" title="Pause  ⌥⇧P" data-icon="pause"></button>
+  <button id="restart" class="icon-btn" title="Restart" data-icon="restart"></button>
+  <button id="del" class="icon-btn" title="Delete recording" data-icon="x"></button>
+  <hr>
+  <button id="rewind" class="icon-btn" title="Live Rewind" data-icon="rewind" hidden></button>
+  <button id="pen" class="icon-btn" title="Draw  ⌥⇧D" data-icon="pen"></button>
+  <button id="cursor" class="icon-btn" title="Cursor ring (only you see it)" data-icon="target"></button>
+  <button id="notes" class="icon-btn" title="Speaker notes" data-icon="notes"></button>
+  <button id="mic" class="icon-btn" title="Mute microphone" data-icon="mic"></button>
+  <button id="cam" class="icon-btn" title="Camera on or off" data-icon="video"></button>
+</div>
+
+<aside id="panel" class="card" hidden>
+  <div id="colors" hidden><h4>Pen colour</h4><div id="swatches"></div><p class="note">Esc stops drawing · ⌫ clears</p></div>
+  <div id="rew" hidden><h4>Live Rewind</h4><p class="note">Rewind to <b id="rt">0:00</b>. Everything after it is removed.</p>
+    <input id="slider" type="range" min="0" max="0" step="0.1"><div class="r"><span id="rmax" class="note"></span><button id="gorew" class="chip on">Re-record from here</button></div></div>
+</aside>
+<script src="../../shared/constants.js"></script>
+<script src="../../shared/icons.js"></script>
+<script src="controls.js"></script>
+</body></html>

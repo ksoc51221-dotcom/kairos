@@ -1,0 +1,15 @@
+/* Camera bubble: the live preview you see while recording. (It is never part of the recording: the camera is its own file.) */
+html, body { height: 100%; overflow: hidden; }
+/* the toolbar appears on hover after an 80 ms delay, so it does not flash while the bubble is being dragged past */
+#tools { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; padding: 4px; white-space: nowrap;
+  background: var(--bar); border-radius: var(--r-pill); box-shadow: var(--shadow-pop); opacity: 0; pointer-events: none; transition: opacity var(--t-pop) var(--ease); }
+body:hover #tools { opacity: 1; pointer-events: auto; transition-delay: 80ms; }
+#tools button { min-width: 26px; height: 26px; padding: 0 8px; border-radius: var(--r-pill); color: var(--ink); font: 600 11px/1 var(--font); transition: background var(--t-hover) var(--ease); }
+#tools button:hover { background: var(--raised); }
+#tools button .i { width: 14px; height: 14px; }
+#tools i { width: 1px; height: 14px; margin: 0 2px; background: var(--line); }
+/* the window eases its own size (windows.easeBounds); inside the page only the corner radius transitions */
+#cam, #ring { position: absolute; left: 10px; top: 38px; transition: border-radius var(--t-pop) var(--ease); }
+#cam { overflow: hidden; background: var(--surface); -webkit-app-region: drag; box-shadow: var(--shadow-pop); }
+#cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; transition: filter var(--t-pop) var(--ease); } /* mirrored preview only: the file is not mirrored */
+#ring { pointer-events: none; }

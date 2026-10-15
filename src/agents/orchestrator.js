@@ -4,7 +4,11 @@ const fs = require('fs');
 const path = require('path');
 const store = require('../store');
 const llm = require('./llm');
-const { run, probe, frameAt } = require('./media');
+const { probe, frameAt } = require('./media');
+const { readManifest, segmentInputs, timelinePath } = require('../pipeline/segments');
+const { buildComposite } = require('../pipeline/composite');
+const { runFfmpeg, transcodeUpload } = require('../pipeline/encode');
+const { ensureMask } = require('../pipeline/masks');
 const { transcribe } = require('./transcribe');
 const privacy = require('./privacy');
 const { insights } = require('./insights');
@@ -40,22 +44,22 @@ async function guarded(log, agent, fn) {
   catch (e) { console.error(`[${agent}]`, e); log(agent, 'error', String(e.message || e).slice(0, 160)); return null; }
 }
 
-// Segments come from pause/resume/Live Rewind; each has its own (possibly trimmed) duration.
-async function encodeSegments(dir, out) {
-  const meta = JSON.parse(fs.readFileSync(path.join(dir, 'segments.json'), 'utf8'));
-  if (meta.upload) { // Loomify: any video file → mp4 (even dimensions, audio if present)
-    const f = path.join(dir, meta.upload), hasA = /Audio:/.test((await run(['-i', f], { collect: true })).err);
-    await run(['-y', '-i', f, '-map', '0:v:0', ...(hasA ? ['-map', '0:a:0', '-c:a', 'aac'] : []), '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
-    fs.rmSync(f, { force: true }); return;
-  }
-  const args = ['-y'];
-  meta.segs.forEach((s) => args.push('-t', String(s.dur.toFixed(3)), '-i', path.join(dir, s.file)));
-  const n = meta.segs.length, ins = meta.segs.map((_, i) => `[${i}:v]` + (meta.hasAudio ? `[${i}:a]` : '')).join('');
-  args.push('-filter_complex', `${ins}concat=n=${n}:v=1:a=${meta.hasAudio ? 1 : 0}[v]${meta.hasAudio ? '[a]' : ''}`, '-map', '[v]');
-  if (meta.hasAudio) args.push('-map', '[a]', '-c:a', 'aac');
-  args.push('-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out);
-  await run(args);
-  meta.segs.forEach((s) => fs.rmSync(path.join(dir, s.file), { force: true }));
+// Turns what the recorder left in the video folder into one mp4: timeline.json + screen_N/cam_N tracks (composited here, once),
+// or an uploaded file (Loomify). Raw tracks are deleted afterwards because they hold the screen before the Privacy Guard has seen it;
+// if the encode fails they stay on disk so nothing is lost.
+async function encodeRecording(id, dir, out) {
+  const m = readManifest(dir);
+  if (!m) throw new Error('this video has no recording data');
+  let last = 0;
+  const onProgress = (p) => { const now = Date.now(); if (now - last > 500) { last = now; store.update(id, { stage: `Encoding video ${Math.round(p * 100)}%` }); } };
+  if (m.kind === 'upload') { await transcodeUpload(m.file, out, { onProgress: null }); fs.rmSync(m.file, { force: true }); return; }
+  const tl = m.timeline, inputs = segmentInputs(dir, tl);
+  if (!inputs.length) throw new Error('the recording is empty');
+  const masks = path.join(dir, 'masks');
+  const plan = buildComposite(tl, inputs, { out, maskPath: (shape, w, h) => ensureMask(masks, shape, w, h) });
+  await runFfmpeg(plan.args, { duration: plan.total, onProgress });
+  fs.rmSync(masks, { recursive: true, force: true });
+  if (!process.env.SPOOL_KEEP_RAW) for (const s of tl.segments || []) for (const f of [s.screen, s.cam]) if (f) fs.rmSync(path.join(dir, f), { force: true });
 }
 
 async function processVideo(id) {
@@ -63,14 +67,14 @@ async function processVideo(id) {
   const log = makeLog(id);
   const set = (patch) => store.update(id, patch);
   const settings = store.getSettings();
-  set({ hasTrack: fs.existsSync(path.join(dir, 'track.json')), crew: CREW.map((c) => ({ ...c, status: 'queued', detail: '' })), stage: 'Encoding video' });
+  set({ hasTrack: fs.existsSync(path.join(dir, 'track.json')) || fs.existsSync(timelinePath(dir)), crew: CREW.map((c) => ({ ...c, status: 'queued', detail: '' })), stage: 'Encoding video' });
 
   // --- 1. encode capture segments → one mp4 ---------------------------------------
   const original = path.join(dir, 'original.mp4');
-  try { await encodeSegments(dir, original); } catch (e) { console.error(e); set({ status: 'failed', stage: 'Encoding failed' }); return; }
-  if (process.env.SPOOL_SKIP_AI) { fs.copyFileSync(original, path.join(dir, 'video.mp4')); await frameAt(original, 1, path.join(dir, 'thumb.jpg'), 480).catch(() => {}); set({ status: 'ready', stage: 'done', duration: (await probe(original)).duration }); return; }
+  try { await encodeRecording(id, dir, original); } catch (e) { console.error(e); set({ status: 'failed', stage: 'Encoding failed' }); return; }
   const meta = await probe(original);
-  set({ duration: meta.duration || store.get(id).duration, stage: 'Reading speech and screen' });
+  if (process.env.SPOOL_SKIP_AI) { fs.copyFileSync(original, path.join(dir, 'video.mp4')); await frameAt(original, 1, path.join(dir, 'thumb.jpg'), 480).catch(() => {}); set({ status: 'ready', stage: 'done', duration: meta.duration, width: meta.width, height: meta.height }); return; }
+  set({ duration: meta.duration || store.get(id).duration, width: meta.width, height: meta.height, stage: 'Reading speech and screen' });
 
   // --- 2. Transcriber ∥ Privacy Guard ------------------------------------------------
   const work = path.join(dir, 'work'); fs.mkdirSync(work, { recursive: true });
