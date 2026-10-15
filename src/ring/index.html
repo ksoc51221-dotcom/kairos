@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+#r{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:rgba(255,214,64,.28);border:3px solid rgba(255,196,0,.85)}
+.ripple{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;border:4px solid #34e0a1;animation:rip .55s ease-out forwards}
+@keyframes rip{from{transform:scale(.7);opacity:1}to{transform:scale(2.1);opacity:0}}
+</style></head><body><div id="r"></div><script>
+spool.on('ring:click', () => { const d = document.createElement('div'); d.className = 'ripple'; document.body.appendChild(d); setTimeout(() => d.remove(), 600); });
+</script></body></html>

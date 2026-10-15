@@ -1,0 +1,221 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spool</title><!--OG--><link rel="stylesheet" href="/static/app.css"><style>
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:24px;max-width:1380px;margin:0 auto;padding:24px}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}.side{position:static!important;height:520px!important}}
+#proc{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:#150f27;text-align:center;z-index:6}
+#proc[hidden]{display:none}
+.spin{width:34px;height:34px;border:4px solid #444;border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+#title{font:700 24px -apple-system,BlinkMacSystemFont,"Inter",sans-serif;border:0;background:transparent;color:var(--ink);width:100%;padding:6px 4px;border-radius:8px;margin-top:14px}
+#title:not([readonly]):hover,#title:focus{background:var(--card);outline:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.react{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.react button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 12px;font-size:16px;cursor:pointer}
+.react button:hover{border-color:var(--accent);transform:scale(1.08)}
+.react button small{font:600 12px -apple-system,sans-serif;color:var(--mute);margin-left:5px}
+.react .hintx{font-size:11px;color:var(--mute);margin-left:4px}
+.side{background:var(--card);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;height:calc(100vh - 100px);position:sticky;top:76px;min-height:420px}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{flex:1;border:0;background:none;padding:13px 10px;font:600 12.5px -apple-system,sans-serif;color:var(--mute);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--accent);border-color:var(--accent)}
+.panel{flex:1;overflow:auto;padding:14px 16px}
+.cm{margin-bottom:14px}.cm b{font-size:13px}.cm .at{color:var(--accent);font:600 12px -apple-system,sans-serif;cursor:pointer;margin-left:6px}
+.cm p{margin:3px 0 0;font-size:14px;line-height:1.4}.men{color:var(--accent);font-weight:600}
+.add{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.add input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:14px}
+.empty{color:var(--mute);font-size:13px;text-align:center;margin-top:30px}
+select.sp{padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 12px -apple-system,sans-serif}
+#notes{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card h4{margin:0 0 6px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute)}
+.card p{margin:0;line-height:1.55;font-size:14.5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip2{border:1px solid var(--line);background:var(--accent-soft);color:var(--ink);border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif;cursor:pointer}
+.chip2 b{color:var(--accent);margin-right:6px}.chip2:hover{border-color:var(--accent)}.chip2.tag{background:var(--mint-soft)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--mint-soft);color:#0f7a56;border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif}
+@media (prefers-color-scheme:dark){.badge{color:#5ee4b0}}
+.tasks{margin:0;padding-left:18px;font-size:14px;line-height:1.6}
+.banner{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:10px;padding:9px 14px;font-size:13px}.banner .spin{width:16px;height:16px;border-width:3px;margin:0}
+.viewas{background:var(--mint-soft);color:#0f7a56;text-align:center;font-size:13px;padding:7px;font-weight:600}.viewas a{text-decoration:underline;margin-left:8px}
+.step{margin-bottom:18px}.step h5{margin:0 0 4px;font-size:14px}.step h5 i{font-style:normal;background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-grid;place-items:center;font-size:11px;margin-right:8px}
+.step p{margin:0 0 8px;font-size:13.5px;line-height:1.5;color:var(--mute)}.step img{width:100%;border-radius:8px;border:1px solid var(--line);cursor:pointer;display:block}
+.crew{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.dot{flex:0 0 10px;height:10px;border-radius:50%;margin-top:5px;background:var(--line)}
+.dot.running{background:var(--accent);animation:p 1s infinite}.dot.done{background:var(--mint)}.dot.error{background:#e5484d}.dot.skipped{background:#b6b1c9}
+@keyframes p{50%{opacity:.3}}
+.crew b{font-size:13.5px}.crew small{display:block;color:var(--mute);font-size:12px;line-height:1.4;margin-top:2px}.crew .d{font-size:12px;margin-top:3px}
+.ghead{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.stats div{background:var(--bg);border-radius:10px;padding:10px;text-align:center}.stats b{display:block;font-size:20px}.stats span{font-size:11px;color:var(--mute)}
+.heat{display:flex;align-items:flex-end;height:56px;gap:1px;margin:8px 0 14px;cursor:pointer}.heat i{flex:1;background:linear-gradient(var(--accent),var(--mint));border-radius:2px 2px 0 0;min-height:2px;opacity:.85}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mute);font-weight:600}
+.act{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line)}.act small{color:var(--mute);display:block}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#231942;color:#fff;padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:99}#toast.on{opacity:1}
+.imgview{display:grid;place-items:center;background:#0e0a1c}.imgview img{max-width:100%;max-height:70vh}
+</style></head><body>
+<div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
+<div class="top"><a class="brand" href="/" id="brand"><span class="logo" id="logo"></span><span id="brandname">Spool</span></a><div class="grow"></div>
+<span id="ownerBtns" hidden><a class="btn" id="edit" href="#">✂ Edit</a> <button class="btn" id="dl">Download</button> <button class="btn danger" id="del">Delete</button> </span><button class="btn pri" id="share">Share</button></div>
+<div id="root"><div class="wrap"><div>
+  <div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin"></div>Processing…</div></div></div>
+  <input id="title" spellcheck="false">
+  <div class="row"><span class="chip" id="meta"></span><div class="grow"></div>
+    <button class="btn sm" id="later" hidden title="Watch later">☆ Watch later</button>
+    <select class="sp" id="cc"></select>
+    <select class="sp" id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
+  <div class="react" id="react"></div>
+  <div id="notes"></div>
+</div>
+<aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div>
+  <form class="add" id="form"><input id="ctext" placeholder="Add a comment at the current time… use @name to mention" autocomplete="off"><button class="btn pri">Send</button></form></aside></div></div>
+<div id="modal" class="modal" hidden></div><div id="toast"></div>
+<script src="/static/player.js"></script>
+<script>
+const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP;
+const id = location.pathname.split('/').pop(), EMOJI = ['👍', '❤️', '😂', '🎉', '👏', '🔥'];
+let me = { owner: false }, vm, ctl, tab = 'comments', loaded = false, lastKey = '', sid = null;
+const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1600); };
+const seek = (t) => { $('v').currentTime = t; $('v').play(); };
+const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
+
+async function boot() {
+  me = await api('/api/me');
+  document.documentElement.style.setProperty('--accent', me.brand.accent);
+  $('brandname').textContent = me.brand.hideBranding ? '' : me.brand.name; if (me.brand.logo) { $('logo').style.cssText = 'background:url(/branding/logo.png) center/cover;border-radius:5px'; } if (me.brand.hideBranding && !me.brand.logo) $('logo').hidden = true;
+  if (document.cookie.includes('sp_asviewer=1')) $('viewas').hidden = false;
+  $('ownerBtns').hidden = !me.owner; $('edit').href = `/static/editor.html?id=${id}`; $('later').hidden = !me.owner;
+  $('title').readOnly = !me.owner; $('share').textContent = me.owner ? 'Share' : 'Copy link';
+  const nm = viewer().name || (me.owner ? me.name : ''); void nm;
+  try { vm = await api(`/api/v/${id}`); }
+  catch (e) { if (e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
+  if (vm.type === 'image') { $('stage').className = 'stage imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('cc').hidden = $('speed').hidden = true; }
+  else ctl = attach({ stage: $('stage'), video: $('v'), vm });
+  setupCC(); render(); setInterval(poll, 3000);
+}
+function setupCC() {
+  $('cc').innerHTML = '<option value="">CC: off</option><option value="original">Captions</option><optgroup label="Translate (local AI)">' + LANGS.map((l) => `<option>${l}</option>`).join('') + '</optgroup>';
+  $('cc').onchange = async () => { const v = $('cc').value; try { if (v && v !== 'original') toast(`Translating to ${v}… first time takes a moment`); await ctl.setCaptions(v || null); } catch (e) { toast(e.message); $('cc').value = ''; } };
+}
+async function poll() {
+  if (document.hidden || document.activeElement.id === 'ctext' || document.activeElement.id === 'title' || !$('modal').hidden) return;
+  try { vm = await api(`/api/v/${id}`); ctl?.setVM(vm); render(); } catch {}
+}
+
+function tabsFor() { const t = [['comments', 'Comments'], ['transcript', 'Transcript'], ['guide', 'Guide']]; if (me.owner) t.push(['actions', 'AI Actions'], ['insights', 'Insights'], ['crew', 'AI Crew'], ['activity', 'Activity']); return t; }
+function renderTabs() {
+  const t = tabsFor(); $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => { tab = b.dataset.t; lastKey = ''; render(); });
+}
+function render() {
+  document.title = vm.title + ' · ' + (me.brand?.name || 'Spool');
+  if (document.activeElement !== $('title')) $('title').value = vm.title;
+  $('meta').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'} · ${new Date(vm.createdAt).toLocaleDateString()}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
+  $('later').textContent = vm.watchLater ? '★ Saved' : '☆ Watch later';
+  $('react').innerHTML = EMOJI.map((e) => `<button data-e="${e}">${e}<small>${vm.reactions[e] || ''}</small></button>`).join('') + '<span class="hintx">⇧-click = super reaction</span>';
+  $('react').querySelectorAll('button').forEach((b) => b.onclick = async (ev) => { const sup = ev.shiftKey, at = $('v').currentTime || 0; ctl?.floatReaction(b.dataset.e, sup); vm = await api(`/api/v/${id}/reactions`, { body: { emoji: b.dataset.e, at, super: sup } }); render(); });
+  const ready = vm.status === 'ready' || vm.status === undefined;
+  $('proc').hidden = ready;
+  if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
+  if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); }
+  renderNotes(); renderTabs();
+  const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy]);
+  if (key !== lastKey) { lastKey = key; renderPanel(); }
+}
+function renderNotes() {
+  const n = [], busy = vm.status === 'ready' && vm.stage && vm.stage !== 'done';
+  if (busy && me.owner) n.push(`<div class="banner"><div class="spin"></div>${esc(vm.stage)}…</div>`);
+  if (vm.redactionCount) n.push(`<div><span class="badge" title="Blurred by the Privacy Guard before anyone could watch">🛡 ${vm.redactionCount} sensitive item${vm.redactionCount > 1 ? 's' : ''} blurred by Privacy Guard</span></div>`);
+  if (vm.tags?.length) n.push(`<div class="chips">${vm.tags.map((t) => `<span class="chip2 tag">#${esc(t)}</span>`).join('')}</div>`);
+  if (vm.summary) n.push(`<div class="card"><h4>Summary</h4><p>${esc(vm.summary)}</p></div>`);
+  if (vm.chapters?.length) n.push(`<div class="card"><h4>Chapters</h4><div class="chips">${vm.chapters.map((c) => `<button class="chip2" data-at="${c.start}"><b>${fmt(c.start)}</b>${esc(c.title)}</button>`).join('')}</div></div>`);
+  if (vm.tasks?.length) n.push(`<div class="card"><h4>Action items</h4><ul class="tasks">${vm.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`);
+  const html = n.join('');
+  if ($('notes').dataset.h !== html) { $('notes').innerHTML = html; $('notes').dataset.h = html; $('notes').querySelectorAll('.chip2[data-at]').forEach((c) => c.onclick = () => seek(+c.dataset.at)); }
+}
+function renderPanel() {
+  const p = $('panel'); $('form').hidden = tab !== 'comments';
+  const bind = () => p.querySelectorAll('[data-at]').forEach((a) => (a.onclick = () => seek(+a.dataset.at)));
+  if (tab === 'comments') {
+    p.innerHTML = vm.comments.length ? vm.comments.map((c) => `<div class="cm"><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div>`).join('') : '<div class="empty">No comments yet. Be the first!</div>'; bind();
+  } else if (tab === 'transcript') {
+    p.innerHTML = vm.segments?.length ? `<div class="ghead"><input id="tq" placeholder="Search transcript…" style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></div><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
+    if (vm.segments?.length) { const draw = () => { const q = $('tq').value.toLowerCase(); $('tl').innerHTML = vm.segments.filter((s) => !q || s.text.toLowerCase().includes(q)).map((s) => `<div class="cm"><span class="at" data-at="${s.start}" style="margin:0 8px 0 0">${fmt(s.start)}</span>${esc(s.text)}</div>`).join(''); bind(); }; $('tq').oninput = draw; draw(); }
+  } else if (tab === 'guide') renderGuide(p, bind);
+  else if (tab === 'crew') renderCrew(p);
+  else if (tab === 'insights') renderInsights(p);
+  else if (tab === 'activity') p.innerHTML = (vm.activity || []).map((a) => `<div class="act">${esc(a.event)}<small>${esc(a.who || '')} · ${new Date(a.at).toLocaleString()}</small></div>`).join('') || '<div class="empty">No activity yet.</div>';
+  else if (tab === 'actions') renderActions(p);
+}
+function renderGuide(p, bind) {
+  const g = vm.guide;
+  if (!g) { p.innerHTML = '<div class="empty">' + (vm.stage && vm.stage !== 'done' ? 'The Guide Writer is drafting…' : 'No guide for this recording.') + '</div>'; return; }
+  p.innerHTML = `<div class="ghead"><span class="badge">${esc(g.label)}</span><button class="btn sm" id="gmd">Copy markdown</button><button class="btn sm" id="ghtml">Export HTML</button></div>
+    <h3 style="margin:0 0 6px">${esc(g.title)}</h3><p style="margin:0 0 16px;color:var(--mute);font-size:13.5px;line-height:1.5">${esc(g.intro)}</p>` +
+    g.steps.map((st) => `<div class="step"><h5><i>${st.n}</i>${esc(st.title)}</h5><p>${esc(st.detail)}</p>${st.image ? `<img src="/media/${id}/guide/${st.image}" data-at="${st.at}" title="Jump to ${fmt(st.at)}">` : ''}</div>`).join('') +
+    `<p style="font-size:13.5px;line-height:1.5">${esc(g.closing)}</p>` + (g.revisions ? `<p class="chip" style="margin-top:12px">The Critic sent the first draft back once${g.criticOk ? ' and approved the revision' : '; it still left notes'}.</p>` : '');
+  bind(); $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); toast('Markdown copied'); }; $('ghtml').onclick = exportGuideHtml;
+}
+const guideMd = () => { const g = vm.guide; return `# ${g.title}\n\n${g.intro}\n\n` + g.steps.map((s) => `## ${s.n}. ${s.title}\n${s.detail}\n${s.image ? `\n![Step ${s.n}](${location.origin}/media/${id}/guide/${s.image})\n` : ''}`).join('\n') + `\n${g.closing}\n`; };
+async function exportGuideHtml() {
+  const g = vm.guide, imgs = await Promise.all(g.steps.map(async (s) => { if (!s.image) return ''; const b = await (await fetch(`/media/${id}/guide/${s.image}`)).blob(); return new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); }));
+  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#231942"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, i) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[i] ? `<img src="${imgs[i]}" style="width:100%;border-radius:8px;border:1px solid #e6e2f4">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = g.title.replace(/[^\w -]/g, '') + '.html'; a.click();
+}
+function renderCrew(p) {
+  p.innerHTML = (vm.crew || []).map((c) => `<div class="crew"><span class="dot ${c.status}"></span><div><b>${esc(c.name)}</b>${c.ms ? `<span class="chip"> · ${(c.ms / 1000).toFixed(1)}s</span>` : ''}<small>${esc(c.role)}</small>${c.detail ? `<div class="d">${esc(c.detail)}</div>` : ''}</div></div>`).join('') +
+    `<p class="chip" style="margin-top:14px">Everything runs on this computer: Whisper, OCR and a local Ollama model.</p><button class="btn" id="rerun" style="margin-top:6px">Re-run AI notes</button>`;
+  $('rerun').onclick = async () => { await fetch(`/api/videos/${id}/rerun`, { method: 'POST' }); toast('AI crew restarted'); };
+}
+function renderInsights(p) {
+  const vs = (vm.viewers || []).filter((x) => !x.owner), uniq = new Set(vs.map((x) => x.email || x.name)).size;
+  const avg = vs.length && vm.duration ? Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) : 0;
+  const heat = vm.heat || [], mx = Math.max(1, ...heat);
+  p.innerHTML = `<div class="stats"><div><b>${vs.length}</b><span>views</span></div><div><b>${uniq}</b><span>people</span></div><div><b>${avg}%</b><span>avg. watched</span></div></div>
+    <b style="font-size:13px">Engagement</b><div class="heat" id="heat">${heat.map((h, i) => `<i data-at="${i}" style="height:${Math.max(4, (h / mx) * 100)}%" title="${fmt(i)}: ${h}"></i>`).join('') || '<span class="chip">Nobody has watched yet.</span>'}</div>
+    <div class="ghead"><b style="font-size:13px;flex:1">Who watched</b><a class="btn sm" href="/api/videos/${id}/viewers.csv">Export CSV</a></div>
+    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--mute)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>`;
+  p.querySelectorAll('#heat i').forEach((h) => (h.onclick = () => seek(+h.dataset.at)));
+}
+function renderActions(p) { p.innerHTML = '<div class="empty">AI actions load here.</div>'; if (window.loadActions) window.loadActions(p); }
+
+// ---- comments / title / header buttons ----
+$('form').onsubmit = async (e) => { e.preventDefault(); const text = $('ctext').value.trim(); if (!text) return; if (!me.owner && !viewer().name) { const n = prompt('Your name for comments?') || 'Guest'; setViewer({ ...viewer(), name: n }); } $('ctext').value = '';
+  vm = await api(`/api/v/${id}/comments`, { body: { text, at: $('v').currentTime || 0, name: me.owner ? me.name : viewer().name } }); lastKey = ''; render(); };
+$('title').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { title: $('title').value } }); };
+$('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
+$('speed').onchange = () => ($('v').playbackRate = +$('speed').value);
+$('later').onclick = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { watchLater: !vm.watchLater } }); render(); };
+$('dl').onclick = () => (location.href = `/media/${id}/download`);
+$('del').onclick = async () => { if (confirm('Delete this video for good?')) { await fetch(`/api/videos/${id}`, { method: 'DELETE' }); location.href = '/'; } };
+$('share').onclick = () => { if (!me.owner) { navigator.clipboard.writeText(location.href); toast('Link copied'); } else openShare(); };
+
+// ---- share / privacy / CTA / organise ----
+async function openShare() {
+  const folders = await api('/api/folders'), spaces = await api('/api/spaces'), s = await api('/api/settings');
+  const base = s.lan && s.lanIp ? `http://${s.lanIp}:${s.port}` : location.origin, link = `${base}/v/${id}`, p = vm.privacy || {};
+  const exp = p.expiresAt ? new Date(p.expiresAt).toISOString().slice(0, 10) : '';
+  const m = $('modal'); m.hidden = false;
+  m.innerHTML = `<div class="box"><h3>Share</h3>
+  <label>Link ${s.lan ? '' : '<span style="text-transform:none;font-weight:400">(works on this computer. Turn on "People on my network" in Settings to share on your Wi-Fi.)</span>'}</label>
+  <div class="rowf"><code class="b" style="flex:1;margin:0">${esc(link)}</code><button class="btn" id="m-copy">Copy</button></div>
+  <div class="rowf" style="margin-top:8px"><a class="btn" href="mailto:?subject=${encodeURIComponent(vm.title)}&body=${encodeURIComponent('Watch: ' + link)}">Email</a><a class="btn" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">Preview as viewer</a></div>
+  <label>Embed (Notion, Zendesk, Intercom, Confluence, any site)</label><code class="b">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code>
+  <label>Who can watch</label><div class="seg2" id="m-mode">${[['link', 'Anyone with the link'], ['password', 'Password'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<label><input type="radio" name="mode" value="${k}" ${p.mode === k ? 'checked' : ''}>${l}</label>`).join('')}</div>
+  <div id="m-pw" ${p.mode === 'password' ? '' : 'hidden'}><label>Password ${p.hasPassword ? '(leave empty to keep the current one)' : ''}</label><input id="m-pwv" type="password" placeholder="Choose a password"></div>
+  <div class="rowf"><div><label>Link expires</label><input id="m-exp" type="date" value="${exp}"></div><div><label>Downloads</label><select id="m-dl"><option value="1" ${p.allowDownload ? 'selected' : ''}>Allowed</option><option value="0" ${!p.allowDownload ? 'selected' : ''}>Blocked</option></select></div></div>
+  <label>Call to action button</label><div class="rowf"><input id="m-ctat" placeholder="Button text, e.g. Book a call" value="${esc(vm.cta?.text || '')}"><input id="m-ctau" placeholder="https://…" value="${esc(vm.cta?.url || '')}"></div>
+  <label>Organise</label><div class="rowf"><select id="m-folder"><option value="">No folder</option>${folders.map((f) => `<option value="${f.id}" ${vm.folder === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select><input id="m-tags" placeholder="tags, comma separated" value="${esc((vm.tags || []).join(', '))}"></div>
+  ${spaces.length ? `<div class="seg2" style="margin-top:8px">${spaces.map((sp) => `<label><input type="checkbox" class="m-sp" value="${sp.id}" ${(vm.spaces || []).includes(sp.id) ? 'checked' : ''}>Space: ${esc(sp.name)}</label>`).join('')}</div>` : ''}
+  <div class="rowf" style="margin-top:18px;justify-content:flex-end"><button class="btn" id="m-cancel">Cancel</button><button class="btn pri" id="m-save">Save</button></div></div>`;
+  document.querySelectorAll('input[name=mode]').forEach((r) => (r.onchange = () => ($('m-pw').hidden = r.value !== 'password')));
+  $('m-copy').onclick = () => { navigator.clipboard.writeText(link); toast('Link copied'); };
+  $('m-cancel').onclick = () => (m.hidden = true); m.onclick = (e) => { if (e.target === m) m.hidden = true; };
+  $('m-save').onclick = async () => {
+    const mode = document.querySelector('input[name=mode]:checked')?.value || 'link', pw = $('m-pwv').value;
+    const body = { privacy: { mode, password: pw || undefined, expiresAt: $('m-exp').value ? new Date($('m-exp').value + 'T23:59:59').getTime() : 0, allowDownload: $('m-dl').value === '1' },
+      cta: $('m-ctau').value ? { text: $('m-ctat').value || 'Learn more', url: $('m-ctau').value } : null, folder: $('m-folder').value || null,
+      tags: $('m-tags').value.split(',').map((t) => t.trim()).filter(Boolean), spaces: [...document.querySelectorAll('.m-sp:checked')].map((c) => c.value) };
+    try { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); m.hidden = true; lastKey = ''; render(); toast('Saved'); } catch (e) { toast(e.message); }
+  };
+}
+boot();
+</script></body></html>

@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;background:transparent;font-family:-apple-system,BlinkMacSystemFont,sans-serif;-webkit-user-select:none;overflow:hidden}
+.panel{position:absolute;left:4px;right:4px;background:#231942;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+#bar{top:4px;height:48px;border-radius:99px;display:flex;align-items:center;gap:2px;padding:0 10px 0 16px;-webkit-app-region:drag}
+#dot{width:10px;height:10px;border-radius:50%;background:#34e0a1;animation:p 1.2s infinite;flex:none}
+.paused #dot{animation:none;background:#9a93b5}
+@keyframes p{50%{opacity:.35}}
+#time{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:50px;margin:0 6px 0 8px}
+button{-webkit-app-region:no-drag;border:0;background:transparent;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;display:grid;place-items:center;flex:none;position:relative}
+button:hover{background:rgba(255,255,255,.12)}button.on{background:#7b5cf0}button.off{opacity:.45}
+button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+button[hidden]{display:none}
+#stop{background:#7b5cf0;width:auto;border-radius:99px;padding:0 14px;font:600 13px -apple-system,sans-serif;gap:6px;display:flex;align-items:center;margin-left:4px}
+#stop:hover{background:#8d72f5}#stop i{width:10px;height:10px;background:#fff;border-radius:2px}
+.sep{width:1px;height:20px;background:rgba(255,255,255,.15);margin:0 4px;flex:none}
+#extra{top:58px;border-radius:16px;padding:10px 14px;display:none;font-size:12px}
+#extra.show{display:block}
+.sw{display:inline-block;width:20px;height:20px;border-radius:50%;margin-right:6px;cursor:pointer;border:2px solid transparent;vertical-align:middle}.sw.on{border-color:#fff}
+#rew input{width:100%;accent-color:#34e0a1}#rew .r{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+#rew button.go{width:auto;border-radius:99px;padding:0 12px;background:#22c08a;font:600 12px -apple-system,sans-serif;height:28px}
+.hide{display:none}
+</style></head><body>
+<div id="bar" class="panel"><span id="dot"></span><span id="time">0:00</span>
+<button id="pause" title="Pause (⌥⇧P)"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button>
+<button id="rewind" title="Live Rewind" hidden><svg viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
+<button id="restart" title="Restart"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg></button>
+<button id="del" title="Delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+<span class="sep"></span>
+<button id="pen" title="Draw (⌥⇧D)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/></svg></button>
+<button id="cursor" title="Highlight cursor"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg></button>
+<button id="notes" title="Speaker notes"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg></button>
+<button id="mic" title="Mute"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+<button id="cam" title="Camera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></button>
+<button id="stop"><i></i>Stop</button></div>
+<div id="extra" class="panel"><div id="colors" class="hide"></div>
+<div id="rew" class="hide"><div>Rewind to <b id="rt">0:00</b> — everything after is removed.</div><input id="slider" type="range" min="0" max="0" step="0.1"><div class="r"><span id="rmax" style="opacity:.6"></span><button class="go" id="gorew">Re-record from here</button></div></div></div>
+<script>
+const $ = (i) => document.getElementById(i);
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+let paused = false, total = 0, pen = false, penColor = '#ff5a7a';
+const COLORS = ['#ff5a7a', '#ffd23f', '#34e0a1', '#4ea8ff', '#ffffff', '#7b5cf0'];
+function layout() { const rew = !$('rew').classList.contains('hide'), col = !$('colors').classList.contains('hide'); $('extra').classList.toggle('show', rew || col); spool.send('controls:size', rew ? 140 : col ? 100 : 56); }
+$('colors').innerHTML = COLORS.map((c) => `<span class="sw${c === penColor ? ' on' : ''}" style="background:${c}" data-c="${c}"></span>`).join('') + '<span style="opacity:.6;margin-left:6px">Esc stops drawing · ⌫ clears</span>';
+$('colors').querySelectorAll('.sw').forEach((s) => s.onclick = () => { penColor = s.dataset.c; $('colors').querySelectorAll('.sw').forEach((x) => x.classList.toggle('on', x === s)); spool.send('tool', 'pen-color', penColor); });
+spool.on('rec:tick', (t) => { $('time').textContent = fmt(t); });
+spool.on('rec:paused', (p, t) => { paused = p; total = t; document.body.className = p ? 'paused' : ''; $('rewind').hidden = !p; if (!p) { $('rew').classList.add('hide'); layout(); } });
+spool.on('tool:state', (s) => { $('pen').classList.toggle('on', s.pen); $('cursor').classList.toggle('on', s.cursor); $('notes').classList.toggle('on', s.notes); $('cam').classList.toggle('off', !s.cam); $('cam').hidden = !s.hasCam;
+  $('colors').classList.toggle('hide', !s.pen); layout(); });
+spool.on('rec:mic', (on) => $('mic').classList.toggle('off', !on));
+$('pause').onclick = () => spool.send('rec:control', paused ? 'resume' : 'pause');
+$('restart').onclick = () => spool.send('rec:control', 'restart');
+$('del').onclick = () => spool.send('rec:control', 'delete');
+$('stop').onclick = () => spool.send('rec:control', 'stop');
+$('mic').onclick = () => spool.send('rec:control', 'mic');
+for (const t of ['pen', 'cursor', 'notes', 'cam']) $(t).onclick = () => spool.send('tool', t);
+$('rewind').onclick = () => { const r = $('rew'); const open = r.classList.contains('hide'); r.classList.toggle('hide', !open);
+  $('slider').max = total; $('slider').value = Math.max(0, total - 5); $('rt').textContent = fmt($('slider').value); $('rmax').textContent = 'of ' + fmt(total); layout(); };
+$('slider').oninput = () => { $('rt').textContent = fmt($('slider').value); };
+$('gorew').onclick = () => spool.send('rec:control', 'rewind', +$('slider').value);
+</script></body></html>

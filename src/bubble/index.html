@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-user-select:none;font-family:-apple-system,sans-serif}
+#tools{position:absolute;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:3px;background:rgba(35,25,66,.92);padding:4px;border-radius:99px;opacity:0;transition:.15s;white-space:nowrap}
+body:hover #tools{opacity:1}
+#tools button{border:0;background:transparent;color:#fff;font:600 11px -apple-system,sans-serif;min-width:26px;height:26px;border-radius:99px;cursor:pointer;padding:0 7px}
+#tools button:hover{background:#7b5cf0}
+#tools i{width:1px;background:rgba(255,255,255,.2);margin:3px 2px}
+#cam{position:absolute;left:10px;top:38px;overflow:hidden;background:#231942;-webkit-app-region:drag;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+#cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+#ring{position:absolute;left:10px;top:38px;pointer-events:none;box-sizing:border-box}
+</style></head><body>
+<div id="tools"><button data-a="size" data-v="140">S</button><button data-a="size" data-v="200">M</button><button data-a="size" data-v="300">L</button><i></i>
+<button data-a="shape" title="Shape">◯ shape</button><button data-a="filter" title="Filter">filter</button><button data-a="frame" title="Frame">frame</button><button data-a="bg" title="Background">bg</button></div>
+<div id="cam"><video id="v" autoplay muted playsinline></video></div><div id="ring"></div>
+<script>
+const FILTERS = { none: 'none', warm: 'sepia(.25) saturate(1.25) hue-rotate(-8deg)', cool: 'saturate(1.1) hue-rotate(12deg) brightness(1.02)', bw: 'grayscale(1) contrast(1.1)', vivid: 'saturate(1.6) contrast(1.1)', soft: 'blur(.7px) brightness(1.06) saturate(.95)', film: 'sepia(.4) contrast(.92) brightness(1.04)' };
+const FRAMES = { none: 'none', ring: '3px solid #fff', purple: '3px solid #7b5cf0', mint: '3px solid #22c08a', gradient: '3px solid #7b5cf0;outline:2px solid #22c08a;outline-offset:-5px', glow: '3px solid #34e0a1;box-shadow:0 0 22px #34e0a1' };
+let st = { w: 200, h: 200, shape: 'circle', filter: 'none', frame: 'ring' };
+const cam = document.getElementById('cam'), ring = document.getElementById('ring'), v = document.getElementById('v');
+function apply(s) {
+  st = { ...st, ...s };
+  for (const el of [cam, ring]) { Object.assign(el.style, { width: st.w + 'px', height: st.h + 'px', borderRadius: st.shape === 'circle' ? '50%' : st.shape === 'squircle' ? Math.min(st.w, st.h) * .32 + 'px' : Math.min(st.w, st.h) * .1 + 'px' }); }
+  v.style.filter = FILTERS[st.filter] || 'none';
+  ring.style.cssText += ';border:' + (FRAMES[st.frame] || 'none');
+}
+spool.on('bubble:style', apply);
+spool.on('bubble:init', async ({ camId }) => {
+  try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: 640, height: 640 }, audio: false }); } catch (e) { console.error(e); }
+});
+document.querySelectorAll('#tools button').forEach((b) => b.onclick = () => spool.send('bubble:action', b.dataset.a, b.dataset.v));
+</script></body></html>

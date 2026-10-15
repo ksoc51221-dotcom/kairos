@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="launcher.css"></head><body>
+<div id="card">
+  <header><div class="brand"><span class="logo"></span>Spool</div><span class="grow"></span><button id="shot" class="link" title="Screenshot (⌥⇧A)">📸 Screenshot</button><button id="lib" class="link">Library ↗</button><button id="x" class="link" title="Close (Esc)">✕</button></header>
+  <div id="perm" class="permbox" hidden><b>Spool can't see your screen yet</b><p id="permtxt"></p><div class="pr"><button id="permopen" class="mini">Open Settings</button><button id="permre" class="mini">Restart Spool</button></div></div>
+  <div class="tabs" id="modes">
+    <button data-m="screen-cam" class="on"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><circle cx="17" cy="14" r="3.2" class="f"/></svg>Screen + Cam</button>
+    <button data-m="screen"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Screen</button>
+    <button data-m="cam"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" class="f"/></svg>Cam only</button>
+  </div>
+  <div class="sec" id="areaSec"><label>Recording area</label>
+    <div class="seg" id="area"><button data-a="screen" class="on">Full screen</button><button data-a="window">Window</button><button data-a="custom">Custom area</button></div>
+    <div id="screens" hidden></div><div id="windows" hidden></div><div id="customInfo" class="note" hidden></div></div>
+  <div class="sec" id="camSec"><label>Camera</label><select id="cam"></select>
+    <div id="bubbleOpts">
+      <div class="seg small" id="shape"><button data-v="circle" class="on" title="Circle">●</button><button data-v="squircle" title="Squircle">▢</button><button data-v="portrait" title="Portrait">▯</button><button data-v="landscape" title="Landscape">▭</button><span>Shape</span></div>
+      <div class="seg small" id="bsize"><button data-v="140">S</button><button data-v="200" class="on">M</button><button data-v="300">L</button><span>Size</span></div>
+      <div class="row2"><div><label>Filter</label><select id="filter"><option value="none">None</option><option value="warm">Warm</option><option value="cool">Cool</option><option value="bw">Black &amp; white</option><option value="vivid">Vivid</option><option value="soft">Soft</option><option value="film">Film</option></select></div>
+      <div><label>Frame</label><select id="frame"><option value="ring">White ring</option><option value="none">None</option><option value="purple">Purple</option><option value="mint">Mint</option><option value="gradient">Gradient</option><option value="glow">Glow</option></select></div></div>
+    </div></div>
+  <div class="sec"><label>Microphone</label><select id="mic"></select></div>
+  <div class="row2"><div><label>Quality</label><select id="quality"><option value="720p">720p</option><option value="1080p" selected>1080p</option><option value="1440p">1440p</option><option value="4k">4K</option></select></div>
+  <div><label>Notes</label><button id="notes" class="mini">Speaker notes…</button></div></div>
+  <div class="checks">
+    <label class="toggle"><input type="checkbox" id="sysAudio"><span>Record system audio</span></label>
+    <label class="toggle"><input type="checkbox" id="hideMenu"><span>Hide menu bar from recording</span></label>
+    <label class="toggle"><input type="checkbox" id="cursorFx" checked><span>Highlight my cursor</span></label>
+    <label class="toggle"><input type="checkbox" id="clickFx" checked><span>Show click ripples</span></label>
+    <label class="toggle"><input type="checkbox" id="pg" checked><span>Privacy Guard: blur secrets automatically</span></label>
+  </div>
+  <button id="start">Start Recording</button>
+</div>
+<script src="launcher.js"></script></body></html>
