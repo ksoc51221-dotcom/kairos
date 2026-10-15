@@ -22,7 +22,7 @@ function mount(app) {
     if ('watchLater' in b) patch.watchLater = !!b.watchLater;
     if ('cta' in b) patch.cta = b.cta && b.cta.url ? { text: String(b.cta.text || 'Learn more').slice(0, 40), url: String(b.cta.url).slice(0, 500) } : null;
     if (Array.isArray(b.overlays)) patch.overlays = b.overlays.slice(0, 80);
-    for (const k of ['captionStyle', 'background', 'autoZoom', 'variables']) if (k in b) patch[k] = b[k];
+    for (const k of ['captionStyle', 'background', 'autoZoom', 'cursorFx', 'variables']) if (k in b) patch[k] = b[k];
     if (b.privacy) {
       const p = { ...(v.privacy || {}) }; const x = b.privacy;
       if (x.mode) p.mode = ['link', 'password', 'email', 'private'].includes(x.mode) ? x.mode : 'link';

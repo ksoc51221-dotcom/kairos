@@ -27,7 +27,7 @@ const VIDEO_DEFAULTS = () => ({ type: 'video', comments: [], reactions: {}, reac
   privacy: null, cta: null, overlays: [], viewers: [], heat: [], activity: [], crew: [], stage: '' });
 
 function normalize(raw) {
-  const d = { videos: {}, folders: {}, spaces: {}, notifications: [], activity: [], settings: {}, ...raw };
+  const d = { videos: {}, folders: {}, spaces: {}, notifications: [], activity: [], settings: {}, jobs: [], ...raw };
   for (const id of Object.keys(d.videos)) d.videos[id] = { ...VIDEO_DEFAULTS(), ...d.videos[id] }; // records from older versions get new fields
   return d;
 }
@@ -125,7 +125,7 @@ function remove(id) { mutate((d) => { delete d.videos[id]; }); fs.rmSync(videoDi
 
 const DEFAULT_SETTINGS = {
   privacyGuard: true, ownerName: 'You', defaultPrivacy: 'link', linkExpiryDays: 0, lan: false, disableDownloads: false, retentionDays: 0,
-  brand: { name: 'Spool', accent: '#7b5cf0', logo: false, hideBranding: false }, follows: [], integrations: {}, model: 'qwen3:8b',
+  brand: { name: 'Spool', accent: '#7b5cf0', logo: false, hideBranding: false }, follows: [], integrations: {}, model: 'qwen3:8b', keepOriginal: false,
 };
 const getSettings = () => { const s = load().settings || {}; return { ...DEFAULT_SETTINGS, ...s, brand: { ...DEFAULT_SETTINGS.brand, ...(s.brand || {}) } }; };
 const setSettings = (patch) => { const s = mutate((d) => { d.settings = { ...d.settings, ...patch }; return d.settings; }); events.emit('settings'); return s; };

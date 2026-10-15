@@ -36,4 +36,18 @@ function guardSameOrigin(req, res, next) {
   res.status(403).send('cross-site request blocked');
 }
 
-module.exports = { TOKEN, HEADER, SAFE, sameOrigin, tokenOk, guardWrites, guardSameOrigin };
+// B22: viewers on the LAN can write comments, reactions and heartbeats. A token bucket per address (20 writes, refilled at 2 a second, so a
+// viewer's once-a-second heartbeat never runs dry) stops one machine from flooding the library. `skip(req)` exempts the owner.
+function rateLimit({ burst = 20, perSec = 2, skip = () => false, now = Date.now } = {}) {
+  const buckets = new Map();
+  setInterval(() => { const t = now(); for (const [k, b] of buckets) if (t - b.at > 60000) buckets.delete(k); }, 60000).unref();
+  return (req, res, next) => {
+    if (skip(req)) return next();
+    const key = req.socket.remoteAddress || '?', t = now(), b = buckets.get(key) || { tokens: burst, at: t };
+    b.tokens = Math.min(burst, b.tokens + ((t - b.at) / 1000) * perSec); b.at = t;
+    if (b.tokens < 1) { buckets.set(key, b); res.setHeader('Retry-After', '5'); return res.status(429).json({ error: 'Too many requests, slow down' }); }
+    b.tokens -= 1; buckets.set(key, b); next();
+  };
+}
+
+module.exports = { rateLimit, TOKEN, HEADER, SAFE, sameOrigin, tokenOk, guardWrites, guardSameOrigin };

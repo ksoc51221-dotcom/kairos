@@ -10,9 +10,9 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | System audio | 🟡 | Uses Chromium loopback; macOS 13+ and Screen Recording permission |
 | Noise suppression | ✅ | Browser noise suppression + echo cancellation + auto gain |
 | Bubble shapes: circle, squircle, portrait, landscape | ✅ | |
-| Camera filters (7), frames (6), edge snapping, S/M/L | 🟡 | Live preview works; filters and frames are not in the published video until Phase 2. Edge snapping and sizes are in |
+| Camera filters (7), frames (6), edge snapping, S/M/L | ✅ | Live preview and published video (ffmpeg equivalents; close to, not identical to, the CSS preview). Edge snapping and sizes are in |
 | Virtual backgrounds | ⏳ | Needs a segmentation model |
-| Drawing tool, cursor highlight, click ripples | 🟡 | Pen works (a ~120 ms capture hiccup when switched on mid-recording). Cursor at 60 Hz and clicks are recorded; highlight and ripples are rendered in Phase 2. Clicks need Input Monitoring |
+| Drawing tool, cursor highlight, click ripples | 🟡 | Pen works (a ~50–130 ms capture hiccup when switched on mid-recording). Cursor at 60 Hz and clicks are recorded; highlight, ripples and auto-zoom are drawn by the player, per-video toggles, not in downloads yet. Clicks need Input Monitoring |
 | Do Not Disturb while recording | ❌ | macOS has no public API; needs a user-made Shortcut |
 | Speaker notes + teleprompter + voice-to-text | ✅ | Dictation runs on local Whisper; notes are never in the recording |
 | Live Rewind (pause, rewind, re-record) | ✅ | Segment based; tested with pause, resume and rewind in one run |
@@ -22,6 +22,18 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Screenshots with annotations + own link | ✅ | Arrow, box, circle, pen, text, blur |
 | Chrome extension, iOS, Android | ⏳ / ❌ | Extension planned; mobile apps are out of scope |
 | Meeting recording via calendar | ⏳ | iCal feed planned |
+
+## Pipeline and privacy (Phase 2)
+| Feature | Status | Notes |
+|---|---|---|
+| Owner can watch ≤ 8 s after Stop | 🟡 | 7.6 s for a 24 s worst-case clip on an M2 (encoder-bound, thin margin) |
+| Privacy Guard gates viewers (fail closed) | ✅ | Viewers get 423 until it clears; the owner is never blocked. 18.2 s after Stop in the test |
+| Blur secrets and personal data | ✅ | Apple Vision OCR + rules (e-mail, keys, tokens, cards, SSN, phone, passwords). Model judgement only when Ollama has the model loaded |
+| Unblurred original deleted | ✅ | Optional "Keep the unblurred original" (owner only) |
+| Job queue that survives a quit | ✅ | One job at a time; resumes after the last finished stage |
+| Speech model status and download | ✅ | Settings → AI |
+| Live updates without polling | ✅ | Server-Sent Events on the watch page and library |
+| Rate limit on viewer writes | ✅ | 20 writes burst, 2/s |
 
 ## Library, sharing, privacy
 | Feature | Status |

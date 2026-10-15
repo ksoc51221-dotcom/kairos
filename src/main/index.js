@@ -36,8 +36,8 @@ app.whenReady().then(async () => {
   }
   // A recording that was still being written when the app stopped keeps its files but is marked, instead of showing "Recording…" forever.
   for (const v of store.list()) if (v.status === C.LIBRARY_STATUS.RECORDING) store.update(v.id, { status: C.LIBRARY_STATUS.FAILED, stage: 'Recording was interrupted (files kept)' });
-  orchestrator.init(dataDir);
-  startServer({ port: config.PORT });
+  orchestrator.init(dataDir, { log, isBusy: () => session.isActive() });
+  startServer({ port: config.PORT, models: path.join(dataDir, 'models') });
   electronSession.defaultSession.setDisplayMediaRequestHandler(async (_req, callback) => {
     const S = session.getS(), srcs = await desktopCapturer.getSources({ types: ['screen', 'window'] });
     const pick = srcs.find((s) => s.id === S?.opts.sourceId) || srcs.find((s) => s.id.startsWith('screen:')) || srcs[0];

@@ -10,7 +10,7 @@ const { processVideo } = require('../agents/orchestrator');
 const routes = ['viewer', 'library', 'media', 'owner', 'settings'].map((n) => require(`./routes/${n}`));
 
 // port 0 picks a free port (tests). `ready` resolves once the server is listening, with the port it got.
-function startServer({ port, host } = {}) {
+function startServer({ port, host, models } = {}) {
   const app = express();
   let server, current = port;
   app.use(express.json({ limit: '4mb' }));
@@ -23,14 +23,14 @@ function startServer({ port, host } = {}) {
   app.use(security.guardWrites); // B5: cross-site writes never reach a route
   app.use('/static', express.static(pub));
 
-  const ctx = { get port() { return current; }, relisten: () => setTimeout(listen, 150) };
+  const ctx = { models, get port() { return current; }, relisten: () => setTimeout(listen, 150) };
   routes.forEach((r) => r.mount(app, ctx));
 
   let resolveReady; const ready = new Promise((r) => { resolveReady = r; });
   function listen() {
     const bind = host || (store.getSettings().lan ? '0.0.0.0' : '127.0.0.1');
     const go = () => { server = app.listen(port, bind, () => { current = server.address().port; resolveReady(current); }); server.on('error', (e) => console.error('server', e.message)); };
-    if (server) server.close(go); else go();
+    if (server) { server.closeAllConnections?.(); server.close(go); } else go(); // B11: close() waits for keep-alive and event-stream connections, so the switch to/from LAN could hang forever
   }
   listen();
   extras.startMaintenance();

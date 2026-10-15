@@ -50,6 +50,10 @@ const c = document.getElementById('c'); c.width = Math.round(innerWidth * device
 const x = c.getContext('2d'), img = x.createImageData(c.width, c.height), d = new Uint32Array(img.data.buffer); let s = 0x9e3779b9 | 0;
 (function frame() { for (let i = 0; i < d.length; i++) { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; d[i] = s | 0xff000000; } x.putImageData(img, 0, 0); requestAnimationFrame(frame); })();
 </script>`;
+// A window of ordinary text with a fake e-mail address and a fake API key in it, for the Privacy Guard scenario. Both are obvious fixtures.
+const SECRETS_HTML = `<!doctype html><body style="margin:0;background:#fff;color:#111;font:600 30px Menlo,monospace;padding:28px 34px;line-height:64px;overflow:hidden">
+<div>Quarterly planning notes</div><div>Send questions to <span data-secret="email">jane.doe@example.com</span></div>
+<div>Deploy key: <span data-secret="key">sk-live-9f8e7d6c5b4a3210abcd</span></div><div>Next review on Friday afternoon</div></body>`;
 const GREEN = '#00ff00'; // test fixtures: the guard colour must be exact, these are not product UI colours
 
 // `normal: true` keeps the window at the normal level: Chromium only lists layer-0 windows as capture sources, so a floating helper cannot be recorded as a window.
@@ -78,7 +82,7 @@ async function startViaLauncher(t) {
 async function runRecording(t) {
   process.env.SPOOL_KEEP_RAW = '1'; // the tests measure the raw tracks, which are normally deleted once the composite exists
   const helpers = [], closeHelpers = () => { for (const h of helpers) if (!h.isDestroyed()) h.close(); helpers.length = 0; };
-  const watchdog = setTimeout(() => { console.log('SELFTEST_TIMEOUT'); app.exit(2); }, ((t.seconds || 5) + 90) * 1000);
+  const watchdog = setTimeout(() => { console.log('SELFTEST_TIMEOUT'); app.exit(2); }, ((t.seconds || 5) + (t.fullAI ? 240 : 90)) * 1000);
   const screens = t.mode === 'cam' ? [] : await desktopCapturer.getSources({ types: ['screen'] });
   const display = t.mode === 'cam' ? screen.getPrimaryDisplay() : win.displayFor(screens[0]?.id), wa = display.workArea, b = display.bounds;
   const rel = (r) => ({ x: r.x - b.x, y: r.y - b.y, w: r.w, h: r.h });
@@ -89,8 +93,18 @@ async function runRecording(t) {
   const patchWin = needsScreen && t.patch ? helperWindow(patchRect, { html: NOISE_HTML, normal: t.windowSource === 'patch' }) : null;
   if (patchWin) helpers.push(patchWin);
   if (patchWin && t.windowSource === 'patch') await wait(600);
+  let secretRects = [];
+  if (needsScreen && t.secrets) {
+    const sr = { x: wa.x + 40, y: wa.y + 360, w: 900, h: 300 };
+    const sw = helperWindow(sr, { html: SECRETS_HTML }); helpers.push(sw); await wait(900);
+    const dom = await sw.webContents.executeJavaScript(`[...document.querySelectorAll('[data-secret]')].map((e) => { const r = e.getBoundingClientRect(); return { name: e.dataset.secret, x: r.x, y: r.y, w: r.width, h: r.height }; })`);
+    secretRects = dom.map((d) => ({ name: d.name, rect: rel({ x: sr.x + d.x, y: sr.y + d.y, w: d.w, h: d.h }) }));
+  }
   const sourceId = t.windowSource === 'patch' && patchWin ? patchWin.getMediaSourceId() : screens[0]?.id;
-  if (needsScreen && t.guards) t.ringAt = { x: wa.x + Math.round(wa.width * 0.62), y: wa.y + Math.round(wa.height * 0.3) }; // a known spot for the presenter ring
+  // a known spot for the presenter ring. Another app's window on top of that spot makes the guard test fail for reasons that are not ours,
+  // so the spot can be moved: SPOOL_E2E_RING=0.25,0.6 (fractions of the work area)
+  const ringFrac = (process.env.SPOOL_E2E_RING || '0.62,0.3').split(',').map(Number);
+  if (needsScreen && t.guards) t.ringAt = { x: wa.x + Math.round(wa.width * ringFrac[0]), y: wa.y + Math.round(wa.height * ringFrac[1]) };
 
   // Flat green windows go exactly where the bubble, control bar and ring are, before capture begins. Those three are content-protected, so the
   // capture must show the green underneath; if one of them leaked into the track, its region would not be green.
@@ -122,7 +136,7 @@ async function runRecording(t) {
   session.events.once('processed', ({ id, dir, timeline }) => {
     clearTimeout(watchdog);
     console.log('SELFTEST_RESULT ' + JSON.stringify({ id, dir, display: { x: b.x, y: b.y, width: b.width, height: b.height, scaleFactor: display.scaleFactor }, guards, overlays, patch: t.patch ? rel(patchRect) : null,
-      ringAt: t.ringAt ? { x: t.ringAt.x - b.x, y: t.ringAt.y - b.y } : null, timeline: { duration: timeline.duration, segments: timeline.segments, stats: timeline.stats, cursorSamples: timeline.cursor.length, clicks: timeline.clicks.length,
+      secrets: secretRects, ringAt: t.ringAt ? { x: t.ringAt.x - b.x, y: t.ringAt.y - b.y } : null, timeline: { duration: timeline.duration, segments: timeline.segments, stats: timeline.stats, cursorSamples: timeline.cursor.length, clicks: timeline.clicks.length,
         bubbleKeyframes: timeline.bubble.length, bubble: timeline.bubble, drawing: timeline.drawing, mode: timeline.mode, quality: timeline.quality, bubbleSpace: timeline.bubbleSpace, screen: timeline.screen, cam: timeline.cam, audio: timeline.audio, mime: timeline.mime } }));
     setTimeout(() => app.quit(), 300);
   });

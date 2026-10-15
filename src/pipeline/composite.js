@@ -1,12 +1,15 @@
 // Builds the ffmpeg command that turns a recording (separate screen + camera tracks and timeline.json) into one video.
 // A pure function: (timeline, segment files, options) → args array. Nothing here touches the disk or runs ffmpeg, so it is unit-tested.
 //
-// Phase 1 scope (the bridge that keeps recordings playable once the live canvas compositor is gone):
-//   concat segments (each trimmed to its recorded length) → crop → scale to the quality preset (never upscale) → 60 fps
-//   → camera bubble with its shape mask, following the recorded keyframes → one hardware encode, AAC audio.
-// Phase 2 adds: camera filters and frame rings, the full keyframe spans, and the speed work.
+// Pipeline: concat segments (each trimmed to its recorded length) → crop → scale to the quality preset (never upscale) → 60 fps
+//   → camera bubble: scale, filter (filters.js), shape mask (alphamerge), frame ring, positioned from the recorded keyframes
+//   → one hardware encode (h264_videotoolbox, libx264 elsewhere), AAC audio, +faststart.
+// A bubble "run" is a stretch of keyframes with the same size, shape, filter and frame. It gets one overlay whose x/y follow the recorded
+// moves as piecewise-constant expressions (equivalent to one overlay per span, but the camera is scaled once per run, not once per span).
+// Optional `scanDir`: the same filter graph also writes 2 fps JPEGs and a tiny gray thumbnail stream for the Privacy Guard, so scanning needs no second decode.
 const C = require('../shared/constants');
 const { videoArgs, audioArgs } = require('./encode');
+const { filterChain, frameSpec } = require('./filters');
 const { totalDuration } = require('./segments');
 
 const evenFloor = (n) => { n = Math.floor(n); return n - (n % 2); };
@@ -15,6 +18,7 @@ const num = (n) => +(+n).toFixed(3);
 const FULL = { x: 0, y: 0, w: 1, h: 1 };
 const MAX_POSITIONS = 60;     // overlay positions per bubble run, thinned beyond this
 const MIN_MOVE_PX = 2;        // smaller moves are merged
+const SCAN_FPS = 2, SCAN_WIDTH = 2048, HASH_W = 9, HASH_H = 8; // Privacy Guard frames: dHash is 9x8 gray, 64 bits
 
 // Pixel size of the finished video.
 function outputSize(tl, quality) {
@@ -46,12 +50,12 @@ function bubbleRuns(tl, size, total) {
     const start = i === 0 ? 0 : row[0], end = i + 1 < rows.length ? rows[i + 1][0] : total;
     if (end <= start) return;
     if (!row[8]) { cur = null; return; }
-    const px = framePx(tl, row, size);
-    if (cur && cur.w === px.w && cur.h === px.h && cur.shape === row[5]) {
+    const px = framePx(tl, row, size), filter = row[6] || 'none', frame = row[7] || 'none';
+    if (cur && cur.w === px.w && cur.h === px.h && cur.shape === row[5] && cur.filter === filter && cur.frame === frame) {
       cur.end = end;
       const last = cur.positions[cur.positions.length - 1];
       if (Math.abs(last[1] - px.x) >= MIN_MOVE_PX || Math.abs(last[2] - px.y) >= MIN_MOVE_PX) cur.positions.push([start, px.x, px.y]);
-    } else { cur = { start, end, w: px.w, h: px.h, shape: row[5], positions: [[start, px.x, px.y]] }; runs.push(cur); }
+    } else { cur = { start, end, w: px.w, h: px.h, shape: row[5], filter, frame, positions: [[start, px.x, px.y]] }; runs.push(cur); }
   });
   for (const r of runs) if (r.positions.length > MAX_POSITIONS) { // thin evenly, keeping the first and last
     const keep = Array.from({ length: MAX_POSITIONS }, (_, k) => r.positions[Math.round((k * (r.positions.length - 1)) / (MAX_POSITIONS - 1))]);
@@ -68,21 +72,25 @@ function piecewise(positions, pick) {
 }
 
 // inputs: [{ n, dur, screen, cam, width?, height? }] absolute paths (see segments.segmentInputs)
-// options: { out, quality (default: what the timeline was recorded with), hw, maskPath(shape, w, h) → png path }
-function buildComposite(tl, inputs, { out, quality, hw, maskPath } = {}) {
+// options: { out, quality (default: what the timeline was recorded with), hw, maskPath(shape, w, h) → png path, framePath(frame, shape, w, h) → png path | null, scanDir }
+function buildComposite(tl, inputs, { out, quality, hw, maskPath, framePath, scanDir } = {}) {
   if (!inputs.length) throw new Error('nothing to composite');
   quality = quality || tl.quality || C.DEFAULT_QUALITY;
   const camMode = tl.mode === 'cam', size = outputSize(tl, quality), total = totalDuration(inputs);
   const useCam = !camMode && tl.mode === 'screen-cam' && !!tl.cam && inputs.every((s) => s.cam); // a segment without camera footage would misalign the concat
   const runs = useCam ? bubbleRuns(tl, size, total) : [];
 
-  const args = ['-y'], idx = { screen: [], cam: [], mask: [] };
+  const args = ['-y'], idx = { screen: [], cam: [], mask: [], frame: [] };
   let i = 0;
   for (const s of inputs) {
     if (!camMode) { args.push('-t', String(num(s.dur)), '-i', s.screen); idx.screen.push(i++); }
     if (camMode || useCam) { args.push('-t', String(num(s.dur)), '-i', s.cam); idx.cam.push(i++); }
   }
-  for (const r of runs) { args.push('-loop', '1', '-framerate', '30', '-t', String(num(total)), '-i', maskPath(r.shape, r.w, r.h)); idx.mask.push(i++); }
+  for (const r of runs) {
+    args.push('-loop', '1', '-framerate', '30', '-t', String(num(total)), '-i', maskPath(r.shape, r.w, r.h)); idx.mask.push(i++);
+    const fp = frameSpec(r.frame) && framePath ? framePath(r.frame, r.shape, r.w, r.h) : null;
+    if (fp) { args.push('-loop', '1', '-framerate', '30', '-t', String(num(total)), '-i', fp); idx.frame.push(i++); } else idx.frame.push(null);
+  }
 
   const lab = (list, k) => list.map((n) => `[${n}:${k}]`).join('');
   const g = [];
@@ -115,9 +123,12 @@ function buildComposite(tl, inputs, { out, quality, hw, maskPath } = {}) {
     g.push(`${lab(idx.cam, 'v')}concat=n=${idx.cam.length}:v=1:a=0[cc]`);
     if (runs.length > 1) g.push(`[cc]split=${runs.length}${runs.map((_, k) => `[cs${k}]`).join('')}`);
     runs.forEach((r, k) => {
-      g.push(`${runs.length > 1 ? `[cs${k}]` : '[cc]'}scale=${r.w}:${r.h}:force_original_aspect_ratio=increase,crop=${r.w}:${r.h},format=yuva420p[cf${k}]`);
+      const fx = filterChain(r.filter);
+      g.push(`${runs.length > 1 ? `[cs${k}]` : '[cc]'}scale=${r.w}:${r.h}:force_original_aspect_ratio=increase,crop=${r.w}:${r.h}${fx ? ',' + fx : ''},format=yuva420p[cf${k}]`);
       g.push(`[${idx.mask[k]}:v]format=gray[mk${k}]`);
-      g.push(`[cf${k}][mk${k}]alphamerge[ca${k}]`);
+      const framed = idx.frame[k] !== null;
+      g.push(`[cf${k}][mk${k}]alphamerge[${framed ? 'cm' : 'ca'}${k}]`);
+      if (framed) g.push(`[cm${k}][${idx.frame[k]}:v]overlay=0:0:format=auto,format=yuva420p[ca${k}]`);
       g.push(`[${cur}][ca${k}]overlay=x='${piecewise(r.positions, (p) => p[1])}':y='${piecewise(r.positions, (p) => p[2])}':enable='between(t,${num(r.start)},${num(r.end)})':eof_action=pass[ov${k}]`);
       cur = `ov${k}`;
     });
@@ -126,9 +137,21 @@ function buildComposite(tl, inputs, { out, quality, hw, maskPath } = {}) {
   const withAudio = !!tl.audio;
   if (withAudio) { const a = camMode ? idx.cam : idx.screen; g.push(`${lab(a, 'a')}concat=n=${a.length}:v=0:a=1[a]`); }
 
-  args.push('-filter_complex', g.join(';'), '-map', `[${cur}]`, ...(withAudio ? ['-map', '[a]'] : []),
+  let encLabel = cur;
+  if (scanDir) { // one decode, three outputs: the video, JPEGs for OCR, and a 9x8 gray stream for the frame hash
+    g.push(`[${cur}]split=3[enc][scj][sch]`);
+    g.push(`[scj]fps=${SCAN_FPS},scale='min(${SCAN_WIDTH},iw)':-2[scan]`);
+    g.push(`[sch]fps=${SCAN_FPS},scale=${HASH_W}:${HASH_H}:flags=area,format=gray[hash]`);
+    encLabel = 'enc';
+  }
+  args.push('-filter_complex', g.join(';'), '-map', `[${encLabel}]`, ...(withAudio ? ['-map', '[a]'] : []),
     ...videoArgs(size.h, hw), ...(withAudio ? audioArgs() : []), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out);
-  return { args, size, total, runs, useCam };
+  if (scanDir) {
+    const path = require('path');
+    args.push('-map', '[scan]', '-q:v', '3', '-vsync', 'cfr', path.join(scanDir, 'f%04d.jpg'),
+      '-map', '[hash]', '-f', 'rawvideo', '-pix_fmt', 'gray', '-vsync', 'cfr', path.join(scanDir, 'hash.raw'));
+  }
+  return { args, size, total, runs, useCam, scan: scanDir ? { fps: SCAN_FPS, hashSize: HASH_W * HASH_H } : null };
 }
 
-module.exports = { buildComposite, outputSize, bubbleRuns, framePx, piecewise };
+module.exports = { buildComposite, outputSize, bubbleRuns, framePx, piecewise, SCAN_FPS, SCAN_WIDTH, HASH_W, HASH_H };

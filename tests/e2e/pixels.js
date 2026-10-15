@@ -22,9 +22,19 @@ function fractionMatching(file, t, g, test) {
   return n / total;
 }
 
+// Standard deviation of the luma (0-255) in a region at time t. Sharp text on a plain background is high, blurred text is much lower.
+function lumaStd(file, t, g) {
+  const r = spawnSync(ffmpeg, ['-hide_banner', '-loglevel', 'error', '-ss', String(t), '-i', file, '-frames:v', '1',
+    '-vf', `crop=${g.w}:${g.h}:${g.x}:${g.y}`, '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { maxBuffer: 1 << 28 });
+  const b = r.stdout; if (!b || !b.length) return null;
+  let m = 0; for (const v of b) m += v; m /= b.length;
+  let q = 0; for (const v of b) q += (v - m) * (v - m);
+  return Math.sqrt(q / b.length);
+}
+
 const near = (c, ref, tol = 24) => !!c && Math.abs(c.r - ref[0]) <= tol && Math.abs(c.g - ref[1]) <= tol && Math.abs(c.b - ref[2]) <= tol;
 
-module.exports = { sampleRegions, fractionMatching, near };
+module.exports = { sampleRegions, fractionMatching, lumaStd, near };
 
 if (require.main === module) { // node tests/e2e/pixels.js <file> <t> x,y,w,h [x,y,w,h ...]
   const [, , file, t, ...rs] = process.argv;

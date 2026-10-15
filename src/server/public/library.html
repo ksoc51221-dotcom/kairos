@@ -15,13 +15,19 @@ h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:26px 0 10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;transition:.15s;display:block}
 .card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(35,25,66,.14)}
 .th{aspect-ratio:16/9;background:#25232f center/cover;position:relative}
-.th .gif{position:absolute;inset:0;background:center/cover;opacity:0;transition:.2s}.card:hover .gif{opacity:1}
+.th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 200ms cubic-bezier(.2,.8,.2,1)}.th img.in{opacity:1}
+.th .gif{position:absolute;inset:0;background:center/cover;opacity:0;transition:opacity 200ms cubic-bezier(.2,.8,.2,1)}.th .gif.on{opacity:1}
+.ring{width:46px;height:46px;transform:rotate(-90deg)}.ring circle{fill:none;stroke-width:4}.ring .bg{stroke:rgba(255,255,255,.25)}.ring .fg{stroke:#fff;stroke-linecap:round;transition:stroke-dashoffset 400ms cubic-bezier(.2,.8,.2,1)}
+.ring.spin{animation:rs 1s linear infinite}@keyframes rs{to{transform:rotate(270deg)}}
+.proc{flex-direction:column;gap:8px;text-align:center;padding:0 10px}.proc span{font-size:12px}
+.upbar{height:4px;background:rgba(255,255,255,.3);border-radius:4px;width:70%;overflow:hidden}.upbar i{display:block;height:100%;background:#fff;width:0;transition:width 150ms linear}
+@media (prefers-reduced-motion:reduce){.th img,.th .gif,.ring .fg{transition:none}.ring.spin{animation:none}}
 .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font:600 11px -apple-system,sans-serif;padding:2px 6px;border-radius:5px}
 .tools{position:absolute;left:8px;top:8px;display:flex;gap:5px;opacity:0;transition:.15s}.card:hover .tools{opacity:1}
 .tools button{border:0;background:rgba(35,25,66,.85);color:#fff;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:13px}
 .lock{position:absolute;right:8px;top:8px;background:rgba(35,25,66,.85);color:#fff;border-radius:7px;padding:3px 7px;font-size:11px}
 .meta{padding:10px 12px}.t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.s{font-size:12px;color:var(--mute);margin-top:3px}
-.proc{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;background:rgba(35,25,66,.65)}
+.proc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;background:rgba(35,25,66,.65)}
 .empty{text-align:center;color:var(--mute);padding:60px 0}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.chip2{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif;cursor:pointer;color:var(--ink)}.chip2.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 #drop{position:fixed;inset:0;background:rgba(123,92,240,.85);color:#fff;display:none;place-items:center;font-size:26px;font-weight:700;z-index:90}
@@ -39,10 +45,31 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:8px 6px;b
 <nav id="nav"></nav><main id="main"></main><div id="drop">Drop a video to add it to your library</div><div id="modal" class="modal" hidden></div>
 <script src="/static/csrf.js"></script>
 <script>
-const $ = (i) => document.getElementById(i), esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let SCOPE = null; // while a soft update renders into a detached element, ids are looked up there first
+const $ = (i) => (SCOPE && SCOPE.querySelector('#' + i)) || document.getElementById(i), esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const ago = (t) => { const m = (Date.now() - t) / 60000; return m < 1 ? 'just now' : m < 60 ? `${Math.floor(m)}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`; };
 const J = async (u, m, b) => { const r = await fetch(u, { method: m || (b ? 'POST' : 'GET'), headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText); return r.status === 204 ? null : r.json().catch(() => null); };
+// U3/U18: make `dst`'s children match `src`'s while touching only what differs. Cards are matched by data-key, so a card whose video did not change
+// keeps its DOM node (hover, loaded image, running GIF) and a changed one is swapped in place.
+function morph(dst, src) {
+  const old = new Map(); for (const n of dst.children) if (n.dataset.key) old.set(n.dataset.key, n);
+  let ref = dst.firstElementChild;
+  for (const sn of [...src.children]) {
+    const k = sn.dataset.key; let dn = k ? old.get(k) : (ref && !ref.dataset.key ? ref : null);
+    if (!dn) { dst.insertBefore(sn, ref); continue; }
+    if (k) old.delete(k);
+    const wasRef = dn === ref, next = wasRef ? ref.nextElementSibling : null;
+    if (!dn.isEqualNode(sn)) {
+      if (sn.hasAttribute('data-morph') && dn.tagName === sn.tagName) { morph(dn, sn); for (const a of sn.getAttributeNames()) dn.setAttribute(a, sn.getAttribute(a)); }
+      else { dn.replaceWith(sn); dn = sn; }
+    }
+    if (wasRef) ref = next; else dst.insertBefore(dn, ref);
+  }
+  while (ref) { const n = ref; ref = ref.nextElementSibling; n.remove(); }
+  for (const n of old.values()) n.remove();
+}
+let uploads = []; // U19: files being sent right now, shown as cards at once
 let videos = [], folders = [], spaces = [], notifs = [], settings = {}, route = location.hash.slice(2) || 'home';
 
 async function refresh() { [videos, folders, spaces, notifs] = await Promise.all([J('/api/videos'), J('/api/folders'), J('/api/spaces'), J('/api/notifications')]); renderNav(); }
@@ -55,21 +82,40 @@ function renderNav() {
   $('addf').onclick = async () => { const n = prompt('Folder name?'); if (n) { await J('/api/folders', 'POST', { name: n }); await refresh(); } };
   $('adds').onclick = async () => { const n = prompt('Space name? A space is a shareable page of videos.'); if (n) { await J('/api/spaces', 'POST', { name: n }); await refresh(); } };
 }
-const card = (v) => `<a class="card" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')">${v.hasGif ? `<div class="gif" style="background-image:url('/media/${v.id}/preview.gif')"></div>` : ''}
-  ${v.status !== 'ready' ? `<div class="proc">${v.status === 'failed' ? 'Failed' : esc(v.stage || 'Processing') + '…'}</div>` : ''}
+const pct = (v) => { const m = /(\d+)%/.exec(v.stage || ''); return m ? +m[1] : null; };
+const ring = (p) => { const C = 2 * Math.PI * 18; return `<svg class="ring ${p == null ? 'spin' : ''}" viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" cx="22" cy="22" r="18" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - (p == null ? 0.28 : p / 100))).toFixed(1)}"/></svg>`; };
+const card = (v) => `<a class="card" data-key="${v.id}" href="/v/${v.id}"><div class="th">${v.status === 'failed' ? '' : `<img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')">`}${v.hasGif ? `<div class="gif" data-gif="/media/${v.id}/preview.gif"></div>` : ''}
+  ${v.status !== 'ready' ? `<div class="proc">${v.status === 'failed' ? 'Failed' : `${ring(pct(v))}<span>${esc((v.stage || 'Processing').replace(/\s*\d+%$/, ''))}${pct(v) != null ? ' ' + pct(v) + '%' : '…'}</span>`}</div>` : ''}
   <div class="tools"><button data-a="later" data-id="${v.id}" title="Watch later">${v.watchLater ? '★' : '☆'}</button><button data-a="del" data-id="${v.id}" title="Delete">🗑</button></div>
   ${v.privacy?.mode && v.privacy.mode !== 'link' ? `<span class="lock">🔒 ${v.privacy.mode}</span>` : ''}${v.type === 'image' ? '' : `<span class="dur">${fmt(v.duration)}</span>`}</div>
   <div class="meta"><div class="t">${esc(v.title)}</div><div class="s">${v.views} view${v.views === 1 ? '' : 's'} · ${ago(v.createdAt)}${v.tags?.length ? ' · #' + esc(v.tags[0]) : ''}</div></div></a>`;
-const grid = (list, empty = 'Nothing here yet.') => list.length ? `<div class="grid">${list.map(card).join('')}</div>` : `<div class="empty">${empty}</div>`;
+const upCard = (u) => `<div class="card" data-key="up-${u.id}"><div class="th"><div class="proc">${u.error ? esc(u.error) : `<span>Uploading ${esc(u.name.slice(0, 28))}</span><div class="upbar"><i style="width:${u.pct}%"></i></div><span>${u.pct}%</span>`}</div></div><div class="meta"><div class="t">${esc(u.name)}</div><div class="s">Uploading</div></div></div>`;
+let upShown = false;
+const grid = (list, empty = 'Nothing here yet.') => { const ups = !upShown && uploads.length ? (upShown = true, uploads.map(upCard).join('')) : ''; return list.length || ups ? `<div class="grid" data-morph>${ups}${list.map(card).join('')}</div>` : `<div class="empty">${empty}</div>`; };
 function wireCards() {
+  document.querySelectorAll('.th img').forEach((i) => i.complete && i.naturalWidth && i.classList.add('in'));
+  document.querySelectorAll('.card[data-key]').forEach((c) => { // the GIF preview starts only after the pointer has rested on the card for 250 ms
+    const g = c.querySelector('.gif'); if (!g || c._wired) return; c._wired = true; let t = null;
+    c.addEventListener('mouseenter', () => { t = setTimeout(() => { if (!g.style.backgroundImage) g.style.backgroundImage = `url('${g.dataset.gif}')`; g.classList.add('on'); }, 250); });
+    c.addEventListener('mouseleave', () => { clearTimeout(t); g.classList.remove('on'); });
+  });
   document.querySelectorAll('.tools button').forEach((b) => (b.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); const v = videos.find((x) => x.id === b.dataset.id);
     if (b.dataset.a === 'later') await J(`/api/videos/${v.id}`, 'PATCH', { watchLater: !v.watchLater }); else if (confirm(`Delete "${v.title}"?`)) await J(`/api/videos/${v.id}`, 'DELETE'); await refresh(); show(); }));
 }
 const matches = (v, q) => { const hay = `${v.title} ${v.transcript || ''} ${v.summary || ''} ${(v.tags || []).join(' ')} ${(v.viewers || []).map((x) => x.name + ' ' + x.email).join(' ')} ${v.comments.map((c) => c.author).join(' ')}`.toLowerCase(); return q.split(/\s+/).every((w) => hay.includes(w)); };
 
-async function show() {
-  route = location.hash.slice(2) || 'home'; renderNav(); const q = $('q').value.trim().toLowerCase(), m = $('main');
-  if (q && !route.startsWith('settings')) { const r = videos.filter((v) => matches(v, q)); m.innerHTML = `<h1>Search</h1><div class="s chip">${r.length} result${r.length === 1 ? '' : 's'} for “${esc(q)}”</div><br>${grid(r, 'No matches.')}`; return wireCards(); }
+// `soft` = an update pushed by the server: render into a detached element, then morph the visible page into it (no flicker, hover and scroll survive)
+async function show(soft = false) {
+  upShown = false;
+  const live = document.getElementById('main'), stage = soft ? document.createElement('main') : null;
+  route = location.hash.slice(2) || 'home'; renderNav(); const q = $('q').value.trim().toLowerCase(), m = stage || live;
+  if (soft) SCOPE = stage;
+  try { await render_(m, q); } finally { SCOPE = null; }
+  if (soft) { morph(live, stage); }
+  wireCards();
+}
+async function render_(m, q) {
+  if (q && !route.startsWith('settings')) { const r = videos.filter((v) => matches(v, q)); m.innerHTML = `<h1>Search</h1><div class="s chip">${r.length} result${r.length === 1 ? '' : 's'} for “${esc(q)}”</div><br>${grid(r, 'No matches.')}`; return; }
   if (route === 'home') {
     const f = await J('/api/feed'); const sec = (t, l) => (l.length ? `<h2>${t}</h2>${grid(l)}` : '');
     m.innerHTML = `<h1>Welcome back</h1><div class="chip">Everything here is computed on this computer.</div>` + sec('Continue watching', f.unfinished) + sec('Trending this week', f.trending) + sec('Recommended for you', f.recommended) + sec('From tags you follow', f.following) + sec('Latest', f.latest) +
@@ -92,7 +138,6 @@ async function show() {
     if (notifs.some((n) => !n.read)) { await J('/api/notifications/read', 'POST'); notifs.forEach((n) => (n.read = true)); setTimeout(renderNav, 400); }
   } else if (route === 'insights') renderInsights(m);
   else if (route === 'settings') renderSettings(m);
-  wireCards();
 }
 
 async function renderInsights(m) {
@@ -111,16 +156,17 @@ async function renderSettings(m) {
   <div class="panelx"><h3>Profile & sharing</h3><p class="d">Spool runs on your computer. Links only work for people who can reach it.</p>
     ${f('Your name', `<input id="s-name" value="${esc(s.ownerName)}">`)}
     ${f('People on my network', `<input type="checkbox" id="s-lan" ${s.lan ? 'checked' : ''}>`, s.lan ? `Anyone on your Wi-Fi can open links at <b>http://${esc(s.lanIp || '?')}:${s.port}</b>. Only videos you shared are visible to them; the library and settings stay owner-only.` : 'Off: only this computer can open links. Turn on to share with colleagues on the same Wi-Fi.')}
-    ${f('Default who can watch', `<select id="s-dp">${[['link', 'Anyone with the link'], ['email', 'Ask for email'], ['password', 'Password (set per video)'], ['private', 'Only me']].map(([k, l]) => `<option value="${k}" ${s.defaultPrivacy === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
+    ${f('Default who can watch', `<select id="s-dp">${[['link', 'Anyone with the link'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<option value="${k}" ${s.defaultPrivacy === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
     ${f('Links expire after', `<input id="s-exp" type="number" min="0" value="${s.linkExpiryDays}">`, 'Days. 0 means never.')}</div>
   <div class="panelx"><h3>Branding</h3><p class="d">Make the player yours.</p>
     ${f('Product name', `<input id="b-name" value="${esc(b.name)}">`)}${f('Accent colour', `<input type="color" id="b-acc" value="${esc(b.accent)}">`)}
     ${f('Logo', `<input type="file" id="b-logo" accept="image/png,image/jpeg">`, b.logo ? 'A logo is set.' : '')}${f('Hide product branding', `<input type="checkbox" id="b-hide" ${b.hideBranding ? 'checked' : ''}>`, 'Removes the name from the player header and embed watermark.')}</div>
   <div class="panelx"><h3>Privacy & security</h3><p class="d">Workspace-wide controls.</p>
-    ${f('Privacy Guard', `<input type="checkbox" id="s-pg" ${s.privacyGuard ? 'checked' : ''}>`, 'Blur secrets and personal data before a video can be watched.')}
+    ${f('Privacy Guard', `<input type="checkbox" id="s-pg" ${s.privacyGuard ? 'checked' : ''}>`, 'Blur secrets and personal data. Until it has checked a video, only you can watch it.')}
+    ${f('Keep the unblurred original', `<input type="checkbox" id="s-ko" ${s.keepOriginal ? 'checked' : ''}>`, 'Off: when something is blurred, the unblurred file is deleted. On: it is kept on this computer (owner only, never served to viewers).')}
     ${f('Disable downloads', `<input type="checkbox" id="s-dd" ${s.disableDownloads ? 'checked' : ''}>`, 'Viewers cannot download any video. You still can.')}
     ${f('Delete videos after', `<input id="s-ret" type="number" min="0" value="${s.retentionDays}">`, 'Days. 0 keeps everything. Applies automatically, hourly.')}</div>
-  <div class="panelx"><h3>AI</h3><p class="d">All models run locally through Ollama.</p>${f('Model', `<input id="s-model" value="${esc(s.model)}">`, 'Any model you have pulled, for example qwen3:8b.')}</div>
+  <div class="panelx"><h3>AI</h3><p class="d">Everything runs on this computer.</p>${f('Model', `<input id="s-model" value="${esc(s.model)}">`, 'Any model you have pulled in Ollama, for example qwen3:8b.')}<div id="models" class="fr" style="display:block"><span class="chip">Checking models…</span></div></div>
   <div class="panelx"><h3>Integrations</h3><p class="d">Tokens stay on this computer and are only sent to the service you configure.</p>
     ${f('Slack incoming webhook', `<input id="i-slack" type="password" placeholder="https://hooks.slack.com/services/…" value="${esc(I.slack?.hook || '')}">`)}
     ${f('GitHub repo (owner/name)', `<input id="i-ghr" value="${esc(I.github?.repo || '')}">`)}${f('GitHub token', `<input id="i-ght" type="password" placeholder="ghp_…" value="${esc(I.github?.token || '')}">`)}
@@ -134,25 +180,57 @@ async function renderSettings(m) {
   $('save').onclick = async () => {
     const v = (i) => $(i).value;
     try {
-      await J('/api/settings', 'PUT', { ownerName: v('s-name'), lan: $('s-lan').checked, defaultPrivacy: v('s-dp'), linkExpiryDays: +v('s-exp') || 0, privacyGuard: $('s-pg').checked, disableDownloads: $('s-dd').checked, retentionDays: +v('s-ret') || 0, model: v('s-model'),
+      await J('/api/settings', 'PUT', { ownerName: v('s-name'), lan: $('s-lan').checked, defaultPrivacy: v('s-dp'), linkExpiryDays: +v('s-exp') || 0, privacyGuard: $('s-pg').checked, keepOriginal: $('s-ko').checked, disableDownloads: $('s-dd').checked, retentionDays: +v('s-ret') || 0, model: v('s-model'),
         brand: { name: v('b-name'), accent: v('b-acc'), hideBranding: $('b-hide').checked },
         integrations: { slack: { hook: v('i-slack') }, github: { repo: v('i-ghr'), token: v('i-ght') }, linear: { key: v('i-lin'), teamId: v('i-lint') }, jira: { site: v('i-jsite'), email: v('i-jmail'), token: v('i-jtok'), project: v('i-jkey') } } });
       const f = $('b-logo').files[0]; if (f) await fetch('/api/branding/logo', { method: 'PUT', body: f });
       $('saved').textContent = 'Saved ✓'; document.documentElement.style.setProperty('--accent', v('b-acc')); setTimeout(() => renderSettings($('main')), 600);
     } catch (e) { $('saved').textContent = e.message; }
   };
+  loadModels();
   $('wipe').onclick = async () => { if (prompt('This deletes every video. Type DELETE to confirm.') === 'DELETE') { await J('/api/data', 'DELETE', { confirm: 'DELETE' }); await refresh(); location.hash = '#/home'; } };
+}
+
+// B17: what the AI needs, and a button to fetch the speech model once instead of failing silently offline
+async function loadModels() {
+  const el = $('models'); if (!el) return;
+  try {
+    const m = await J('/api/models'), sp = m.speech, d = sp.download || {}, mb = (b) => (b / 1048576).toFixed(0) + ' MB';
+    const speech = sp.cached ? `<b>Speech (Whisper)</b> ready · ${mb(sp.bytes)}` : d.state === 'running' ? `<b>Speech (Whisper)</b> downloading… ${d.percent}%` : `<b>Speech (Whisper)</b> not downloaded yet (about 290 MB). Transcripts wait until it is.${d.state === 'error' ? ` <span style="color:#e5484d">${esc(d.error)}</span>` : ''} <button class="btn sm" id="dlm">Download models</button>`;
+    el.innerHTML = `<div style="font-size:13px;line-height:1.9">${speech}<br><b>Screen reading (OCR)</b> ${esc(m.ocr.engine)}<br><b>Notes model</b> ${m.ollama.available ? `Ollama is running (${esc(m.ollama.model)})` : 'Ollama is not running: titles, summaries and guides are skipped'}</div>`;
+    if ($('dlm')) $('dlm').onclick = async () => { await J('/api/models/download', 'POST', {}); loadModels(); };
+    if (d.state === 'running') setTimeout(() => { if (route === 'settings') loadModels(); }, 1500);
+  } catch (e) { el.innerHTML = `<span class="chip">${esc(e.message)}</span>`; }
 }
 
 // Loomify: upload any video file by button or drag-and-drop
 async function upload(file) {
-  if (!file) return; $('main').insertAdjacentHTML('afterbegin', `<div class="warn" id="up">Uploading ${esc(file.name)}…</div>`);
-  try { const r = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}`, { method: 'PUT', body: file }); const d = await r.json(); if (!r.ok) throw new Error(d.error); location.href = `/v/${d.id}`; }
-  catch (e) { $('up').textContent = 'Upload failed: ' + e.message; }
+  if (!file) return;
+  const u = { id: Math.random().toString(36).slice(2, 8), name: file.name, pct: 0 }; uploads.push(u); if (!['home', 'library'].includes(route)) location.hash = '#/library'; else show(true);
+  const done = () => { uploads = uploads.filter((x) => x !== u); };
+  try {
+    const token = await window.spoolToken();
+    const id = await new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest(); x.open('PUT', `/api/upload?name=${encodeURIComponent(file.name)}`); x.setRequestHeader('x-spool-csrf', token);
+      x.upload.onprogress = (e) => { if (e.lengthComputable) { u.pct = Math.round((e.loaded / e.total) * 100); show(true); } };
+      x.onload = () => { let d = {}; try { d = JSON.parse(x.responseText); } catch {} x.status < 300 ? resolve(d.id) : reject(new Error(d.error || x.statusText)); };
+      x.onerror = () => reject(new Error('connection lost')); x.send(file);
+    });
+    done(); await refresh(); show(true);
+  } catch (e) { u.error = 'Upload failed: ' + e.message; show(true); setTimeout(() => { done(); show(true); }, 4000); }
 }
 $('file').onchange = () => upload($('file').files[0]);
 let dc = 0; addEventListener('dragenter', (e) => { if (e.dataTransfer.types.includes('Files')) { dc++; $('drop').style.display = 'grid'; } }); addEventListener('dragleave', () => { if (--dc <= 0) { dc = 0; $('drop').style.display = 'none'; } });
 addEventListener('dragover', (e) => e.preventDefault()); addEventListener('drop', (e) => { e.preventDefault(); dc = 0; $('drop').style.display = 'none'; upload(e.dataTransfer.files[0]); });
-$('q').oninput = show; addEventListener('hashchange', () => { $('q').value = ''; show(); });
-(async () => { const me = await J('/api/me'); $('bn').textContent = me.brand.name; document.documentElement.style.setProperty('--accent', me.brand.accent); if (location.pathname === '/settings') location.hash = '#/settings'; settings = await J('/api/settings'); await refresh(); show(); setInterval(async () => { if (!document.hidden && !route.startsWith('settings')) { await refresh(); if (!$('q').value && !['settings', 'insights'].includes(route)) show(); } }, 5000); })();
+$('q').oninput = () => show(); addEventListener('hashchange', () => { $('q').value = ''; show(); });
+// U3: the server says when something changed; no 5 s timer. Updates are coalesced and rendered as a morph of the visible page.
+let softTimer = null;
+function liveUpdates() {
+  const run = async () => { softTimer = null; if (document.hidden) return; await refresh(); if (!$('q').value && !['settings', 'insights', 'notifications'].includes(route)) show(true); };
+  const kick = () => { if (!softTimer) softTimer = setTimeout(run, 120); };
+  if (!window.EventSource) return void setInterval(kick, 8000);
+  const es = new EventSource('/api/events'); es.addEventListener('video', kick); es.addEventListener('settings', () => { if (route === 'settings') loadModels(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+}
+(async () => { const me = await J('/api/me'); $('bn').textContent = me.brand.name; document.documentElement.style.setProperty('--accent', me.brand.accent); if (location.pathname === '/settings') location.hash = '#/settings'; settings = await J('/api/settings'); await refresh(); show(); liveUpdates(); })();
 </script></body></html>

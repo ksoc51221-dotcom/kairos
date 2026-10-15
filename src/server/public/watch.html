@@ -50,6 +50,13 @@ select.sp{padding:7px;border-radius:8px;border:1px solid var(--line);background:
 table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mute);font-weight:600}
 .act{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line)}.act small{color:var(--mute);display:block}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#231942;color:#fff;padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:99}#toast.on{opacity:1}
+.tabs{position:relative}.tabs .ind{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);width:0;transition:transform 240ms cubic-bezier(.2,.8,.2,1),width 240ms cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.tabs button{border-bottom-color:transparent!important}
+.fade{animation:fadein 150ms cubic-bezier(.2,.8,.2,1)}@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sk{background:linear-gradient(90deg,var(--line) 25%,var(--bg) 37%,var(--line) 63%);background-size:400% 100%;animation:sk 1.2s ease infinite;border-radius:8px}@keyframes sk{from{background-position:100% 50%}to{background-position:0 50%}}
+.modal:not([hidden]) .box{animation:pop 180ms cubic-bezier(.2,.8,.2,1)}@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.fxrow{display:flex;gap:14px;margin-top:8px;font-size:12.5px;color:var(--mute)}.fxrow label{display:flex;gap:6px;align-items:center;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.tabs .ind,.fade,.sk,.modal:not([hidden]) .box{animation:none!important;transition:none!important}}
 .imgview{display:grid;place-items:center;background:#0e0a1c}.imgview img{max-width:100%;max-height:70vh}
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
@@ -63,9 +70,10 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 4px
     <select class="sp" id="cc"></select>
     <select class="sp" id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
   <div class="react" id="react"></div>
-  <div id="notes"></div>
+  <div class="fxrow" id="fxrow" hidden><label><input type="checkbox" id="fx-cursor"> Cursor highlight &amp; click ripples</label><label><input type="checkbox" id="fx-zoom"> Auto-zoom on clicks</label></div>
+  <div id="notes"><div class="sk" style="height:64px"></div><div class="sk" style="height:96px"></div></div>
 </div>
-<aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div>
+<aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"><div class="sk" style="height:18px;width:40%"></div><div class="sk" style="height:46px;margin-top:12px"></div><div class="sk" style="height:46px;margin-top:12px"></div></div>
   <form class="add" id="form"><input id="ctext" placeholder="Add a comment at the current time… use @name to mention" autocomplete="off"><button class="btn pri">Send</button></form></aside></div></div>
 <div id="modal" class="modal" hidden></div><div id="toast"></div>
 <script src="/static/csrf.js"></script>
@@ -78,10 +86,12 @@ const FEATURES = { editor: false, actions: false };
 let me = { owner: false }, vm, ctl, tab = 'comments', loaded = false, lastKey = '', sid = null;
 const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1600); };
 const now = () => $('v')?.currentTime || 0; // B10: screenshots replace #v with an <img>
+const copied = (btn) => { const t = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => (btn.textContent = t), 1400); }; // U16
 const seek = (t) => { const v = $('v'); if (!v) return; v.currentTime = t; v.play(); };
 const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
 
 async function boot() {
+  $('v').poster = `/media/${id}/thumb.jpg`; // U12: the poster and the skeletons are on screen before any API call returns
   me = await api('/api/me');
   document.documentElement.style.setProperty('--accent', me.brand.accent);
   $('brandname').textContent = me.brand.hideBranding ? '' : me.brand.name; if (me.brand.logo) { $('logo').style.cssText = 'background:url(/branding/logo.png) center/cover;border-radius:5px'; } if (me.brand.hideBranding && !me.brand.logo) $('logo').hidden = true;
@@ -93,40 +103,71 @@ async function boot() {
   catch (e) { if (e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
   if (vm.type === 'image') { $('stage').className = 'stage imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('cc').hidden = $('speed').hidden = true; }
   else ctl = attach({ stage: $('stage'), video: $('v'), vm });
-  setupCC(); render(); setInterval(poll, 3000);
+  setupCC(); render(); listen();
 }
 function setupCC() {
   $('cc').innerHTML = '<option value="">CC: off</option><option value="original">Captions</option><optgroup label="Translate (local AI)">' + LANGS.map((l) => `<option>${l}</option>`).join('') + '</optgroup>';
   $('cc').onchange = async () => { const v = $('cc').value; try { if (v && v !== 'original') toast(`Translating to ${v}… first time takes a moment`); await ctl.setCaptions(v || null); } catch (e) { toast(e.message); $('cc').value = ''; } };
 }
-async function poll() {
-  if (document.hidden || document.activeElement.id === 'ctext' || document.activeElement.id === 'title' || !$('modal').hidden) return;
+// U3: the server pushes "this video changed" over one event stream, and the page refetches only then. No timer, so nothing is rebuilt for no reason.
+// If the stream cannot be opened (an old browser, a proxy that buffers it), fall back to a slow poll.
+let refetching = false, again = false;
+async function refetch() {
+  if (refetching) { again = true; return; }
+  if (document.activeElement.id === 'ctext' || document.activeElement.id === 'title' || !$('modal').hidden) { setTimeout(refetch, 1500); return; }
+  refetching = true;
   try { vm = await api(`/api/v/${id}`); ctl?.setVM(vm); render(); } catch {}
+  refetching = false; if (again) { again = false; refetch(); }
+}
+function listen() {
+  if (!window.EventSource) return void setInterval(() => { if (!document.hidden) refetch(); }, 5000);
+  const es = new EventSource(`/api/events?video=${id}`);
+  es.addEventListener('video', refetch);
+  es.onerror = () => { if (es.readyState === EventSource.CLOSED) setInterval(() => { if (!document.hidden) refetch(); }, 5000); }; // CLOSED = refused (e.g. 423): EventSource does not retry on its own
 }
 
 function tabsFor() { const t = [['comments', 'Comments'], ['transcript', 'Transcript'], ['guide', 'Guide']]; if (me.owner) { if (FEATURES.actions) t.push(['actions', 'AI Actions']); t.push(['insights', 'Insights'], ['crew', 'AI Crew'], ['activity', 'Activity']); } return t; }
+const scrollOf = {};
 function renderTabs() {
-  const t = tabsFor(); $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
-  $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => { tab = b.dataset.t; lastKey = ''; render(); });
+  const t = tabsFor(), sig = t.map((x) => x[0]).join();
+  if ($('tabs').dataset.sig !== sig) {
+    $('tabs').dataset.sig = sig;
+    $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('') + '<i class="ind"></i>';
+    $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => { scrollOf[tab] = $('panel').scrollTop; tab = b.dataset.t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; });
+  }
+  let on = null; $('tabs').querySelectorAll('button').forEach((b) => { const is = b.dataset.t === tab; b.classList.toggle('on', is); if (is) on = b; });
+  if (on) { const i = $('tabs').querySelector('.ind'); i.style.width = on.offsetWidth + 'px'; i.style.transform = `translateX(${on.offsetLeft}px)`; }
 }
 function render() {
   document.title = vm.title + ' · ' + (me.brand?.name || 'Spool');
   if (document.activeElement !== $('title')) $('title').value = vm.title;
   $('meta').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'} · ${new Date(vm.createdAt).toLocaleDateString()}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
   $('later').textContent = vm.watchLater ? '★ Saved' : '☆ Watch later';
-  $('react').innerHTML = EMOJI.map((e) => `<button data-e="${e}">${e}<small>${vm.reactions[e] || ''}</small></button>`).join('') + '<span class="hintx">⇧-click = super reaction</span>';
-  $('react').querySelectorAll('button').forEach((b) => b.onclick = async (ev) => { const sup = ev.shiftKey, at = now(); ctl?.floatReaction(b.dataset.e, sup); vm = await api(`/api/v/${id}/reactions`, { body: { emoji: b.dataset.e, at, super: sup } }); render(); });
+  drawReactions();
   const ready = vm.status === 'ready' || vm.status === undefined;
   $('proc').hidden = ready;
   if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
   if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); }
   renderNotes(); renderTabs();
+  $('fxrow').hidden = !(me.owner && vm.type !== 'image' && vm.track); if (document.activeElement !== $('fx-cursor')) $('fx-cursor').checked = vm.cursorFx !== false; if (document.activeElement !== $('fx-zoom')) $('fx-zoom').checked = !!vm.autoZoom;
   const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy]);
   if (key !== lastKey) { lastKey = key; renderPanel(); }
 }
+// U15: the count goes up the instant you click; the server's answer replaces it a moment later (and corrects it if the write failed)
+function drawReactions() {
+  const html = EMOJI.map((e) => `<button data-e="${e}">${e}<small>${vm.reactions[e] || ''}</small></button>`).join('') + '<span class="hintx">⇧-click = super reaction</span>';
+  if ($('react').dataset.h === html) return; $('react').dataset.h = html; $('react').innerHTML = html;
+  $('react').querySelectorAll('button').forEach((b) => b.onclick = async (ev) => {
+    const sup = ev.shiftKey, at = now(), e = b.dataset.e, before = vm.reactions[e] || 0;
+    ctl?.floatReaction(e, sup); vm.reactions = { ...vm.reactions, [e]: before + (sup ? 3 : 1) }; drawReactions();
+    try { vm = await api(`/api/v/${id}/reactions`, { body: { emoji: e, at, super: sup } }); } catch (er) { vm.reactions = { ...vm.reactions, [e]: before }; toast(er.status === 429 ? 'Slow down a little' : er.message); }
+    drawReactions();
+  });
+}
 function renderNotes() {
   const n = [], busy = vm.status === 'ready' && vm.stage && vm.stage !== 'done';
-  if (busy && me.owner) n.push(`<div class="banner"><div class="spin"></div>${esc(vm.stage)}…</div>`);
+  if (me.owner && vm.status === 'ready' && vm.shareable === false) n.push(`<div class="banner"><div class="spin"></div><span><b>Privacy Guard is checking…</b> You can watch now. Viewers can watch when it's done.</span></div>`);
+  else if (busy && me.owner) n.push(`<div class="banner"><div class="spin"></div>${esc(vm.stage)}…</div>`);
   if (vm.redactionCount) n.push(`<div><span class="badge" title="Blurred by the Privacy Guard before anyone could watch">🛡 ${vm.redactionCount} sensitive item${vm.redactionCount > 1 ? 's' : ''} blurred by Privacy Guard</span></div>`);
   if (vm.tags?.length) n.push(`<div class="chips">${vm.tags.map((t) => `<span class="chip2 tag">#${esc(t)}</span>`).join('')}</div>`);
   if (vm.summary) n.push(`<div class="card"><h4>Summary</h4><p>${esc(vm.summary)}</p></div>`);
@@ -139,8 +180,15 @@ function renderPanel() {
   const p = $('panel'); $('form').hidden = tab !== 'comments';
   const bind = () => p.querySelectorAll('[data-at]').forEach((a) => (a.onclick = () => seek(+a.dataset.at)));
   if (tab === 'comments') {
-    p.innerHTML = vm.comments.length ? vm.comments.map((c) => `<div class="cm"><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div>`).join('') : '<div class="empty">No comments yet. Be the first!</div>'; bind();
-  } else if (tab === 'transcript') {
+    // U14: when only new comments arrived, append them with a short fade instead of rebuilding the list (keeps scroll and hover)
+    const shown = p.dataset.k === 'comments' ? new Set([...p.querySelectorAll('.cm[data-cid]')].map((x) => x.dataset.cid)) : null;
+    if (shown && shown.size && vm.comments.every((c) => !shown.has(c.id)) === false && [...shown].every((cid) => vm.comments.some((c) => c.id === cid))) {
+      vm.comments.filter((c) => !shown.has(c.id)).forEach((c) => p.insertAdjacentHTML('beforeend', `<div class="cm fade" data-cid="${c.id}"><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div>`));
+      bind(); return;
+    }
+    p.dataset.k = 'comments';
+    p.innerHTML = vm.comments.length ? vm.comments.map((c) => `<div class="cm" data-cid="${c.id}"><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div>`).join('') : '<div class="empty">No comments yet. Be the first!</div>'; bind();
+  } else if ((p.dataset.k = tab), tab === 'transcript') {
     p.innerHTML = vm.segments?.length ? `<div class="ghead"><input id="tq" placeholder="Search transcript…" style="flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></div><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
     if (vm.segments?.length) { const draw = () => { const q = $('tq').value.toLowerCase(); $('tl').innerHTML = vm.segments.filter((s) => !q || s.text.toLowerCase().includes(q)).map((s) => `<div class="cm"><span class="at" data-at="${s.start}" style="margin:0 8px 0 0">${fmt(s.start)}</span>${esc(s.text)}</div>`).join(''); bind(); }; $('tq').oninput = draw; draw(); }
   } else if (tab === 'guide') renderGuide(p, bind);
@@ -156,7 +204,7 @@ function renderGuide(p, bind) {
     <h3 style="margin:0 0 6px">${esc(g.title)}</h3><p style="margin:0 0 16px;color:var(--mute);font-size:13.5px;line-height:1.5">${esc(g.intro)}</p>` +
     g.steps.map((st) => `<div class="step"><h5><i>${st.n}</i>${esc(st.title)}</h5><p>${esc(st.detail)}</p>${st.image ? `<img src="/media/${id}/guide/${st.image}" data-at="${st.at}" title="Jump to ${fmt(st.at)}">` : ''}</div>`).join('') +
     `<p style="font-size:13.5px;line-height:1.5">${esc(g.closing)}</p>` + (g.revisions ? `<p class="chip" style="margin-top:12px">The Critic sent the first draft back once${g.criticOk ? ' and approved the revision' : '; it still left notes'}.</p>` : '');
-  bind(); $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); toast('Markdown copied'); }; $('ghtml').onclick = exportGuideHtml;
+  bind(); $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); copied($('gmd')); }; $('ghtml').onclick = exportGuideHtml;
 }
 const guideMd = () => { const g = vm.guide; return `# ${g.title}\n\n${g.intro}\n\n` + g.steps.map((s) => `## ${s.n}. ${s.title}\n${s.detail}\n${s.image ? `\n![Step ${s.n}](${location.origin}/media/${id}/guide/${s.image})\n` : ''}`).join('\n') + `\n${g.closing}\n`; };
 async function exportGuideHtml() {
@@ -186,6 +234,8 @@ $('form').onsubmit = async (e) => { e.preventDefault(); const text = $('ctext').
   vm = await api(`/api/v/${id}/comments`, { body: { text, at: now(), name: me.owner ? me.name : viewer().name } }); lastKey = ''; render(); };
 $('title').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { title: $('title').value } }); };
 $('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
+$('fx-cursor').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { cursorFx: $('fx-cursor').checked } }); ctl?.setVM(vm); };
+$('fx-zoom').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { autoZoom: $('fx-zoom').checked } }); ctl?.setVM(vm); };
 $('speed').onchange = () => { if ($('v')) $('v').playbackRate = +$('speed').value; };
 $('later').onclick = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { watchLater: !vm.watchLater } }); render(); };
 $('dl').onclick = () => (location.href = `/media/${id}/download`);
@@ -211,14 +261,24 @@ async function openShare() {
   ${spaces.length ? `<div class="seg2" style="margin-top:8px">${spaces.map((sp) => `<label><input type="checkbox" class="m-sp" value="${sp.id}" ${(vm.spaces || []).includes(sp.id) ? 'checked' : ''}>Space: ${esc(sp.name)}</label>`).join('')}</div>` : ''}
   <div class="rowf" style="margin-top:18px;justify-content:flex-end"><button class="btn" id="m-cancel">Cancel</button><button class="btn pri" id="m-save">Save</button></div></div>`;
   document.querySelectorAll('input[name=mode]').forEach((r) => (r.onchange = () => ($('m-pw').hidden = r.value !== 'password')));
-  $('m-copy').onclick = () => { navigator.clipboard.writeText(link); toast('Link copied'); };
-  $('m-cancel').onclick = () => (m.hidden = true); m.onclick = (e) => { if (e.target === m) m.hidden = true; };
+  $('m-copy').onclick = () => { navigator.clipboard.writeText(link); copied($('m-copy')); };
+  const close = () => { m.hidden = true; document.removeEventListener('keydown', trap, true); opener?.focus(); };
+  const opener = document.activeElement;
+  const trap = (e) => { // U16: Esc closes, Tab stays inside the dialog
+    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    if (e.key !== 'Tab') return;
+    const f = [...m.querySelectorAll('button,input,select,a[href],textarea')].filter((x) => !x.disabled && x.offsetParent !== null); if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', trap, true); m.querySelector('.box').setAttribute('role', 'dialog'); m.querySelector('.box').setAttribute('aria-modal', 'true'); $('m-copy').focus();
+  $('m-cancel').onclick = () => close(); m.onclick = (e) => { if (e.target === m) close(); };
   $('m-save').onclick = async () => {
     const mode = document.querySelector('input[name=mode]:checked')?.value || 'link', pw = $('m-pwv').value;
     const body = { privacy: { mode, password: pw || undefined, expiresAt: $('m-exp').value ? new Date($('m-exp').value + 'T23:59:59').getTime() : 0, allowDownload: $('m-dl').value === '1' },
       cta: $('m-ctau').value ? { text: $('m-ctat').value || 'Learn more', url: $('m-ctau').value } : null, folder: $('m-folder').value || null,
       tags: $('m-tags').value.split(',').map((t) => t.trim()).filter(Boolean), spaces: [...document.querySelectorAll('.m-sp:checked')].map((c) => c.value) };
-    try { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); m.hidden = true; lastKey = ''; render(); toast('Saved'); } catch (e) { toast(e.message); }
+    try { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); close(); lastKey = ''; render(); toast('Saved'); } catch (e) { toast(e.message); }
   };
 }
 boot();

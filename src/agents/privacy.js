@@ -2,8 +2,10 @@
 const fs = require('fs');
 const path = require('path');
 const llm = require('./llm');
-const { run, frameAt, sceneChanges } = require('./media');
+const { run } = require('./media');
 const { ocrFrames } = require('./ocr');
+const { runFfmpeg, videoArgs } = require('../pipeline/encode');
+const { SCAN_FPS, SCAN_WIDTH, HASH_W, HASH_H } = require('../pipeline/composite');
 
 const luhn = (s) => { const d = s.replace(/\D/g, ''); if (d.length < 13 || d.length > 19) return false;
   let sum = 0; for (let i = 0; i < d.length; i++) { let n = +d[d.length - 1 - i]; if (i % 2) { n *= 2; if (n > 9) n -= 9; } sum += n; } return sum % 10 === 0; };
@@ -46,9 +48,12 @@ function regexFindings(line) {
   return out;
 }
 
+const LLM_BUDGET_MS = +process.env.SPOOL_PRIVACY_LLM_MS || 10000; // the rules are the floor; the model is a bonus that must not hold up publishing
+
 async function llmFindings(uniqueLines, log) {
   if (!uniqueLines.length || !(await llm.available())) return [];
-  const numbered = uniqueLines.slice(0, 120).map((t, i) => `${i}: ${t.slice(0, 140)}`).join('\n');
+  if (!(await llm.loaded())) { llm.warm(); log('LLM pass skipped: the model is not loaded yet (rules only for this video)'); return []; }
+  const numbered = uniqueLines.slice(0, 60).map((t, i) => `${i}: ${t.slice(0, 140)}`).join('\n');
   try {
     const res = await llm.json({
       system: 'You are the Privacy Guard of a screen recorder. You get OCR text lines from a screen recording. ' +
@@ -57,6 +62,7 @@ async function llmFindings(uniqueLines, log) {
         'Do NOT flag normal UI labels, menu names, company/product names or code. ' +
         'For each hit return the line index, a short type, and `value`: the exact substring of that line to hide (copy it character for character).',
       user: numbered + '\n\nReturn JSON: {"hits":[{"i":0,"type":"password","value":"..."}]}. Use {"hits":[]} if nothing is sensitive.',
+      timeoutMs: LLM_BUDGET_MS, retries: 0,
       schema: { type: 'object', properties: { hits: { type: 'array', items: { type: 'object',
         properties: { i: { type: 'integer' }, type: { type: 'string' }, value: { type: 'string' } }, required: ['i', 'type', 'value'] } } }, required: ['hits'] },
     });
@@ -71,80 +77,127 @@ const iou = (a, b) => {
   return u > 0 ? inter / u : 0;
 };
 
-// Scan a video. Returns { findings, frames (OCR, secrets masked), redact(outPath) }
-async function scan({ video, workDir, duration, width, height, cachePath, onStatus = () => {}, log = () => {} }) {
-  const fdir = path.join(workDir, 'frames'); fs.mkdirSync(fdir, { recursive: true });
-  const times = await sceneChanges(video, { every: 3, duration });
-  const fw = Math.min(1600, width);
-  const frames = [];
-  for (let i = 0; i < times.length; i++) {
-    const file = path.join(fdir, `f${i}.jpg`);
-    await frameAt(video, times[i], file, fw);
-    if (!fs.existsSync(file)) continue; // timestamp past the last decodable frame
-    frames.push({ t: times[i], file, width: fw, height: Math.round(fw * height / width) });
-  }
-  onStatus(`reading ${frames.length} frames`);
-  const ocr = await ocrFrames(frames, { cachePath, onProgress: (d, n) => onStatus(`reading screen ${d}/${n}`) });
+// ---- frames: 2 fps JPEGs + a 9x8 gray picture per frame, written by the composite step (or by extractScanFrames for uploads) ----
 
-  // 1) deterministic rules on every line
+// One ffmpeg run, one decode: used for uploaded videos, which do not go through the composite step.
+async function extractScanFrames(video, scanDir) {
+  fs.mkdirSync(scanDir, { recursive: true });
+  const g = `[0:v]split=2[a][b];[a]fps=${SCAN_FPS},scale='min(${SCAN_WIDTH},iw)':-2[scan];[b]fps=${SCAN_FPS},scale=${HASH_W}:${HASH_H}:flags=area,format=gray[hash]`;
+  await runFfmpeg(['-y', '-i', video, '-filter_complex', g, '-map', '[scan]', '-q:v', '3', '-vsync', 'cfr', path.join(scanDir, 'f%04d.jpg'),
+    '-map', '[hash]', '-f', 'rawvideo', '-pix_fmt', 'gray', '-vsync', 'cfr', path.join(scanDir, 'hash.raw')]);
+}
+
+// 64-bit difference hash of a 9x8 gray picture: bit = left pixel brighter than its right neighbour. The margin keeps video noise from flipping bits in flat areas.
+const DHASH_MARGIN = 3;
+function dhash(gray, offset = 0) {
+  const bits = [];
+  for (let y = 0; y < HASH_H; y++) for (let x = 0; x < HASH_W - 1; x++) bits.push(gray[offset + y * HASH_W + x] - gray[offset + y * HASH_W + x + 1] > DHASH_MARGIN ? 1 : 0);
+  return bits;
+}
+const hamming = (a, b) => a.reduce((n, v, i) => n + (v !== b[i] ? 1 : 0), 0);
+
+// Which sampled frames to read: the first, any that differs from the last kept one, and at least one every `maxGap` seconds so a small change cannot hide.
+// Returns [{ index, t, until }] where [t, until) is the stretch of near-identical frames this one stands for.
+function pickFrames(hashBuf, count, { fps = SCAN_FPS, maxSame = 2, maxGap = 2 } = {}) {
+  const size = HASH_W * HASH_H, kept = [];
+  let last = null;
+  for (let k = 0; k < count; k++) {
+    const h = dhash(hashBuf, k * size), t = k / fps;
+    if (!last || hamming(h, last.h) > maxSame || t - last.t >= maxGap) { last = { index: k, t, h }; kept.push(last); }
+  }
+  return kept.map((f, i) => ({ index: f.index, t: f.t, until: i + 1 < kept.length ? kept[i + 1].t : count / fps }));
+}
+
+// Scan a recording for secrets and personal data. Needs a folder of sampled frames (`scanDir`: f0001.jpg… + hash.raw) or, failing that, the video to sample.
+// Returns { report, masked, redact(outPath), stats }.
+async function scan({ video, scanDir, workDir, duration, width, height, cachePath, onStatus = () => {}, log = () => {} }) {
+  const t0 = Date.now();
+  if (!scanDir || !fs.existsSync(path.join(scanDir, 'hash.raw'))) { scanDir = path.join(workDir, 'scan'); onStatus('sampling frames'); await extractScanFrames(video, scanDir); }
+  const jpgs = fs.readdirSync(scanDir).filter((f) => /^f\d+\.jpg$/.test(f)).sort();
+  const hashBuf = fs.readFileSync(path.join(scanDir, 'hash.raw'));
+  const count = Math.min(jpgs.length, Math.floor(hashBuf.length / (HASH_W * HASH_H)));
+  const picked = pickFrames(hashBuf, count);
+  const fw = Math.min(SCAN_WIDTH, width), fh = Math.round((fw * height) / width);
+  const frames = picked.map((f) => ({ t: f.t, until: f.until, file: path.join(scanDir, jpgs[f.index]), width: fw, height: fh }));
+  onStatus(`reading ${frames.length} of ${count} frames`);
+  const tOcr = Date.now();
+  const ocr = await ocrFrames(frames, { cachePath, onProgress: (d, n) => onStatus(`reading screen ${d}/${n}`) });
+  const ocrMs = Date.now() - tOcr;
+  ocr.forEach((f, i) => { f.until = frames[i].until; });
+
+  // 1) deterministic rules on every line. These are the floor: they gate publishing even when the model is cold, slow or absent.
   const found = []; // {frame, type, value, box, by}
   ocr.forEach((f, fi) => f.lines.forEach((l) => regexFindings(l).forEach((r) => found.push({ frame: fi, ...r }))));
 
-  // 2) LLM judgement on unique lines the rules didn't already cover
-  const covered = new Set(found.map((f) => f.value));
-  const uniq = [...new Set(ocr.flatMap((f) => f.lines.map((l) => l.text)))].filter((t) => t.length >= 4 && ![...covered].some((v) => t.includes(v)));
-  onStatus('asking the model what is sensitive');
-  const hits = await llmFindings(uniq, log);
-  for (const h of hits) ocr.forEach((f, fi) => f.lines.forEach((l) => {
-    if (l.text !== h.line) return;
-    const s = l.text.indexOf(h.value); const box = boxFor(l, s, s + h.value.length);
-    if (box) found.push({ frame: fi, type: h.type, value: h.value, box, by: 'model' });
-  }));
-
-  // 3) turn per-frame hits into time intervals (conservative: extend to neighbouring samples)
-  const intervals = [];
-  const byKey = new Map();
-  for (const f of found) { const k = f.value.toLowerCase(); (byKey.get(k) || byKey.set(k, []).get(k)).push(f); }
-  for (const list of byKey.values()) {
-    list.sort((a, b) => a.frame - b.frame);
-    let cur = null;
-    for (const f of list) {
-      if (cur && f.frame <= cur.lastFrame + 1 && iou(cur.box, f.box) > 0.3) {
-        cur.lastFrame = f.frame;
-        cur.box = { x0: Math.min(cur.box.x0, f.box.x0), y0: Math.min(cur.box.y0, f.box.y0), x1: Math.max(cur.box.x1, f.box.x1), y1: Math.max(cur.box.y1, f.box.y1) };
-      } else {
-        if (cur) intervals.push(cur);
-        cur = { type: f.type, by: f.by, box: { ...f.box }, firstFrame: f.frame, lastFrame: f.frame };
+  // 3) turn per-frame hits into time intervals. A hit on frame i covers [t_i - one sample, until_i): everything the dedupe folded into it.
+  const build = () => {
+    const intervals = [], byKey = new Map();
+    for (const f of found) { const k = f.value.toLowerCase(); (byKey.get(k) || byKey.set(k, []).get(k)).push(f); }
+    for (const list of byKey.values()) {
+      list.sort((a, b) => a.frame - b.frame);
+      let cur = null;
+      for (const f of list) {
+        if (cur && f.frame <= cur.lastFrame + 1 && iou(cur.box, f.box) > 0.3) {
+          cur.lastFrame = f.frame;
+          cur.box = { x0: Math.min(cur.box.x0, f.box.x0), y0: Math.min(cur.box.y0, f.box.y0), x1: Math.max(cur.box.x1, f.box.x1), y1: Math.max(cur.box.y1, f.box.y1) };
+        } else {
+          if (cur) intervals.push(cur);
+          cur = { type: f.type, by: f.by, box: { ...f.box }, firstFrame: f.frame, lastFrame: f.frame };
+        }
       }
+      if (cur) intervals.push(cur);
     }
-    if (cur) intervals.push(cur);
-  }
-  for (const iv of intervals) {
-    iv.from = iv.firstFrame > 0 ? ocr[iv.firstFrame - 1].t : 0;
-    iv.to = iv.lastFrame + 1 < ocr.length ? ocr[iv.lastFrame + 1].t : duration + 1;
-  }
+    for (const iv of intervals) {
+      iv.from = Math.max(0, ocr[iv.firstFrame].t - 1 / SCAN_FPS);
+      iv.to = iv.lastFrame + 1 < ocr.length ? ocr[iv.lastFrame].until + 1 / SCAN_FPS : duration + 1;
+    }
+    // mask secrets in the OCR text that downstream agents will read
+    const secrets = [...byKey.values()].map((l) => l[0].value);
+    const masked = ocr.map((f) => ({ t: f.t, lines: f.lines.map((l) => secrets.reduce((txt, s) => txt.split(s).join('[REDACTED]'), l.text)) }));
+    return { intervals, masked, report: intervals.map((iv) => ({ type: iv.type, from: +iv.from.toFixed(1), to: +iv.to.toFixed(1), by: iv.by })) };
+  };
+  let cur = build();
 
-  // mask secrets in the OCR text that downstream agents will read
-  const secrets = [...byKey.values()].map((l) => l[0].value);
-  const masked = ocr.map((f) => ({ t: f.t, lines: f.lines.map((l) => secrets.reduce((txt, s) => txt.split(s).join('[REDACTED]'), l.text)) }));
+  // 2) LLM judgement on unique lines the rules didn't already cover, time-boxed. Run it with refine() while the first blur pass is encoding
+  // (the model uses the GPU, the encoder the media engine), so a clean video waits for max(blur, model) rather than blur + model.
+  // Returns { changed } : true when the model found something the rules did not, so the caller must blur again with `intervals`.
+  let llmMs = 0, llmHits = 0;
+  const refine = async () => {
+    const covered = new Set(found.map((f) => f.value));
+    const uniq = [...new Set(ocr.flatMap((f) => f.lines.map((l) => l.text)))].filter((t) => t.length >= 4 && ![...covered].some((v) => t.includes(v)));
+    onStatus('asking the model what is sensitive');
+    const tLlm = Date.now(), hits = await llmFindings(uniq, log); llmMs = Date.now() - tLlm; llmHits = hits.length;
+    const before = found.length;
+    for (const h of hits) ocr.forEach((f, fi) => f.lines.forEach((l) => {
+      if (l.text !== h.line) return;
+      const s = l.text.indexOf(h.value); const box = boxFor(l, s, s + h.value.length);
+      if (box) found.push({ frame: fi, type: h.type, value: h.value, box, by: 'model' });
+    }));
+    if (found.length === before) return { changed: false };
+    cur = build(); return { changed: true };
+  };
 
-  const redact = async (outPath) => {
+  // The blur pass reads the published video and writes the blurred one with the hardware encoder. It only runs when something was found.
+  const redact = async (outPath, { onProgress } = {}) => {
+    const intervals = cur.intervals;
     if (!intervals.length) return false;
     const pad = 0.012;
-    const chain = []; let cur = '0:v';
+    const chain = []; let src = '0:v';
     intervals.forEach((iv, i) => {
       const x = Math.max(0, Math.floor((iv.box.x0 - pad) * width)), y = Math.max(0, Math.floor((iv.box.y0 - pad * 1.2) * height));
       const w = Math.min(width - x, Math.ceil((iv.box.x1 - iv.box.x0 + pad * 2) * width)), h = Math.min(height - y, Math.ceil((iv.box.y1 - iv.box.y0 + pad * 2.4) * height));
       const r = Math.max(1, Math.min(30, Math.floor(Math.min(w, h) / 2) - 1));
-      chain.push(`[${cur}]split[a${i}][b${i}];[b${i}]crop=${w}:${h}:${x}:${y},boxblur=${r}:3:${Math.floor(r / 2)}:3[c${i}];[a${i}][c${i}]overlay=${x}:${y}:enable='between(t,${iv.from.toFixed(2)},${iv.to.toFixed(2)})'[v${i}]`);
-      cur = `v${i}`;
+      chain.push(`[${src}]split[a${i}][b${i}];[b${i}]crop=${w}:${h}:${x}:${y},boxblur=${r}:3:${Math.floor(r / 2)}:3[c${i}];[a${i}][c${i}]overlay=${x}:${y}:enable='between(t,${iv.from.toFixed(2)},${iv.to.toFixed(2)})'[v${i}]`);
+      src = `v${i}`;
     });
     const script = path.join(workDir, 'blur.filter'); fs.writeFileSync(script, chain.join(';'));
-    await run(['-y', '-i', video, '-filter_complex_script', script, '-map', `[${cur}]`, '-map', '0:a?', '-c:v', 'libx264', '-preset', 'veryfast',
-      '-crf', '22', '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', outPath]);
+    await runFfmpeg(['-y', '-i', video, '-filter_complex_script', script, '-map', `[${src}]`, '-map', '0:a?', ...videoArgs(height), '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', outPath],
+      { duration, onProgress });
     return true;
   };
-  const report = intervals.map((iv) => ({ type: iv.type, from: +iv.from.toFixed(1), to: +iv.to.toFixed(1), by: iv.by }));
-  return { report, masked, redact };
+  return {
+    get report() { return cur.report; }, get masked() { return cur.masked; }, refine, redact,
+    get stats() { return { sampled: count, read: frames.length, engine: ocr.engine, ocrMs, llmMs, llmHits, elapsedMs: Date.now() - t0 }; },
+  };
 }
-module.exports = { scan, regexFindings };
+module.exports = { scan, regexFindings, pickFrames, dhash, hamming, extractScanFrames };

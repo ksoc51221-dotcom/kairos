@@ -2,7 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const store = require('../../store');
-const { isOwner, requireOwner, gated, checkPw, effectivePrivacy, access, unlockCookie } = require('../auth');
+const { isOwner, requireOwner, gated, checkPw, effectivePrivacy, access, unlockCookie, GATE_STATUS } = require('../auth');
 const security = require('../security');
 const extras = require('../extras');
 const { viewModel } = require('../viewmodel');
@@ -10,6 +10,7 @@ const { pub, page, esc, lanIp } = require('../util');
 
 function mount(app, ctx) {
   const settings = () => store.getSettings();
+  const limit = security.rateLimit({ skip: isOwner }); // B22
 
   // ---- pages with link previews (Open Graph / oEmbed) ----
   const origin = (req) => `${req.protocol}://${req.headers.host}`;
@@ -43,7 +44,7 @@ function mount(app, ctx) {
 
   // ---- viewer API (everything here is gated by the link's privacy settings) ----
   app.get('/api/v/:id', gated, (q, res) => res.json(viewModel(q.video, q.owner)));
-  app.post('/api/v/:id/unlock', (q, res) => {
+  app.post('/api/v/:id/unlock', limit, (q, res) => {
     const v = store.get(q.params.id); if (!v) return res.sendStatus(404);
     const p = effectivePrivacy(v);
     if (p.mode === 'password') {
@@ -57,12 +58,12 @@ function mount(app, ctx) {
   });
   const who = (q) => ({ name: String(q.body.name || (q.owner ? settings().ownerName : 'Guest')).slice(0, 40), email: String(q.body.email || '').slice(0, 80) });
 
-  app.post('/api/v/:id/view', gated, (q, res) => {
+  app.post('/api/v/:id/view', limit, gated, (q, res) => {
     const sid = store.newId(5), w = who(q);
     store.update(q.video.id, (v) => ({ views: v.views + 1, viewers: [...v.viewers, { sid, ...w, owner: q.owner, at: Date.now(), maxT: 0, watched: 0, last: Date.now() }].slice(-500) }));
     store.log(q.video.id, 'Viewed', w.name); res.json({ sid });
   });
-  app.post('/api/v/:id/heartbeat', gated, (q, res) => {
+  app.post('/api/v/:id/heartbeat', limit, gated, (q, res) => {
     const { sid, t } = q.body; const now = Date.now();
     store.update(q.video.id, (v) => {
       const viewers = v.viewers.map((x) => (x.sid === sid ? { ...x, maxT: Math.max(x.maxT, +t || 0), watched: x.watched + Math.min(3, (now - x.last) / 1000), last: now } : x));
@@ -74,7 +75,7 @@ function mount(app, ctx) {
     res.sendStatus(204);
   });
   const snippet = (v, at) => (v.segments || []).find((s) => s.start <= at && s.end >= at - 0.5)?.text || (v.segments || []).reduce((b, s) => (Math.abs(s.start - at) < Math.abs((b?.start ?? 1e9) - at) ? s : b), null)?.text || '';
-  app.post('/api/v/:id/comments', gated, (q, res) => {
+  app.post('/api/v/:id/comments', limit, gated, (q, res) => {
     const text = String(q.body.text || '').slice(0, 1000).trim(); if (!text) return res.sendStatus(400);
     const w = who(q), at = +q.body.at || 0;
     const c = { id: store.newId(4), author: w.name, text, at, createdAt: Date.now(), mentions: [...text.matchAll(/@(\w+)/g)].map((m) => m[1]) };
@@ -83,7 +84,7 @@ function mount(app, ctx) {
     c.mentions.forEach((m) => store.notify({ type: 'mention', videoId: v.id, title: v.title, by: w.name, to: m, text, t: at, snippet: snippet(v, at) }));
     store.log(v.id, 'Commented', w.name); res.json(viewModel(v, q.owner));
   });
-  app.post('/api/v/:id/reactions', gated, (q, res) => {
+  app.post('/api/v/:id/reactions', limit, gated, (q, res) => {
     const e = String(q.body.emoji || '').slice(0, 8), sup = !!q.body.super, w = who(q);
     const v = store.update(q.video.id, (x) => ({ reactions: { ...x.reactions, [e]: (x.reactions[e] || 0) + (sup ? 3 : 1) }, reactionEvents: [...x.reactionEvents, { emoji: e, at: +q.body.at || 0, by: w.name, super: sup }].slice(-500) }));
     if (!q.owner) store.notify({ type: 'reaction', videoId: v.id, title: v.title, by: w.name, text: `${sup ? 'super-reacted' : 'reacted'} ${e}`, t: +q.body.at || 0, snippet: snippet(v, +q.body.at || 0) });
@@ -101,12 +102,29 @@ function mount(app, ctx) {
     const lang = String(q.query.lang || '').slice(0, 30);
     try { res.json(lang && lang !== 'original' ? await extras.translateSegments(q.video, lang) : q.video.segments || []); } catch (e) { res.status(502).json({ error: e.message }); }
   });
+  // U3: one Server-Sent Events stream instead of polling. A watch page subscribes to its own video; the library subscribes to everything (owner only).
+  // The payload only says *what* changed; the page refetches it. Bursts (progress updates) are coalesced to one event per 200 ms.
+  app.get('/api/events', (q, res) => {
+    const vid = q.query.video ? String(q.query.video) : null;
+    if (vid) { const v = store.get(vid); if (!v) return res.sendStatus(404); const a = access(q, v); if (a !== 'ok') return res.sendStatus(GATE_STATUS[a] || 403); }
+    else if (!isOwner(q)) return res.sendStatus(403);
+    res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.flushHeaders(); res.write('retry: 2000\n\n');
+    let pending = null;
+    const flush = () => { const ids = [...pending]; pending = null; res.write(`event: video\ndata: ${JSON.stringify({ ids })}\n\n`); };
+    const onVideo = (id) => { if (vid && id !== vid) return; if (!pending) { pending = new Set(); setTimeout(flush, 200); } pending.add(id); };
+    const onSettings = () => res.write('event: settings\ndata: {}\n\n');
+    store.events.on('video', onVideo); if (!vid) store.events.on('settings', onSettings);
+    const beat = setInterval(() => res.write(': ping\n\n'), 20000);
+    q.on('close', () => { clearInterval(beat); store.events.off('video', onVideo); store.events.off('settings', onSettings); });
+  });
+
   // Cursor + clicks for the player. Recordings made by the v2 recorder keep them in timeline.json; older ones have track.json.
   app.get('/api/v/:id/track', gated, (q, res) => {
     const dir = store.videoDir(q.video.id);
     const tl = path.join(dir, 'timeline.json'), old = path.join(dir, 'track.json');
     try {
-      if (fs.existsSync(tl)) { const t = JSON.parse(fs.readFileSync(tl, 'utf8')); return res.json({ cursor: t.cursor || [], clicks: (t.clicks || []).map(([at, x, y, button]) => ({ t: at, x, y, button })), size: t.screen ? [t.screen.width, t.screen.height] : undefined }); }
+      if (fs.existsSync(tl)) { const t = JSON.parse(fs.readFileSync(tl, 'utf8')); return res.json({ cursor: t.mode === 'cam' ? [] : t.cursor || [], clicks: t.mode === 'cam' ? [] : (t.clicks || []).map(([at, x, y, button]) => ({ t: at, x, y, button })), size: t.screen ? [t.screen.width, t.screen.height] : undefined, crop: t.crop || null, windowSource: t.bubbleSpace === 'frame' }); }
       if (fs.existsSync(old)) return res.type('json').send(fs.readFileSync(old));
     } catch (e) { return res.status(500).json({ error: e.message }); }
     res.json({ cursor: [], clicks: [] });

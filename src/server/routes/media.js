@@ -1,7 +1,7 @@
 // Video files, thumbnails and step screenshots. Viewers need the unlock cookie for everything here, thumbnails included.
 const path = require('path');
 const store = require('../../store');
-const { gated, effectivePrivacy, access } = require('../auth');
+const { gated, effectivePrivacy, access, GATE_STATUS } = require('../auth');
 
 function mount(app) {
   const mediaFile = (v, name) => {
@@ -22,7 +22,8 @@ function mount(app) {
   });
   app.get('/media/:id/:file', (q, res) => {
     const v = store.get(q.params.id); if (!v) return res.sendStatus(404);
-    if (access(q, v) !== 'ok') return res.sendStatus(403); // viewers need the unlock cookie, thumbnails included
+    const a = access(q, v);
+    if (a !== 'ok') return res.sendStatus(GATE_STATUS[a] || 403); // viewers need the unlock cookie, thumbnails included; 423 = the Privacy Guard has not cleared this video yet
     const f = mediaFile(v, q.params.file); if (!f) return res.sendStatus(404);
     res.sendFile(path.join(store.videoDir(v.id), f), (err) => { if (err && !res.headersSent) res.sendStatus(404); }); // sendFile handles HTTP ranges
   });

@@ -145,7 +145,7 @@ Status: **all checks pass** (`node tests/e2e/run.js all`: 59/59 = acceptance 27,
 6. **Probe findings that shaped the code:** a fresh MediaRecorder's first 2–3 frames arrive late, so each recording does a 400 ms throwaway warm-up (this took pacing std from up to 4.5 ms to under 1.5 ms); creating or showing a window mid-capture stalls it, so every overlay is created and painted before `__begin`; `track.getSettings()` is wrong for window capture (reported 7680×4320), so the real size is measured from a frame; Chromium lists only layer-0 windows as capture sources.
 7. **Colour:** the Loom reference PNGs carry a Display P3 profile (`cICP`), so sampled colours are stored as `color(display-p3 …)` in `shared/ui.css`. Writing the same numbers as sRGB hex washed the red button out (174,66,41 instead of 188,56,28).
 
-**Interim composite bridge (until Phase 2).** `pipeline/composite.js` is a pure function from `timeline.json` plus segment files to one ffmpeg command: concat, crop, lanczos downscale (never upscale), 60 fps, shape-masked camera bubble following the recorded keyframes, one hardware encode. Not yet baked in: camera filters and frames, cursor highlight and click ripples, zoom, speed. Those are recorded in the timeline and visible live, but **absent from the published video until Phase 2**.
+**Interim composite bridge (closed in Phase 2: camera filters and frames are now in the published video; cursor highlight, ripples and zoom are rendered by the player).** `pipeline/composite.js` is a pure function from `timeline.json` plus segment files to one ffmpeg command: concat, crop, lanczos downscale (never upscale), 60 fps, shape-masked camera bubble following the recorded keyframes, one hardware encode. Not yet baked in: camera filters and frames, cursor highlight and click ripples, zoom, speed. Those are recorded in the timeline and visible live, but **absent from the published video until Phase 2**.
 
 **UI (§3d) status.** Done to the Loom reference: launcher and control bar (tokens sampled from `design/loom-ref/`, living only in `shared/ui.css`). **No reference exists** for the camera bubble, countdown, speaker notes, area picker or annotator, so they were moved onto the tokens and keep their old layout and functions. Send references before Phase 2 if you want them restyled. Deliberate deviations from Loom: a one-line summary under the launcher rows; the launcher's Effects/Quality/Notes/More replace Loom's Blur/Public slots; control-bar tooltips are native `title` tooltips.
 
@@ -154,7 +154,7 @@ Status: **all checks pass** (`node tests/e2e/run.js all`: 59/59 = acceptance 27,
 - Source quality is the default and big: published 35.9 Mb/s on busy content (about 270 MB/min), 10.5 Mb/s on a quiet desktop (about 80 MB/min). This bears on decision 2 in section 5.
 - **Do not rebuild `Spool.app`** until Phase 5: an ad-hoc-signed rebuild resets Screen Recording permission. Phase 1 did not rebuild it. Run the new code with `npm start`.
 
-### Phase 2: Fast pipeline (composite, publish, AI in the background) · Oct 16
+### Phase 2: Fast pipeline (composite, publish, AI in the background) · Oct 16 — ✅ done 2026-10-15 (results below the tasks)
 **Also in this phase:** bugs B4, B6, B11, B12, B15–B19, B22 and UI items U3, U11, U12, U14–U19.
 
 **Tasks**
@@ -183,6 +183,61 @@ Status: **all checks pass** (`node tests/e2e/run.js all`: 59/59 = acceptance 27,
 - Output is 1 encode generation: ≥ 8 Mbps at 1080p, native resolution when "Source", 60 fps.
 - A viewer request (cookie `sp_asviewer=1`) to a video whose Privacy Guard hasn't finished gets 423/"checking", never the file.
 - Test video with a fake API key and email (see `agents` tests): both blurred in the published file.
+
+#### Phase 2 results (executed 2026-10-15, Apple M2 8-core, 1440×900 @2x; Ollama qwen3:8b, resident)
+Status: **all checks pass** (`SPOOL_E2E_RING=0.12,0.45 node tests/e2e/run.js all`: 77/77 = Phase 1 scenarios 59 + `pipeline` 18; `npm test`: 97/97). One run, numbers below; the range over my last runs is shown where it moved.
+
+| Acceptance check | Target | Measured |
+|---|---|---|
+| Stop → owner can press play (24 s Screen+Cam, 1080p, noise patch = worst-case content) | ≤ 8 s | **7.6 s** (7.4–7.6 over 5 runs): composite 7.5 s + thumbnail 0.1 s. **Thin margin**, see caveat 1 |
+| Privacy Guard clears the video for viewers (since Stop) | ≤ 20 s | **18.2 s** (16.9–19.2): OCR+rules 3.9 s, blur pass 6.7 s, model judgement running alongside the blur |
+| AI notes finished (since Stop) | ≤ 60 s | **26.3 s** total: transcribe 2.6 s, Planner/Insights/Guide 5.4 s |
+| Published file | ≥ 8 Mb/s at 1080p, 60 fps, one encode generation | 1728×1080, 12.3 Mb/s, 60.0 fps, AAC (the blur pass is the only second generation, and only when something was found) |
+| Source quality published | native, 60 fps | 2880×1800, 60.0 fps, 35.6 Mb/s |
+| Fake e-mail + fake API key on screen | both blurred | both found by the rules; luma std of the two regions 102→6 and 103→6 (blurred flat) |
+| Unblurred copy | not kept (B16) | `original.mp4`, `video.blur.mp4` and `work/` all gone |
+| Viewer request before the guard passes | 423, never the file | 423 for page data, video, thumbnail, download, track and event stream (unit tests); the owner always gets 200 |
+| Privacy Guard OCR | ≤ 10 s | **1.5–3.9 s** for 12–25 frames read of 48 sampled (Apple Vision) |
+| Speech | ≤ 0.25× realtime | **0.07×** (27 s clip in 1.9 s) with the existing model |
+| Phase 1 checks (rerun) | | all pass: pacing std 1.39 and 1.57 ms, 57.3–57.5 fps, 48 Mb/s raw, cursor feed 60.1 Hz |
+
+**Benchmarks (speech, 27.2 s `say` clip, Apple M2, warm cache)**
+
+| Model | Load | Transcribe | × realtime |
+|---|---|---|---|
+| `Xenova/whisper-base` fp32 (kept) | 0.6–0.7 s | 1.4–1.9 s | 0.05–0.07 |
+| `onnx-community/whisper-base` q8 | 0.4 s | 1.6–1.7 s | 0.06 |
+| `onnx-community/whisper-tiny.en` q8 | 0.3 s | 1.0–1.1 s | 0.04 |
+
+The old 108 s was not Whisper. It was OCR in WASM, two software encodes and everything fighting for the CPU. **No change to the speech engine**: whisper.cpp / `smart-whisper` was not needed and is not added. Word timestamps for Phase 3 are a flag on the same pipeline.
+
+Encoder benchmark (24 s of 1728×1080, same content): `h264_videotoolbox` 6.5 s (about 220 fps, linear in length, the same with 1–4 parallel encodes, so it is one hardware engine), `libx264 ultrafast` 2.4 s but 93 MB instead of 35 MB, `veryfast crf20` 4.2 s / 32 MB. I kept VideoToolbox as §3 says.
+
+**What was built**
+- **Composite** (`pipeline/composite.js`, `filters.js`, `masks.js`): camera filters (all 7, ffmpeg chains; documented where they differ from the CSS preview), frame rings (all 6, drawn from the same signed-distance maths as the shape mask), runs split on size/shape/filter/frame. The same filter graph also writes the Privacy Guard's frames (2 fps JPEGs at ≤ 2048 px plus a 9×8 gray stream for the hash), so scanning needs no second decode. Snapshot tests of the full ffmpeg arguments for 4 timelines (`UPDATE_SNAPSHOTS=1 npm test` regenerates).
+- **Order** (`agents/orchestrator.js`): composite → thumbnail → `ready` → Privacy Guard → blur if needed → `shareable` → Transcriber → Planner → Insights → Guide. Each finished stage is checkpointed (`pipe`), so a quit resumes after the last one. Stage durations go to `spool.log` (`pipeline <id> <stage> <s>`) and to `timings` in the video record, shown in the owner's AI Crew tab data.
+- **B4 queue** (`agents/queue.js`): one job at a time, persisted in `db.jobs`, requeued once after an interrupted start and marked failed after two. Tests cover overlap, failure, and both restart cases.
+- **Privacy Guard**: frames picked by a 64-bit difference hash (duplicate = ≤ 2 bits different, but a frame is read at least every 2 s so a small change cannot hide); Apple Vision OCR through `agents/native/vision-ocr.swift` (compiled once into `<data>/models/bin`, about 10 s, falls back to tesseract.js without Xcode's command line tools or off macOS); rules gate publishing; the model judgement runs while the first blur pass encodes, so a clean video waits for max(blur, model) and a video the model flags beyond the rules gets a second blur pass (not exercised by the e2e: the model found nothing extra on the fixture).
+- **Server**: B6, B11, B12, B16, B17, B18, B22 (below), SSE `/api/events`, `/api/models`, per-video `cursorFx` / `autoZoom`.
+- **Player** (`server/public/player.js`): cursor highlight, click ripples and auto-zoom from `timeline.json` (spring, 1.8×, starts 0.25 s before a click, eases out 1.5 s after the last one), B19 binary search with a sequential hint, skip while paused and unchanged, confetti on one canvas.
+- **UI**: U3 (event stream on watch page and library, morph updates), U11, U12, U14, U15, U16, U17, U18, U19.
+
+**Bugs closed:** B4 (queue), B6 (blocked viewers get "owner hasn't set a password", `password` removed from the workspace default and rejected by the API), B11 (`closeAllConnections` before `close`; a test switches LAN with an event stream open), B12 (120 s timeout, one retry; tested against a server that never answers), B15 (one ffmpeg run for sampling), B16 (unblurred file deleted unless **Keep the unblurred original** is on), B17 (Settings → AI shows model status and a Download button; the Transcriber says "waiting for the speech model" instead of failing), B18 (shared in-flight translation), B19, B22 (20-write burst, 2/s refill, owner exempt).
+
+**Caveats (read these)**
+1. **7.6 s vs the 8 s target is the hardware, not slack in the code.** The encode is the cost (about 220 fps on this M2 for noisy content; a quiet screen encodes faster). A longer or busier clip, or an M1 base chip, will miss 8 s. The noise patch in the test is deliberately worst-case. If it matters, the lever is `libx264 ultrafast` for the *owner preview* only (2.4 s, 2.6× bigger file) and VideoToolbox for the final file. Not done.
+2. **The model judgement only runs when the model is already in memory.** Cold, qwen3:8b takes 5–20 s to load, which would eat the guard's budget; the guard then runs on its rules alone (e-mail, keys, tokens, cards, SSN, phone, passwords, long secrets) and asks Ollama to load the model for next time. Warm, one judgement call took 4.3–6.1 s here (4.9 s in the final run) and found nothing beyond the rules. So the model's extra catch (names, addresses) is best-effort; the rules are the floor. A recording made right after launch is checked by rules only. Loading the model during a recording cost frames (measured: pacing std 2.7 ms and a 245 ms gap), so it is warmed only when idle (45 s after launch, and 2 s after each job), never while recording.
+3. **Dedupe trades a little sensitivity for speed.** 48 frames sampled, 12–25 read. A change smaller than about 3 bits of the 64-bit hash that lasts under 2 s can be missed. Reading every frame would add 2–3 s.
+4. **Cursor highlight, ripples and zoom exist only in the player**, not in the downloaded file or the embed's download. Burning them in is an export task (Phase 3).
+5. **Camera filters are close to, not identical to, the CSS preview** (hue rotation in YUV vs RGB, additive vs multiplicative brightness). I checked that every filter and frame renders and that the frame art looks right (circle ring, gradient, glow); I did not compare filtered video against the live preview side by side.
+6. **The ring-guard acceptance check depends on what else is on your screen.** At the default spot, your Margin app's windows (layer 25) sit on top of the guard, and the check fails for that reason. Use `SPOOL_E2E_RING=0.12,0.45` to move it. I confirmed the cause by listing windows at that spot, not by looking at pixels. A first run during heavy system load (load average 14) also failed the pacing checks; reruns on a calm machine pass.
+7. **Verified in the browser pane against a fixture server** (real server, synthetic video, recorded-style cursor feed): cursor ring and ripple drawn, zoom to 1.8× after a click and back out, per-video toggles, owner banner "Privacy Guard is checking…", viewer 423, keyed library updates over the event stream (only the changed card was replaced), lazy images and the progress ring. **Not exercised in a browser:** upload progress, the share-modal focus trap and Esc, tab underline slide, optimistic reactions, confetti. They are syntax-checked and follow the specs, but treat them as untested. The zoom spring was checked numerically (no overshoot, 98 % in 0.53 s) because the background pane throttles animation frames.
+8. **Windows and Linux paths** (libx264 fallback, tesseract) are unit-tested as arguments only, not run.
+
+**Not done in this phase**
+- §3d screens 3 and 4 (watch page and library in Loom's look). `design/loom-ref/` holds only the recorder-menu screenshot; per §3d, I did not style them without references. **Send screenshots of the Loom watch page (with comments/transcript panel and share modal) and library** and I will do them. The Phase 2 UI work above is behaviour, not skin.
+- Burning cursor effects into exports; the `libx264` owner-preview idea in caveat 1.
+- U13 and B23 stay in Phase 3.
 
 ### Phase 3: Editor · Oct 17
 **Also in this phase:** B23, U13 (custom player controls + hover thumbnails).

@@ -27,7 +27,14 @@ function feed(model) {
   };
 }
 
-async function translateSegments(v, lang) {
+// B18: two viewers asking for the same language at once share one model run.
+const inflight = new Map();
+function translateSegments(v, lang) {
+  const key = `${v.id}:${lang.replace(/[^\w-]/g, '').toLowerCase()}`;
+  if (!inflight.has(key)) inflight.set(key, translateOnce(v, lang).finally(() => inflight.delete(key)));
+  return inflight.get(key);
+}
+async function translateOnce(v, lang) {
   const safe = lang.replace(/[^\w-]/g, '').toLowerCase(); const cache = path.join(store.videoDir(v.id), `captions_${safe}.json`);
   if (fs.existsSync(cache)) return JSON.parse(fs.readFileSync(cache, 'utf8'));
   if (!(await llm.available())) throw new Error('Ollama is not running');
@@ -45,4 +52,4 @@ function startMaintenance() {
   const sweep = () => { const days = store.getSettings().retentionDays; if (!days) return; const cut = Date.now() - days * 86400000; store.list().forEach((v) => { if (v.createdAt < cut) { store.remove(v.id); store.log(null, `Retention policy deleted "${v.title}"`, 'system'); } }); };
   sweep(); setInterval(sweep, 3600000).unref();
 }
-module.exports = { feed, translateSegments, storageUsed, startMaintenance };
+module.exports = { feed, translateSegments, inflightCount: () => inflight.size, storageUsed, startMaintenance };

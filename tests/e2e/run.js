@@ -11,7 +11,7 @@ const os = require('os');
 const path = require('path');
 const root = path.join(__dirname, '..', '..');
 const { probe } = require('./probe');
-const { sampleRegions, fractionMatching, near } = require('./pixels');
+const { sampleRegions, fractionMatching, lumaStd, near } = require('./pixels');
 const { readTimeline, segmentInputs } = require(path.join(root, 'src/pipeline/segments'));
 const { buildComposite } = require(path.join(root, 'src/pipeline/composite'));
 const { runFfmpeg } = require(path.join(root, 'src/pipeline/encode'));
@@ -35,6 +35,9 @@ const SCENARIOS = {
   window: { config: { mode: 'screen-cam', seconds: 4, windowSource: 'patch', patch: true, script: [[1000, 'pen'], [1400, 'notes'], [1800, 'notes'], [2000, 'pen'], [2500, 'toggle-pause'], [3000, 'toggle-pause']] }, expected: 3.5, screen: true, window: true, informational: true },
   // Starts through the real launcher window (preferences seeded, quality chosen from the Quality panel, Start clicked): the launcher -> IPC -> session path.
   ui: { config: { ui: { quality: '1080p' }, seconds: 3 }, expected: 3.0, screen: true, ui: true, informational: true },
+  // PLAN.md Phase 2: 24 s Screen + Cam through the whole pipeline (Privacy Guard and the AI crew are on). A window with a fake e-mail address and a fake API
+  // key is on screen, next to the noise patch, so the published file must have both blurred. Stage timings come from the video record in db.json.
+  pipeline: { config: { mode: 'screen-cam', seconds: 24, quality: '1080p', patch: true, secrets: true }, expected: 24.0, screen: true, pipeline: true, informational: true },
 };
 
 const results = [];
@@ -44,13 +47,13 @@ function check(name, ok, detail = '') { results.push({ name, ok }); console.log(
 function runApp(scenario, dataDir) {
   return new Promise((resolve, reject) => {
     const electron = require('electron'); // from Node this is the path of the Electron binary
-    const env = { ...process.env, SPOOL_DATA: dataDir, SPOOL_PORT: '4799', SPOOL_SKIP_AI: '1', SPOOL_SELFTEST: JSON.stringify(scenario.config) };
+    const env = { ...process.env, SPOOL_DATA: dataDir, SPOOL_PORT: '4799', ...(scenario.pipeline ? {} : { SPOOL_SKIP_AI: '1' }), SPOOL_SELFTEST: JSON.stringify(scenario.config) };
     const p = spawn(electron, ['.'], { cwd: root, env });
-    let buf = '', result = null, tail = '';
-    const onData = (d) => { buf += d; let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); tail = (tail + line + '\n').slice(-3000); if (line.startsWith('SELFTEST_RESULT ')) result = JSON.parse(line.slice(16)); } };
+    let buf = '', result = null, tail = ''; const logLines = [];
+    const onData = (d) => { buf += d; let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); tail = (tail + line + '\n').slice(-3000); if (/ (pipeline|privacy) /.test(line)) { logLines.push(line.replace(/^\S+ /, '')); } if (line.startsWith('SELFTEST_RESULT ')) result = JSON.parse(line.slice(16)); } };
     p.stdout.on('data', onData); p.stderr.on('data', (d) => { tail = (tail + d).slice(-3000); });
-    const killer = setTimeout(() => { p.kill('SIGKILL'); reject(new Error('app did not finish in time\n' + tail)); }, (scenario.config.seconds + 150) * 1000);
-    p.on('close', () => { clearTimeout(killer); result ? resolve(result) : reject(new Error('no SELFTEST_RESULT line from the app\n' + tail)); });
+    const killer = setTimeout(() => { p.kill('SIGKILL'); reject(new Error('app did not finish in time\n' + tail)); }, (scenario.config.seconds + (scenario.pipeline ? 330 : 150)) * 1000);
+    p.on('close', () => { clearTimeout(killer); if (result) result.logLines = logLines; result ? resolve(result) : reject(new Error('no SELFTEST_RESULT line from the app\n' + tail)); });
   });
 }
 
@@ -58,6 +61,10 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
 
 async function acceptance(name, scenario, dataDir) {
   console.log(`\n== ${name}: ${JSON.stringify(scenario.config)}`);
+  if (scenario.pipeline) { // reuse the models the real app already downloaded and the compiled Vision tool, instead of fetching 150 MB into a throwaway folder
+    const real = path.join(os.homedir(), 'Library', 'Application Support', 'spool', 'models');
+    fs.mkdirSync(dataDir, { recursive: true }); if (fs.existsSync(real)) fs.symlinkSync(real, path.join(dataDir, 'models'));
+  }
   const r = await runApp(scenario, dataDir);
   const dir = r.dir, tl = r.timeline, scale = r.display.scaleFactor, expected = scenario.expected;
   console.log(`  display ${r.display.width}x${r.display.height} @${scale}x  mime ${tl.mime}  audio ${tl.audio}  segments ${tl.segments.map((s) => `#${s.n}:${f(s.dur)}s`).join(' ')}`);
@@ -131,7 +138,7 @@ async function acceptance(name, scenario, dataDir) {
     const c = sampleRegions(path.join(dir, 'video.mp4'), 0.8, [rg])[0];
     check('window recording: camera bubble composited bottom-left', near(c, [242, 201, 160], 45), c ? `mean rgb ${c.r},${c.g},${c.b} vs skin 242,201,160` : 'unreadable');
   } else if (scenario.screen) {
-    check('published video keeps the native size at Source quality', vid.video.width === wantW, `${vid.video.width}x${vid.video.height}`);
+    if (!scenario.pipeline) check('published video keeps the native size at Source quality', vid.video.width === wantW, `${vid.video.width}x${vid.video.height}`);
     check('published video is 60 fps', vid.avgFps >= 55, `${f(vid.avgFps, 1)} fps`);
     const bub = r.guards.find((g) => g.name === 'bubble');
     if (bub) { // the fake camera's forehead is skin-coloured: it must be where the live bubble was
@@ -152,6 +159,29 @@ async function acceptance(name, scenario, dataDir) {
       const p = probe(out), want = +q.replace('p', '');
       check(`${q} preset: height ${want}, even width, ${f(plan.total, 1)} s long`, p.video.height === want && p.video.width % 2 === 0 && Math.abs((p.containerDuration ?? p.videoSeconds) - plan.total) <= 0.15, `${p.video.width}x${p.video.height}, ${f(p.bitrateMbps, 1)} Mb/s, composite took ${f(took, 1)} s`);
     }
+  }
+
+  // ---- the whole pipeline (Phase 2) ----
+  if (scenario.pipeline) {
+    const db = JSON.parse(fs.readFileSync(path.join(dataDir, 'library', 'db.json'), 'utf8')), v = db.videos[r.id], T = v.timings || {};
+    console.log(`  stage timings (since Stop): ${Object.entries(T).map(([k, x]) => `${k} ${f(x / 1000, 1)}s`).join(', ')}`);
+    for (const l of r.logLines) if (/^privacy /.test(l)) console.log('  ' + l);
+    check('Stop -> owner can press play within 8 s', T.readyForOwner <= 8000, `${f(T.readyForOwner / 1000, 1)} s (composite ${f(T.composite / 1000, 1)} s, thumbnail ${f(T.thumbnail / 1000, 1)} s)`);
+    check('Privacy Guard cleared the video within 20 s of Stop', T.shareable <= 20000, `${f(T.shareable / 1000, 1)} s (scan ${f(T.privacyScan / 1000, 1)} s${T.privacyBlur ? `, blur pass ${f(T.privacyBlur / 1000, 1)} s` : ''})`);
+    check('AI notes finished within 60 s of Stop', T.total <= 60000, `${f(T.total / 1000, 1)} s total, transcribe ${f((T.transcribe || 0) / 1000, 1)} s, agents ${f((T.ai || 0) / 1000, 1)} s`);
+    check('video is cleared for viewers (shareable) and finished', v.shareable === true && v.pipe === 'done' && v.status === 'ready', `shareable ${v.shareable}, pipe ${v.pipe}, status ${v.status}`);
+    const types = (v.redactions || []).map((x) => x.type);
+    check('Privacy Guard found the fake e-mail address and the fake API key', types.includes('email') && types.includes('api key'), `found: ${types.join(', ') || 'nothing'}`);
+    check('published video: 1080 high, >= 8 Mb/s, 60 fps, one encode generation', vid.video.height === 1080 && vid.bitrateMbps >= 8 && vid.avgFps >= 55, `${vid.video.width}x${vid.video.height}, ${f(vid.bitrateMbps, 1)} Mb/s, ${f(vid.avgFps, 1)} fps`);
+    const sc = r.display.scaleFactor, k = vid.video.height / (r.display.height * sc); // published pixels per display point
+    for (const sec of r.secrets) {
+      const rg = { x: Math.max(0, Math.round(sec.rect.x * sc * k)), y: Math.max(0, Math.round(sec.rect.y * sc * k)), w: Math.max(8, Math.round(sec.rect.w * sc * k)), h: Math.max(8, Math.round(sec.rect.h * sc * k)) };
+      const raw = lumaStd(path.join(dir, main.screen), 6, { x: Math.round(sec.rect.x * sc), y: Math.round(sec.rect.y * sc), w: Math.round(sec.rect.w * sc), h: Math.round(sec.rect.h * sc) });
+      const out = lumaStd(path.join(dir, 'video.mp4'), 6, rg);
+      check(`the ${sec.name} text is blurred in the published file (luma std ${f(raw, 0)} raw, ${f(out, 0)} published)`, raw != null && out != null && raw > 40 && out < raw * 0.5, `raw ${f(raw, 1)} -> published ${f(out, 1)}`);
+    }
+    check('sample frames and working files are gone', !fs.existsSync(path.join(dir, 'work')) && !fs.existsSync(path.join(dir, 'video.blur.mp4')) && !fs.existsSync(path.join(dir, 'original.mp4')), 'work/, video.blur.mp4, original.mp4 absent');
+    check('no unblurred copy kept (B16)', !fs.existsSync(path.join(dir, 'original.mp4')));
   }
 
   // ---- timeline ----

@@ -42,23 +42,29 @@ const effectivePrivacy = (v) => {
   return { mode, expiresAt, allowDownload: p.allowDownload !== false && !s.disableDownloads, passwordHash: p.passwordHash };
 };
 
-// 'ok' or the reason a viewer is blocked: 'private' | 'expired' | 'password' | 'email'
+// 'ok' or the reason a viewer is blocked: 'checking' | 'private' | 'expired' | 'nopassword' | 'password' | 'email'
+// 'checking' is the Privacy Guard gate (Phase 2): until it has cleared a recording, only the owner can watch it. `shareable` is undefined on
+// videos from before the gate existed, which stay watchable.
 function access(req, v) {
   if (isOwner(req)) return 'ok';
+  if (v.shareable === false && v.status !== 'failed') return 'checking';
   const p = effectivePrivacy(v);
   if (p.mode === 'private') return 'private';
+  if (p.mode === 'password' && !p.passwordHash) return 'nopassword'; // B6: nothing could ever satisfy the gate, so say so instead of asking for a password
   if (p.expiresAt && Date.now() > p.expiresAt) return 'expired';
   if (p.mode === 'password' || p.mode === 'email') return cookies(req)['sp_' + v.id] === token(v) ? 'ok' : p.mode;
   return 'ok';
 }
 const unlockCookie = (v) => `sp_${v.id}=${token(v)}; Path=/; Max-Age=2592000; SameSite=Lax; HttpOnly`;
 
+const GATE_STATUS = { checking: 423, private: 403, expired: 403, nopassword: 403 };
+
 // Middleware for /api/v/:id/... and /media/:id/...: loads the video and applies the link's privacy settings.
 const gated = (req, res, next) => {
   const v = store.get(req.params.id); if (!v) return res.status(404).json({ error: 'not found' });
   const a = access(req, v);
-  if (a !== 'ok') return res.status(a === 'private' || a === 'expired' ? 403 : 401).json({ gate: a, title: a === 'password' || a === 'email' ? v.title : undefined });
+  if (a !== 'ok') return res.status(GATE_STATUS[a] || 401).json({ gate: a, title: a === 'password' || a === 'email' ? v.title : undefined });
   req.video = v; req.owner = isOwner(req); next();
 };
 
-module.exports = { isOwner, fromOwnerMachine, previewingAsViewer, requireOwner, gated, cookies, hashPw, checkPw, effectivePrivacy, access, unlockCookie };
+module.exports = { GATE_STATUS, isOwner, fromOwnerMachine, previewingAsViewer, requireOwner, gated, cookies, hashPw, checkPw, effectivePrivacy, access, unlockCookie };
