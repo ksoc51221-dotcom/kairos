@@ -134,7 +134,7 @@ function createOutline(b) {
 // It is created hidden before capture starts and only shown on first pen use. Creating a full-screen window in the middle of a recording
 // froze capture for about 330 ms (measured), and a hidden window costs the compositor nothing.
 function createDraw(d) {
-  const w = load('draw', 'draw/index.html', { x: d.x, y: d.y, width: d.width, height: d.height, alwaysOnTop: true, hasShadow: false, focusable: true });
+  const w = load('draw', 'draw/index.html', { x: d.x, y: d.y, width: d.width, height: d.height, alwaysOnTop: true, hasShadow: false, focusable: true, acceptFirstMouse: true });
   floatTop(w); w.setIgnoreMouseEvents(true); return w;
 }
 // Presenter-only cursor ring: content-protected so it never appears in the recording (B21).
@@ -143,7 +143,7 @@ function createRing() {
   w.setIgnoreMouseEvents(true); floatTop(w); w.setContentProtection(true); w.showInactive(); return w;
 }
 function createNotes({ x, y, mode }) {
-  const w = load('notes', 'notes/index.html', { width: 440, height: mode === 'prompt' ? 340 : 400, x, y, alwaysOnTop: true, focusable: true });
+  const w = load('notes', 'notes/index.html', { width: 440, height: mode === 'prompt' ? 340 : 400, x, y, alwaysOnTop: true, focusable: true, acceptFirstMouse: true });
   floatTop(w); w.setContentProtection(true); return w; // never part of the recording
 }
 

@@ -367,12 +367,12 @@ Status: **all acceptance checks pass.** `npm test`: **154/154** (was 119). `node
 **Batched verification** (you were warned; run once, then stopped at your request)
 | Check | Result |
 |---|---|
-| `tests/e2e/speech.js` ×2 | 7/7 both times. Cleared for viewers **28.9 s and 33.9 s** after the job started; the Phase 4 note said 3.6–5.5 s. I did not find out why (the machine was busy with my other runs and Ollama; not re-measured alone). The bleep itself worked: transcript reads "the password is [bleep], and the pin is [bleep]" and Whisper cannot hear them in the published audio |
+| `tests/e2e/speech.js` ×2 | 7/7 both times. It printed "cleared after 28.9 s / 33.9 s", **which was a measurement bug in the test, not the product (see the follow-up below)**. The bleep itself worked: transcript reads "the password is [bleep], and the pin is [bleep]" and Whisper cannot hear them in the published audio |
 | `tests/e2e/actions.js` (new; real qwen3:8b, 6 actions × 3 videos) | **18/18 valid**, 7.8–21 s each, 220 s total |
 | `node tests/e2e/run.js all` | **76/83**. Phase 1–3 scenarios all pass except the focus check (below). Failures: |
-| · B28 "Spool never frontmost" ×4 | **Unresolved, probably confounded.** An **older Spool.app of yours (started 16:03, still running) is frontmost** in several runs ("before Spool, after Spool"), so the check sees it. In the `ui` scenario "Electron" also appears frontmost; I could not tell whether that is the launcher focusing itself as before or a regression, because the other instance was running. Needs a rerun with Spool.app quit |
-| · Privacy Guard ≤ 20 s | **26.1 s** (scan 3.6 s, blur pass 15.4 s, the model judgement ran). Earlier runs: 15.6–18.2 s. Likely load, **not shown to be** |
-| · Fake key found and blurred | **Open problem.** This run the rules did not match the fake key (`sk-live-…`) in the OCR text; the model found something typed "password", and the key area was only partly covered (luma std 93 → 54, previously 102 → 6). I changed nothing in OCR or the rules, so this looks like OCR output varying between runs, which would mean the rules are weaker than the earlier runs suggested. **A rerun to check was cancelled** when you asked me to make the windows go away |
+| · B28 "Spool never frontmost" ×4 | **Resolved in the follow-up below.** (Original reading: confounded.) An **older Spool.app of yours (started 16:03, still running) is frontmost** in several runs ("before Spool, after Spool"), so the check sees it. In the `ui` scenario "Electron" also appears frontmost; I could not tell whether that is the launcher focusing itself as before or a regression, because the other instance was running. Needs a rerun with Spool.app quit |
+| · Privacy Guard ≤ 20 s | **Not reproduced, see the follow-up (8 runs: 15.1–18.5 s).** This run: 26.1 s (scan 3.6 s, blur pass 15.4 s, the model judgement ran). Earlier runs: 15.6–18.2 s. Likely load, **not shown to be** |
+| · Fake key found and blurred | **Handled in the follow-up below; the miss did not reproduce.** In that run: This run the rules did not match the fake key (`sk-live-…`) in the OCR text; the model found something typed "password", and the key area was only partly covered (luma std 93 → 54, previously 102 → 6). I changed nothing in OCR or the rules, so this looks like OCR output varying between runs, which would mean the rules are weaker than the earlier runs suggested. **A rerun to check was cancelled** when you asked me to make the windows go away |
 Captures from the cancelled run were deleted. Nothing was published anywhere.
 
 **Not done**
@@ -380,6 +380,37 @@ Captures from the cancelled run were deleted. Nothing was published anywhere.
 - **README GIF:** there is no recording of Spool to make one from; Phase 6's demo recording can supply it. The README is written without a broken image.
 - No LICENSE file (package.json says MIT; I did not want to invent a copyright holder).
 - The launcher banner and tray warning, and the new screenshot path in the real app, were not exercised in a running window.
+
+#### Phase 5 follow-up (2026-10-16 evening): the three open items, measured with no other Spool running
+Before starting I checked that no Spool.app or dev Electron was running. All screen runs used `caffeinate -d -i` (a temporary assertion, no setting changed). **A first attempt of 5 pipeline runs produced nothing: four runs hung for about 15 minutes each (the app never started recording, or its pipeline never finished) while nobody was at the Mac.** The most likely cause is the display sleeping, which stops screen capture; I did not prove it. After that, unattended screen runs need `caffeinate`.
+
+**1. Fake-key miss.** The rules now run on three views of every OCR line (as read; dashes unified and spaces next to `-` / `_` removed; and additionally folded O/Q→0, l/I/|→1), and every hit is mapped back to the original characters, so the word boxes and the "mask this value everywhere" step still work (`privacy.regexFindings`, `normalise`). The folded view skips the e-mail, password and generic long-secret rules, so ordinary long words do not become "secrets". 3 unit tests (sk-key with long dashes, spaces around dashes, I/l/O look-alikes, card and phone look-alikes, and text that must not match).
+- **Result: 5/5 dedicated pipeline runs found both the e-mail and the key and covered both completely** (luma std 102→0 and 103→0 in every run; the check now demands a std under 15, not just "halved"). Three more in the full runs: 8/8.
+- **What this does and does not show:** in all 5 runs I traced, Apple Vision read the key line identically and correctly (`Denlov key: sk-live-9f8e7d6c5b4a3210abcd`, 12 of 12 sampled frames), so the old rules would have passed these runs too. **The earlier miss did not reproduce, so I cannot show that the normalisation fixed it.** It is covered by unit tests on OCR variants I made up, not by an observed real miss. Treat the original cause as unknown.
+
+**2. B28 focus.** With nothing else of Spool open, two scenarios failed for real reasons (the earlier `cam`/`idle` failures were the old Spool.app):
+- `window`: Spool was frontmost for the whole recording (4.7 s). Cause: switching the pen on called `w.focus()` on the drawing overlay, and opening the teleprompter called `show()`; each activates the app, and macOS gives focus back to nobody when they go. **Fixed:** the pen no longer takes focus (drawing is mouse input), the teleprompter opens with `showInactive()` (the launcher's "edit" notes still take focus, the user is about to type), and both windows accept the first click. Spool frontmost: 4700 ms → 0 ms.
+- `ui`: the launcher the test opens holds focus for 400 ms and then hands it back to the previous app. That is by design (a launcher you open with ⌥⇧R should take keys), so the check for that scenario now allows at most 1 s and says so, instead of "never".
+- The 6 scenarios: B28 passes in all. **Not tested by hand:** drawing with the pen, the Esc key inside the pen overlay (it needs focus, so Esc only works after your first stroke), and typing into the teleprompter after opening it mid-recording. Only the focus behaviour was measured.
+
+**3. Timings, no other Spool running (Apple M2, host app open; 24 s Screen + Cam, 1080p, worst-case noise patch)**
+| Run | Stop → owner | Stop → viewers | AI notes done | Privacy scan | Blur | Whisper |
+|---|---|---|---|---|---|---|
+| dedicated 1 | 7.1 s | 15.3 s | 20.7 s | 1.6 s | 6.7 s | 8.3 s |
+| dedicated 2 | 7.1 | 15.4 | 20.6 | 1.7 | 6.7 | 8.3 |
+| dedicated 3 | 7.1 | 15.3 | 20.3 | 1.5 | 6.7 | 8.2 |
+| dedicated 4 | 7.1 | 15.2 | 20.5 | 1.5 | 6.7 | 8.1 |
+| dedicated 5 | 7.1 | 15.1 | 20.1 | 1.5 | 6.6 | 8.1 |
+| inside full run A | 7.3 | 16.7 | 22.2 | 2.5 | 6.9 | 9.4 |
+| inside full run B | 7.0 | 16.2 | 21.7 | 2.4 | 6.7 | 9.2 |
+| inside full run C (last) | 7.2 | 18.5 | 24.4 | 4.5 | 6.7 | 11.2 |
+
+Stop → owner: **7.0–7.3 s (target 8 s, thin margin as before)**. Stop → viewers: **15.1–18.5 s (target 20 s)**, 15.1–15.4 s when run on its own, longer inside the full suite. The 26.1 s seen once earlier did **not** reproduce in 8 runs. Whisper runs next to the blur pass here, so it only costs time once it takes longer than the blur (the last run: 11.2 s against 6.7 s).
+
+**Speech clear time (`tests/e2e/speech.js`, 10 s `say` clip with a spoken password and PIN, run 3 times alone): viewers can watch 4.6 s, 3.7 s and 4.3 s after the job started** (scan 0.5–0.7 s, Whisper 3.4–4.3 s, bleep 0.2 s). The "28.9 s, 33.9 s, and 41.6–48.8 s" printed earlier were **the whole job including the AI notes** (`processVideo()` resolves when the job ends): the test now prints the pipeline's own `shareable` time and the whole-job time separately. That also means the "3.6–5.5 s" in the Phase 4 section was right.
+
+**Final full e2e after all changes: 83/83.** Unit tests 164/164.
+**Not done:** `Spool.app` was **not** rebuilt, so the packaged app does not have these fixes yet (a rebuild keeps Screen Recording permission now that it is signed with "Spool Dev"). No GitHub repo or release.
 
 ### Phase 6: Demo · Oct 21 (buffer Oct 22)
 Business plan one-pager, 3-minute demo script, a recorded demo (made with Spool itself), Q&A cheat sheet.

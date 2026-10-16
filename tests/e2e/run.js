@@ -4,6 +4,7 @@
 //   - frames are only ever read as numbers (pixels.js), never looked at
 //   - the whole capture folder is deleted at the end (pass --keep to keep it)
 //   node tests/e2e/run.js [acceptance|cam|all] [--keep]
+// Run unattended with `caffeinate -d -i node tests/e2e/run.js ...`: if the display sleeps, capture stops and runs hang for minutes.
 // Needs macOS Screen Recording permission for the app that launches it (the same one `npm start` uses).
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -66,7 +67,8 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
 
 async function acceptance(name, scenario, dataDir) {
   console.log(`\n== ${name}: ${JSON.stringify(scenario.config)}`);
-  const frontBefore = frontApp(), seen = new Set(), poll = setInterval(() => { const a = frontApp(); if (a) seen.add(a); }, 100); // every app that was frontmost during the run
+  let held = 0; // polls (100 ms each) during which Spool itself was the frontmost app
+  const frontBefore = frontApp(), seen = new Set(), poll = setInterval(() => { const a = frontApp(); if (a) { seen.add(a); if (/spool|electron/i.test(a)) held++; } }, 100); // every app that was frontmost during the run
   if (scenario.pipeline) { // reuse the models the real app already downloaded and the compiled Vision tool, instead of fetching 150 MB into a throwaway folder
     const real = path.join(os.homedir(), 'Library', 'Application Support', 'spool', 'models');
     fs.mkdirSync(dataDir, { recursive: true }); if (fs.existsSync(real)) fs.symlinkSync(real, path.join(dataDir, 'models'));
@@ -76,7 +78,7 @@ async function acceptance(name, scenario, dataDir) {
   // The pass condition is that Spool itself never became the frontmost app. (Comparing before/after alone also fails when the user, or another
   // session, switches apps while the run is going: that is not Spool taking focus.)
   const mine = [...seen].filter((n) => /spool|electron/i.test(n));
-  if (frontBefore && frontAfter) check(`B28: Spool never became the frontmost app during the run`, mine.length === 0, `frontmost during the run: ${[...seen].map((n) => n.replace(/^"LSDisplayName"=/, '')).join(', ') || 'n/a'}; before ${frontBefore}, after ${frontAfter}`);
+  if (frontBefore && frontAfter) check(scenario.ui ? 'B28: Spool held focus only for the launcher the test opens (at most 1 s)' : 'B28: Spool never became the frontmost app during the run', scenario.ui ? held <= 10 : mine.length === 0, `spool frontmost ${held * 100} ms; frontmost during the run: ${[...seen].map((n) => n.replace(/^"LSDisplayName"=/, '')).join(', ') || 'n/a'}; before ${frontBefore}, after ${frontAfter}`);
   const dir = r.dir, tl = r.timeline, scale = r.display.scaleFactor, expected = scenario.expected;
   console.log(`  display ${r.display.width}x${r.display.height} @${scale}x  mime ${tl.mime}  audio ${tl.audio}  segments ${tl.segments.map((s) => `#${s.n}:${f(s.dur)}s`).join(' ')}`);
 
@@ -189,7 +191,7 @@ async function acceptance(name, scenario, dataDir) {
       const rg = { x: Math.max(0, Math.round(sec.rect.x * sc * k)), y: Math.max(0, Math.round(sec.rect.y * sc * k)), w: Math.max(8, Math.round(sec.rect.w * sc * k)), h: Math.max(8, Math.round(sec.rect.h * sc * k)) };
       const raw = lumaStd(path.join(dir, main.screen), 6, { x: Math.round(sec.rect.x * sc), y: Math.round(sec.rect.y * sc), w: Math.round(sec.rect.w * sc), h: Math.round(sec.rect.h * sc) });
       const out = lumaStd(path.join(dir, 'video.mp4'), 6, rg);
-      check(`the ${sec.name} text is blurred in the published file (luma std ${f(raw, 0)} raw, ${f(out, 0)} published)`, raw != null && out != null && raw > 40 && out < raw * 0.5, `raw ${f(raw, 1)} -> published ${f(out, 1)}`);
+      check(`the ${sec.name} text is blurred in the published file (luma std ${f(raw, 0)} raw, ${f(out, 0)} published)`, raw != null && out != null && raw > 40 && out < raw * 0.5 && out < 15, `raw ${f(raw, 1)} -> published ${f(out, 1)}; fully covered means a luma std under 15 (a solid fill measures about 6, half-covered text 50+)`);
     }
     check('sample frames and working files are gone', !fs.existsSync(path.join(dir, 'work')) && !fs.existsSync(path.join(dir, 'video.blur.mp4')) && !fs.existsSync(path.join(dir, 'original.mp4')), 'work/, video.blur.mp4, original.mp4 absent');
     check('no unblurred copy kept (B16)', !fs.existsSync(path.join(dir, 'original.mp4')));

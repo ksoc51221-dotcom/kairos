@@ -39,13 +39,17 @@ function flushEvents() {
 }
 
 // ---------------- speaker notes ----------------
+// B28: the teleprompter ('prompt') is opened while the user is presenting another app, so it must not pull focus away from it (that app would stop
+// receiving keystrokes, and Spool would stay frontmost until the recording ended). Clicking into it still works at once (acceptFirstMouse).
+// Editing ('edit', from the launcher) is the user asking to type, so it takes focus.
+const showNotes = (w, mode) => (mode === 'prompt' ? w.showInactive() : w.show());
 function openNotes(mode) {
   const text = store.getSettings().notes || '';
   if (!alive(W.notes)) {
     const wa = (S?.display || screen.getPrimaryDisplay()).workArea;
     const w = win.createNotes({ x: wa.x + Math.round(wa.width / 2) - 220, y: wa.y + 20, mode });
-    w.webContents.once('did-finish-load', () => { w.webContents.send('notes:mode', { mode, text }); w.show(); });
-  } else { W.notes.webContents.send('notes:mode', { mode, text }); W.notes.show(); }
+    w.webContents.once('did-finish-load', () => { w.webContents.send('notes:mode', { mode, text }); showNotes(w, mode); });
+  } else { W.notes.webContents.send('notes:mode', { mode, text }); showNotes(W.notes, mode); }
 }
 const closeNotes = () => { if (alive(W.notes)) W.notes.close(); };
 
@@ -192,8 +196,10 @@ const toolState = () => ({ pen: !!S?.pen, cursor: !!S?.cursorOn, notes: alive(W.
 const broadcastTools = () => send('controls', 'tool:state', toolState());
 function toggleTool(t, arg) {
   if (!S) return;
+  log('tool', t);
   if (t === 'pen') {
-    S.pen = !S.pen; const w = ensureDraw(); if (!w.isVisible()) w.showInactive(); w.setIgnoreMouseEvents(!S.pen); w.webContents.send('draw:mode', S.pen); if (S.pen) w.focus();
+    S.pen = !S.pen; const w = ensureDraw(); if (!w.isVisible()) w.showInactive(); w.setIgnoreMouseEvents(!S.pen); w.webContents.send('draw:mode', S.pen); // B28: no w.focus() here. Drawing is mouse input and works without it; taking focus pulled the presenter's app out of the keyboard and Spool never gave it back
+
     emit(['d', epoch(), S.pen ? 1 : 0]);
   } else if (t === 'pen-color') send('draw', 'draw:color', arg);
   else if (t === 'cursor') { S.cursorOn = !S.cursorOn; if (S.cursorOn) ensureRing(); else if (alive(W.ring)) W.ring.close(); }

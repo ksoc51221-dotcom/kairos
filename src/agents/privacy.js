@@ -36,17 +36,41 @@ function boxFor(line, start, end) {
            x1: Math.max(...hit.map((w) => w.x1)), y1: Math.max(...hit.map((w) => w.y1)) };
 }
 
-function regexFindings(line) {
-  const out = [];
-  for (const p of PATTERNS) {
-    for (const m of line.text.matchAll(p.re)) {
-      const value = p.group ? m[p.group] : m[0];
-      if (!value || (p.check && !p.check(value))) continue;
-      const start = m.index + (p.group ? m[0].indexOf(value) : 0);
-      const box = boxFor(line, start, start + value.length);
-      if (box) out.push({ type: p.type, value, box, by: 'rule' });
+// OCR does not read a key the way it was typed: it turns "-" into a long dash, puts spaces next to dashes ("sk- live-9f8e"), and swaps O/0, l/1 and I/1.
+// So the rules run on three views of each line and every hit is mapped back to the characters of the ORIGINAL text, which is what the word boxes
+// and the "mask this value everywhere" step are based on:
+//   1. the line as read;  2. normalised: dashes unified, spaces next to - or _ removed;  3. normalised and folded: O→0, l→1, I→1 (same length).
+const DASHES = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g;
+function normalise(text) {
+  const t = text.replace(DASHES, '-'); let s = ''; const map = [];
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === ' ') {
+      let j = i; while (t[j] === ' ') j++;
+      const prev = s[s.length - 1], next = t[j];
+      if (prev === '-' || prev === '_' || next === '-' || next === '_') continue;
     }
+    s += t[i]; map.push(i);
   }
+  return { s, map };
+}
+const fold = (s) => s.replace(/[OQ]/g, '0').replace(/[lI|]/g, '1');
+
+function regexFindings(line) {
+  const out = [], seen = new Set(), n = normalise(line.text), views = [{ s: line.text, map: null }, n, { s: fold(n.s), map: n.map }];
+  views.forEach((view, vi) => {
+    for (const p of PATTERNS) {
+      if (vi === 2 && (p.type === 'secret' || p.type === 'email' || p.type === 'password')) continue; // folding l/O into digits would turn long ordinary words into "secrets"
+      for (const m of view.s.matchAll(p.re)) {
+        const value = p.group ? m[p.group] : m[0];
+        if (!value || (p.check && !p.check(value))) continue;
+        const start = m.index + (p.group ? m[0].indexOf(value) : 0), end = start + value.length;
+        const o0 = view.map ? view.map[start] : start, o1 = view.map ? view.map[end - 1] + 1 : end; // span in the original text
+        const key = `${p.type}:${o0}-${o1}`; if (seen.has(key)) continue; seen.add(key);
+        const box = boxFor(line, o0, o1);
+        if (box) out.push({ type: p.type, value: line.text.slice(o0, o1), box, by: 'rule' });
+      }
+    }
+  });
   return out;
 }
 
@@ -138,6 +162,14 @@ function blurGraph(intervals, width, height, pad = 0.012) {
   return { graph: chain.join(';'), last: src };
 }
 
+// Test aid, only when SPOOL_PRIVACY_TRACE=<file> is set (the e2e runs set it to learn how the OCR renders the fixture's fake key): appends the OCR lines
+// that look like the fixture's "Deploy key" line, with what the rules made of them. Nothing else from the screen is written.
+function traceOcr(file, ocr) {
+  const rows = [];
+  ocr.forEach((f) => f.lines.forEach((l) => { if (/deploy|sk.{0,3}live|9f8e|key:/i.test(l.text)) rows.push(JSON.stringify({ t: +f.t.toFixed(1), text: l.text, words: l.words.map((w) => w.text), hits: regexFindings(l).map((h) => `${h.type}:${h.value}`) })); }));
+  if (rows.length) fs.appendFileSync(file, rows.join('\n') + '\n');
+}
+
 // Scan a recording for secrets and personal data. Needs a folder of sampled frames (`scanDir`: f0001.jpg… + hash.raw) or, failing that, the video to sample.
 // Returns { report, masked, redact(outPath), stats }.
 async function scan({ video, scanDir, workDir, duration, width, height, cachePath, onStatus = () => {}, log = () => {} }) {
@@ -157,6 +189,7 @@ async function scan({ video, scanDir, workDir, duration, width, height, cachePat
   if (ocr.length !== frames.length || ocr.some((f) => !f || !Array.isArray(f.lines))) throw new Error('the screen reader did not return a result for every frame'); // R4
   const ocrMs = Date.now() - tOcr;
   ocr.forEach((f, i) => { f.until = frames[i].until; });
+  if (process.env.SPOOL_PRIVACY_TRACE) traceOcr(process.env.SPOOL_PRIVACY_TRACE, ocr); // test aid: see below
 
   // 1) deterministic rules on every line. These are the floor: they gate publishing even when the model is cold, slow or absent.
   const found = []; // {frame, type, value, box, by}
@@ -239,4 +272,4 @@ async function scanStill({ file, out, width, height, cachePath, read = ocrFrames
   await runFfmpeg(['-y', '-i', file, '-filter_complex', graph, '-map', `[${last}]`, '-frames:v', '1', out]);
   return { report: found.map((f) => ({ type: f.type, by: f.by })), blurred: true, engine: ocr.engine };
 }
-module.exports = { scan, scanStill, regexFindings, pickFrames, dhash, hamming, extractScanFrames, sortFrames, assertCoverage, blurGraph, PATTERNS };
+module.exports = { scan, scanStill, regexFindings, normalise, pickFrames, dhash, hamming, extractScanFrames, sortFrames, assertCoverage, blurGraph, PATTERNS };

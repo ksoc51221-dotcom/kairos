@@ -27,7 +27,10 @@ const run = (cmd, args) => { const r = spawnSync(cmd, args, { encoding: 'utf8' }
   await wait(() => r.pipe === 'done' || store.get(v.id).pipe === 'done', 120000);
   const f = store.get(v.id); console.log('timings', JSON.stringify(f.timings), 'stage', f.stage);
   console.log('transcript:', f.transcript);
-  check('the video was cleared for viewers', cleared && f.shareable === true, `after ${(sinceStart / 1000).toFixed(1)} s`);
+  // processVideo() resolves when the WHOLE job is done (AI notes included), so `sinceStart` is the full job. The moment viewers can watch is the pipeline's own
+  // `shareable` timing (ms since the job was queued): scan + blur + Whisper + bleep.
+  const T = f.timings || {}, secs = (ms) => (ms == null ? 'n/a' : (ms / 1000).toFixed(1) + ' s');
+  check('the video was cleared for viewers', cleared && f.shareable === true, `viewers can watch ${secs(T.shareable)} after the job started (scan ${secs(T.privacyScan)}, transcribe ${secs(T.transcribe)}, bleep ${secs(T.speechBleep)}); whole job incl. AI notes ${(sinceStart / 1000).toFixed(1)} s`);
   check('the transcript has no spoken password or PIN', !/battery|staple|correct horse|four two one|421/i.test(f.transcript || '') && /\[bleep\]/.test(f.transcript || ''), (f.transcript || '').slice(0, 140));
   check('captions and word timings are clean too', !/battery|staple/i.test(JSON.stringify(f.segments)) && !/battery|staple/i.test(JSON.stringify(f.words || [])));
   check('the pipeline recorded the bleeps', (f.speechRedactions || []).length >= 1, JSON.stringify(f.speechRedactions));
