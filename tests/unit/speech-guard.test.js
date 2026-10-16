@@ -79,3 +79,12 @@ test('the bleep filter really silences the original audio and plays a tone (real
     fs.rmSync(d, { recursive: true, force: true });
   });
 });
+
+test('misheard triggers still count: "past word", "pass word", one-letter typos, "pin code"', () => {
+  const said = (s) => sg.findSpokenSecrets(words(s)).map((h) => h.phrase || words(s).slice(h.i0, h.i1 + 1).map((x) => x.w).join(' '));
+  assert.deepEqual(said('Yeah, no, past word is test 123.'), ['test 123']); // the real miss, 2026-10-16
+  assert.deepEqual(said('the pass word is blue horse'), ['blue horse']);
+  assert.deepEqual(said('the passward is hunter2.'), ['hunter2']);
+  assert.deepEqual(said('my pin code is 4 2 1 9'), ['4 2 1 9']);
+  for (const s of ['I forgot my password reset link', 'we passed word of it to the team', 'the passport is in the drawer']) assert.deepEqual(said(s), [], s);
+});

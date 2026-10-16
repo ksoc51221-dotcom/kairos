@@ -14,7 +14,15 @@ const LINK = new Set(['is', 'was', 'are', 'equals', 'equal', 'be', 'it', 'its', 
 const IS_LINK = new Set(['is', 'was', 'are', 'equals', 'equal', 'be', 'to', 'as']); // a real "is" between trigger and secret (or a ':' / '=')
 const STOP = new Set(['and', 'then', 'but', 'so', 'ok', 'okay', 'now', 'next', 'because', 'or', 'which', 'that', 'when', 'if', 'you', 'we', 'i']);
 const TRIG1 = new Set(['password', 'passwords', 'passcode', 'passphrase', 'pin', 'secret', 'token', 'credential', 'credentials', 'pwd']);
-const TRIG2 = [['api', 'key'], ['access', 'key'], ['secret', 'key'], ['private', 'key'], ['auth', 'token'], ['social', 'security'], ['credit', 'card'], ['card', 'number'], ['account', 'number'], ['routing', 'number'], ['security', 'code'], ['login', 'code'], ['verification', 'code']];
+// Whisper often splits or mishears the trigger ("past word is test 123", heard in a real recording on 2026-10-16), so the two-word
+// forms and any single word one letter away from "password" count too.
+const near = (a, b) => { // edit distance <= 1
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0; while (i < a.length && a[i] === b[i]) i++;
+  return a.slice(i + 1) === b.slice(i + 1) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i);
+};
+const isTrig1 = (c) => TRIG1.has(c) || (c.length >= 7 && near(c, 'password'));
+const TRIG2 = [['pass', 'word'], ['past', 'word'], ['pass', 'words'], ['pass', 'code'], ['pass', 'phrase'], ['pin', 'code'], ['pin', 'number'], ['api', 'key'], ['access', 'key'], ['secret', 'key'], ['private', 'key'], ['auth', 'token'], ['social', 'security'], ['credit', 'card'], ['card', 'number'], ['account', 'number'], ['routing', 'number'], ['security', 'code'], ['login', 'code'], ['verification', 'code']];
 const DIGIT_WORDS = new Set(['zero', 'oh', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']);
 const digitCount = (w) => { const c = clean(w); if (DIGIT_WORDS.has(c)) return 1; return /^\d+$/.test(c) ? c.length : 0; };
 const MIN_DIGITS = 9; // an SSN is 9, a phone number 10, a card 13+
@@ -27,8 +35,8 @@ function findSpokenSecrets(words, { pad = [0.05, 0.12] } = {}) {
   // 1) "the password is hunter2", "my api key is sk-...", "pin 4 2 1 9"
   for (let i = 0; i < words.length; i++) {
     let end = -1;
-    if (TRIG1.has(clean(words[i].w))) end = i;
-    else if (i + 1 < words.length && TRIG2.some(([a, b]) => clean(words[i].w) === a && clean(words[i + 1].w) === b)) end = i + 1;
+    if (i + 1 < words.length && TRIG2.some(([a, b]) => clean(words[i].w) === a && clean(words[i + 1].w) === b)) end = i + 1; // before TRIG1: "pin code" must skip "code"
+    else if (isTrig1(clean(words[i].w))) end = i;
     if (end < 0) continue;
     let j = end + 1, sawIs = /[:=]$/.test(words[end].w.trim());
     while (j < words.length && j <= end + 3 && LINK.has(clean(words[j].w))) { if (IS_LINK.has(clean(words[j].w))) sawIs = true; j++; }
