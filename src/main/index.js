@@ -9,6 +9,7 @@ const C = require('../shared/constants');
 const config = require('./config');
 const logger = require('./log');
 const permissions = require('./permissions');
+const readiness = require('./readiness');
 const shortcuts = require('./shortcuts');
 const screenshot = require('./screenshot');
 const session = require('./session');
@@ -38,6 +39,7 @@ app.whenReady().then(async () => {
   for (const v of store.list()) if (v.status === C.LIBRARY_STATUS.RECORDING) store.update(v.id, { status: C.LIBRARY_STATUS.FAILED, stage: 'Recording was interrupted (files kept)' });
   orchestrator.init(dataDir, { log, isBusy: () => session.isActive() });
   startServer({ port: config.PORT, models: path.join(dataDir, 'models'), openLauncher: win.showLauncher });
+  readiness.init(path.join(dataDir, 'models'));
   electronSession.defaultSession.setDisplayMediaRequestHandler(async (_req, callback) => {
     const S = session.getS(), srcs = await desktopCapturer.getSources({ types: ['screen', 'window'] });
     const pick = srcs.find((s) => s.id === S?.opts.sourceId) || srcs.find((s) => s.id.startsWith('screen:')) || srcs[0];
@@ -47,12 +49,16 @@ app.whenReady().then(async () => {
   log('start', { packaged: app.isPackaged, version: app.getVersion(), perms: permissions.report() });
 
   const tray = new Tray(nativeImage.createEmpty()); tray.setTitle('● Spool');
-  tray.setContextMenu(Menu.buildFromTemplate([
+  const trayMenu = () => Menu.buildFromTemplate([
+    ...(readiness.get().speechMissing ? [{ label: readiness.get().download.state === 'running' ? `Downloading speech model… ${readiness.get().download.percent}%` : `⚠ Download the speech model (${readiness.MODEL_MB} MB)`, enabled: readiness.get().download.state !== 'running', click: () => readiness.startDownload() }, { type: 'separator' }] : []),
     { label: 'New recording…  (⌥⇧R)', click: win.showLauncher }, { label: 'Screenshot  (⌥⇧A)', click: screenshot.start },
     { label: 'Open library', click: () => shell.openExternal(config.ownerOrigin('/')) }, { type: 'separator' },
     { label: 'Copy diagnostics', click: () => clipboard.writeText(`Spool diagnostics\nperms: ${JSON.stringify(permissions.report())}\n${logger.tail(60)}`) },
     { label: 'Show log file', click: () => shell.showItemInFolder(logger.file) }, { type: 'separator' }, { role: 'quit' },
-  ]));
+  ]);
+  tray.setContextMenu(trayMenu());
+  readiness.onChange(() => { tray.setContextMenu(trayMenu()); tray.setTitle(readiness.get().speechMissing ? '⚠ Spool' : '● Spool'); });
+  readiness.refresh().then((r) => log('readiness', { speechModel: !r.speechMissing, ollama: !r.ollamaMissing }));
   tray.on('click', win.showLauncher);
   shortcuts.registerApp({ onScreenshot: screenshot.start, onLauncher: win.toggleLauncher });
   const ico = path.join(__dirname, '..', '..', 'assets', 'icon.png');

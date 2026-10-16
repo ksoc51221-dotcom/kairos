@@ -6,22 +6,23 @@
   "scripts": {
     "start": "electron .",
     "app": "npm run build:mac && open dist/Spool-darwin-arm64/Spool.app",
-    "build:mac": "electron-packager . Spool --platform=darwin --arch=arm64 --out=dist --overwrite --no-asar --app-bundle-id=com.spool.app --icon=assets/icon.icns --ignore='^/(dist|FEATURES.md)' --extend-info=scripts/Info.extend.plist && codesign --force --deep --sign - dist/Spool-darwin-arm64/Spool.app",
+    "build:mac": "node scripts/build-mac.js",
     "test": "node --test tests/unit/*.test.js",
-    "test:e2e": "bash tests/e2e/selftest.sh"
+    "test:e2e": "bash tests/e2e/selftest.sh",
+    "build:mac:dry": "node scripts/build-mac.js --dry"
   },
   "license": "MIT",
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@tesseract.js-data/eng": "^1.0.0",
-    "electron": "^44.7.2",
     "express": "^5.3.0",
     "ffmpeg-static": "^5.3.0",
     "tesseract.js": "^7.0.0",
     "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {
-    "@electron/packager": "^20.3.0"
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.7.2"
   }
 }

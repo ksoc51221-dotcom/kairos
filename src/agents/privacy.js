@@ -226,4 +226,17 @@ async function scan({ video, scanDir, workDir, duration, width, height, cachePat
     get stats() { return { sampled: count, modelRan, read: frames.length, engine: ocr.engine, ocrMs, llmMs, llmHits, elapsedMs: Date.now() - t0 }; },
   };
 }
-module.exports = { scan, regexFindings, pickFrames, dhash, hamming, extractScanFrames, sortFrames, assertCoverage, blurGraph, PATTERNS };
+
+// Finding 1: a screenshot is one still frame, and it goes through the same gate as a recording. OCR of the full-size PNG, the same rules, a solid
+// fill over every hit. Rules only (no model pass: a still has no time to hide in and the rules are the floor). Throws when the screen reader
+// returns nothing usable, so the caller keeps the image closed to viewers.
+async function scanStill({ file, out, width, height, cachePath, read = ocrFrames }) {
+  const ocr = await read([{ t: 0, file, width, height }], { cachePath });
+  if (ocr.length !== 1 || !ocr[0] || !Array.isArray(ocr[0].lines)) throw new Error('the screen reader did not return a result for the screenshot');
+  const found = ocr[0].lines.flatMap((l) => regexFindings(l));
+  if (!found.length) return { report: [], blurred: false };
+  const { graph, last } = blurGraph(found.map((f) => ({ box: f.box, from: 0, to: 1e6 })), width, height);
+  await runFfmpeg(['-y', '-i', file, '-filter_complex', graph, '-map', `[${last}]`, '-frames:v', '1', out]);
+  return { report: found.map((f) => ({ type: f.type, by: f.by })), blurred: true, engine: ocr.engine };
+}
+module.exports = { scan, scanStill, regexFindings, pickFrames, dhash, hamming, extractScanFrames, sortFrames, assertCoverage, blurGraph, PATTERNS };

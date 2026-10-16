@@ -18,7 +18,7 @@ function fromOwnerMachine(req) {
 // R1: loopback plus a Host header can be faked by anything that tunnels raw TCP to this port (ssh -R, ngrok tcp, socat, a default nginx on this Mac), so
 // "owner" also needs the HttpOnly `sp_owner` cookie. Its value is a random per-launch secret that only a one-time login link (opened by the app
 // itself, see security.ownerLoginUrl) hands out. A tunnel visitor never sees that link.
-const hasOwnerCookie = (req) => security.ownerCookieOk(cookies(req)[security.OWNER_COOKIE]);
+const hasOwnerCookie = (req) => security.ownerCookieOk(cookies(req)[security.ownerCookieName(req.headers.host)]);
 const ownerMachine = (req) => fromOwnerMachine(req) && hasOwnerCookie(req);
 // B14: the owner switched on "preview as a viewer"
 const previewingAsViewer = (req) => ownerMachine(req) && cookies(req).sp_asviewer === '1';

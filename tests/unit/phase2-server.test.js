@@ -33,7 +33,7 @@ test.after(async () => { await srv.close(); hang.close(); hang.closeAllConnectio
 function call(method, url, { headers = {}, body, host, p, noOwner } = {}) {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? null : JSON.stringify(body);
-    const req = http.request({ host: '127.0.0.1', port: p || port, method, path: url, headers: { Host: host || `127.0.0.1:${p || port}`, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...(noOwner ? headers : withOwner(headers)) } }, (res) => {
+    const req = http.request({ host: '127.0.0.1', port: p || port, method, path: url, headers: { Host: host || `127.0.0.1:${p || port}`, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...(noOwner ? headers : withOwner(headers, host || p || port)) } }, (res) => {
       let buf = ''; res.on('data', (d) => (buf += d)); res.on('end', () => { let json = null; try { json = JSON.parse(buf); } catch {} resolve({ status: res.statusCode, headers: res.headers, text: buf, json }); });
     });
     req.on('error', reject); if (data) req.write(data); req.end();
@@ -91,7 +91,7 @@ test('B22: the limiter refills over time (fake clock)', () => {
 
 function events(url, headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = http.get({ host: '127.0.0.1', port, path: url, headers: { Host: `127.0.0.1:${port}`, ...withOwner(headers) } }, (res) => {
+    const req = http.get({ host: '127.0.0.1', port, path: url, headers: { Host: `127.0.0.1:${port}`, ...withOwner(headers, port) } }, (res) => {
       const out = { status: res.statusCode, chunks: [], req, res };
       res.setEncoding('utf8'); res.on('data', (d) => out.chunks.push(d)); resolve(out);
     }); req.on('error', reject);

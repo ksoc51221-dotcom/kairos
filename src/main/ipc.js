@@ -19,6 +19,9 @@ function register() {
   on('launcher:close', win.hideLauncher);
   on('launcher:size', win.sizeLauncher);
   handle('app:relaunch', permissions.relaunch);
+  handle('ready:get', () => require('./readiness').get());
+  handle('ready:refresh', () => require('./readiness').refresh());
+  handle('ready:download', () => { require('./readiness').startDownload(); return require('./readiness').get(); });
   handle('settings:get', () => store.getSettings());
   handle('settings:set', (patch) => store.setSettings(patch));
   handle('library:open', () => shell.openExternal(config.ownerOrigin('/')));

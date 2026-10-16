@@ -22,7 +22,7 @@ test.before(async () => {
 test.after(async () => { await srv.close(); store.close(); });
 const call = (method, url, { headers = {}, body } = {}) => new Promise((resolve, reject) => {
   const data = body === undefined ? null : JSON.stringify(body);
-  const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { ...(csrf && method !== 'GET' ? { 'x-spool-csrf': csrf } : {}), ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...withOwner(headers) } }, (res) => {
+  const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: `127.0.0.1:${port}`, ...(csrf && method !== 'GET' ? { 'x-spool-csrf': csrf } : {}), ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...withOwner(headers, port) } }, (res) => {
     let buf = ''; res.on('data', (d) => (buf += d)); res.on('end', () => { let json = null; try { json = JSON.parse(buf); } catch {} resolve({ status: res.statusCode, text: buf, json }); });
   });
   req.on('error', reject); if (data) req.write(data); req.end();

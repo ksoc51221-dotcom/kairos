@@ -41,7 +41,7 @@ test.after(async () => { llm.json = realJson; llm.available = realAvail; await s
 function call(method, url, { body } = {}) {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? null : JSON.stringify(body);
-    const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: `127.0.0.1:${port}`, 'x-spool-csrf': security.TOKEN, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...withOwner() } }, (res) => {
+    const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: `127.0.0.1:${port}`, 'x-spool-csrf': security.TOKEN, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...withOwner({}, port) } }, (res) => {
       let buf = ''; res.on('data', (d) => (buf += d)); res.on('end', () => { let json = null; try { json = JSON.parse(buf); } catch {} resolve({ status: res.statusCode, headers: res.headers, text: buf, json }); });
     });
     req.on('error', reject); if (data) req.write(data); req.end();

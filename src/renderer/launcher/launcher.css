@@ -29,6 +29,10 @@
 #winGrid img { width: 100%; display: block; background: var(--surface); }
 #winGrid span { display: block; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* finding 2: a missing speech model is said out loud before the user records */
+.warnbox { margin-top: 12px; padding: 8px 10px; border-radius: var(--r-cell); background: var(--surface-inset); font: 400 12px/1.4 var(--font); color: var(--ink); }
+.warnbox .link { margin-left: 2px; padding: 0; color: var(--blue); font: 600 12px/1.4 var(--font); cursor: pointer; }
+.warnbox .link:disabled { color: var(--ink-2); cursor: default; }
 #start { margin-top: 6px; }
 #start.busy { background: var(--cta-press); }
 

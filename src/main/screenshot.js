@@ -53,11 +53,12 @@ const cancelAnnotate = () => { if (alive(W.annotate)) W.annotate.close(); };
 const copyAnnotated = (url) => clipboard.writeImage(nativeImage.createFromDataURL(url));
 function saveAnnotated(url) {
   const img = nativeImage.createFromDataURL(url), sz = img.getSize();
-  const v = store.create({ type: 'image', title: `Screenshot ${new Date().toLocaleString()}`, titleAuto: false, status: 'ready', stage: 'done', shareable: true, // a screenshot is a PNG the owner annotated himself: no Privacy Guard pass for stills yet
+  const v = store.create({ type: 'image', title: `Screenshot ${new Date().toLocaleString()}`, titleAuto: false, status: 'ready', stage: 'Privacy Guard is checking', shareable: false, // closed to viewers until the Privacy Guard has read the picture (orchestrator.stillJob)
  width: sz.width, height: sz.height });
   fs.writeFileSync(path.join(store.videoDir(v.id), 'image.png'), img.toPNG());
   fs.writeFileSync(path.join(store.videoDir(v.id), 'thumb.jpg'), img.resize({ width: 480 }).toJPEG(80));
   clipboard.writeText(config.origin(`/v/${v.id}`));
+  require('../agents/orchestrator').guardStill(v.id).catch((e) => console.error('screenshot guard', e));
   cancelAnnotate();
   shell.openExternal(config.ownerOrigin(`/v/${v.id}`));
 }

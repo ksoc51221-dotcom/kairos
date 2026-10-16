@@ -38,8 +38,8 @@ function init(dir, { log, isBusy } = {}) {
 // B4: one job at a time. `process` = the whole pipeline for a new video; `ai` = re-run the notes (and the Privacy Guard if the video was never cleared).
 // `edit` and `words` are the editor's jobs (Phase 3): apply an edit list, and time every word of a video that has none.
 async function processJobs(job) {
-  const run = { ai: rerunJob, process: processJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }) }[job.kind] || processJob;
-  try { return await run(job); } finally { if (job.kind !== 'edit' && job.kind !== 'words') cleanLeftovers(job.videoId); warmWhenIdle(2000); }
+  const run = { ai: rerunJob, process: processJob, still: stillJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }) }[job.kind] || processJob;
+  try { return await run(job); } finally { if (!['edit', 'words', 'still'].includes(job.kind)) cleanLeftovers(job.videoId); warmWhenIdle(2000); }
 }
 // R11: sample frames (the user's screen), half-written blur and bleep files must not outlive the job, whether it finished or threw.
 function cleanLeftovers(id) {
@@ -49,6 +49,7 @@ function cleanLeftovers(id) {
 }
 const processVideo = (id) => queue.enqueue(id, 'process');
 const rerunAI = (id) => queue.enqueue(id, 'ai');
+const guardStill = (id) => queue.enqueue(id, 'still');
 const applyEdits = (id) => queue.enqueue(id, 'edit');
 const timeWords = (id) => queue.enqueue(id, 'words');
 
@@ -248,6 +249,30 @@ async function dropDerivedPictures(id, dir, video) {
   store.update(id, { gifAt: null, ...(fs.existsSync(custom) ? {} : { thumbAt: null }) });
 }
 
+// Finding 1: a screenshot is saved closed (`shareable: false`) and opened here, after the same secret rules as a recording's frames have run and
+// blurred what they found. If the screen reader fails, the image stays closed to viewers and the owner is told.
+async function stillJob(job, { read } = {}) {
+  const id = job.videoId, v = store.get(id);
+  if (!v || v.shareable === true) return;
+  const dir = store.videoDir(id), file = path.join(dir, 'image.png'), settings = store.getSettings(), set = (patch) => store.update(id, patch);
+  if (!settings.privacyGuard) return set({ shareable: true, stage: 'done' });
+  try {
+    const out = path.join(dir, 'image.guard.png'), t0 = Date.now();
+    const r = await privacy.scanStill({ file, out, width: v.width, height: v.height, cachePath: dataDir && path.join(dataDir, 'models'), read });
+    if (r.blurred) {
+      if (settings.keepOriginal) fs.copyFileSync(file, path.join(dir, 'original.png'));
+      fs.renameSync(out, file);
+      await runFfmpeg(['-y', '-i', file, '-vf', 'scale=480:-2', '-q:v', '4', path.join(dir, 'thumb.jpg')]);
+    }
+    say(`pipeline ${id} stillGuard ${secs(Date.now() - t0)} ${r.report.length} hit(s)`);
+    set({ redactions: r.report, guard: { model: false, speech: 'no-audio' }, shareable: true, stage: 'done' });
+  } catch (e) {
+    say('still guard failed', id, e);
+    fs.rmSync(path.join(dir, 'image.guard.png'), { force: true });
+    set({ shareable: false, stage: 'Privacy Guard could not read this screenshot: only you can see it' });
+  }
+}
+
 const online = () => fetch('https://huggingface.co', { method: 'HEAD', signal: AbortSignal.timeout(3000) }).then(() => true, () => false);
 
 // Planner → Insights → Guide Writer ⇄ Critic. Needs Ollama; skips cleanly without it.
@@ -300,4 +325,4 @@ async function rerunJob(job) {
   await runAgents(id, { segments: v.segments || [], text: v.transcript || '', scan: null, meta: { duration: v.duration }, finalVideo: path.join(dir, 'video.mp4'), work: null });
 }
 
-module.exports = { dropDerivedPictures, cleanLeftovers, init, processVideo, rerunAI, applyEdits, timeWords, CREW, ORDER };
+module.exports = { guardStill, stillJob, dropDerivedPictures, cleanLeftovers, init, processVideo, rerunAI, applyEdits, timeWords, CREW, ORDER };

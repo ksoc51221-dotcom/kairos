@@ -43,7 +43,7 @@ function mount(app, ctx) {
   app.get('/owner-login', security.guardSameOrigin, (q, res) => {
     if (!fromOwnerMachine(q)) return res.sendStatus(403);
     if (!security.redeemLoginCode(q.query.code)) return res.status(403).type('html').send('<!doctype html><meta charset="utf-8"><title>Spool</title><body style="font:16px system-ui;padding:3rem"><h2>This sign-in link has expired</h2><p>Open Spool from the menu bar (Open library) to get a new one.</p>');
-    res.setHeader('Set-Cookie', [security.ownerCookie(), 'sp_asviewer=0; Path=/; Max-Age=0']);
+    res.setHeader('Set-Cookie', [security.ownerCookie(q.headers.host), 'sp_asviewer=0; Path=/; Max-Age=0']);
     res.redirect(security.safeNext(q.query.to));
   });
   // these two flip a cookie on a GET, so they get the same-origin check too

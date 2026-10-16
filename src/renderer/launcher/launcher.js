@@ -233,7 +233,17 @@ document.querySelectorAll('#tools button').forEach((b) => (b.onclick = () => tog
 $('permopen').onclick = () => spool.invoke('perm:open', 'screen'); $('permre').onclick = () => spool.invoke('app:relaunch');
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (openMenu) closeMenus(); else if (openPanel) togglePanel(openPanel); else spool.send('launcher:close'); } });
 // U4: every time the window is shown it fades in and slides up 8 px; and the main process is told the card's height so the window fits it
-spool.on('launcher:shown', () => { const c = $('card'); c.classList.remove('enter'); void c.offsetWidth; c.classList.add('enter'); busy(false); checkPerm(); refreshScreens(); syncPreview(); });
+// finding 2: say it before recording if the speech model (viewers cannot watch without it) or Ollama is missing
+let readyTimer = null;
+function paintReady(r) {
+  $('ready').hidden = !r.warning; $('readyText').textContent = r.warning || '';
+  const dl = r.download || {}, btn = $('readyBtn');
+  btn.hidden = !r.speechMissing; btn.disabled = dl.state === 'running';
+  btn.textContent = dl.state === 'running' ? `Downloading… ${dl.percent}%` : dl.state === 'error' ? `Retry download (${dl.error.slice(0, 40)})` : `Download ${r.mb} MB`;
+  clearTimeout(readyTimer); if (dl.state === 'running') readyTimer = setTimeout(() => spool.invoke('ready:get').then(paintReady), 700);
+}
+$('readyBtn').onclick = () => spool.invoke('ready:download').then(paintReady);
+spool.on('launcher:shown', () => { spool.invoke('ready:get').then(paintReady); spool.invoke('ready:refresh').then(paintReady); const c = $('card'); c.classList.remove('enter'); void c.offsetWidth; c.classList.add('enter'); busy(false); checkPerm(); refreshScreens(); syncPreview(); });
 new ResizeObserver(() => spool.send('launcher:size', Math.ceil($('card').getBoundingClientRect().height) + MARGIN * 2)).observe($('card'));
 
 async function refreshScreens() {

@@ -19,7 +19,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Quality Source / 4K / 1440p / 1080p / 720p, hide menu bar | ✅ | Source is native resolution, scaled only at export; tested at Source, 1080p, 720p |
 | Hide desktop icons | ❌ | Would change a system setting |
 | Keyboard shortcuts | ✅ | ⌥⇧P pause, ⌥⇧S stop, ⌥⇧D draw, ⌥⇧A screenshot |
-| Screenshots with annotations + own link | ✅ | Arrow, box, circle, pen, text, blur |
+| Screenshots with annotations + own link | ✅ | Arrow, box, circle, pen, text, blur. Run through the Privacy Guard (OCR rules, black box) before anyone else can open them |
 | Chrome extension, iOS, Android | ⏳ / ❌ | Extension planned; mobile apps are out of scope |
 | Meeting recording via calendar | ⏳ | iCal feed planned |
 
@@ -31,7 +31,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Blur secrets and personal data | ✅ | Apple Vision OCR + rules (e-mail, keys, tokens, cards, SSN, phone, passwords). Model judgement only when Ollama has the model loaded |
 | Unblurred original deleted | ✅ | Optional "Keep the unblurred original" (owner only) |
 | Job queue that survives a quit | ✅ | One job at a time; resumes after the last finished stage |
-| Speech model status and download | ✅ | Settings → AI |
+| Speech model status and download | ✅ | Settings → AI; also a warning with a Download button in the launcher and the menu bar before you record (launcher and menu not yet seen in the running app) |
 | Live updates without polling | ✅ | Server-Sent Events on the watch page and library |
 | Rate limit on viewer writes | ✅ | 20 writes burst, 2/s |
 
@@ -67,7 +67,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 ## Privacy hardening (Phase 4, from the security review)
 | Feature | Status | Notes |
 |---|---|---|
-| Privacy Guard listens too: spoken passwords, keys, PINs and card numbers are bleeped and removed from transcript and captions | ✅ | Rule-based; a secret said without a cue can slip through. Costs no measurable time (16.9 s Stop → viewers, was 15.6–18.2 s) |
+| Privacy Guard listens too: secrets said with a cue ("the password is…", "my pin is…", "API key is…"), token-like words and runs of 9+ digits are bleeped and removed from transcript and captions | ✅ | Rule-based; a secret said without a cue ("hunter2" on its own) can slip through. Costs no measurable time (16.9 s Stop → viewers, was 15.6–18.2 s) |
 | Owner = this machine **and** a per-launch sign-in cookie | ✅ | A raw TCP tunnel to the port is just a viewer. Open the library from the menu bar to sign in |
 | Failed or unfinished videos are never served to viewers; unknown privacy modes close the link | ✅ | One-time migration marks old finished videos cleared |
 | Thumbnails and GIFs made before a blur are regenerated or deleted | ✅ | Blocked while the guard is still checking |
@@ -82,6 +82,13 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Send to Slack, GitHub, Linear, Jira with a preview first | 🟡 | Request building, preview and sending tested against local endpoints and canned responses; not sent to the real services |
 | Spool MCP server (list, search, transcript, guide, action plan) | ✅ | Tested over stdio with the SDK client; read-only; cleared videos only |
 | Record for agents: Action Plan brief (voice, steps, clicks, screenshots) | 🟡 | No window titles (not recorded) |
+
+## Packaging (Phase 5)
+| Feature | Status | Notes |
+|---|---|---|
+| Signed Spool.app without design/, tests, notes or other platforms' binaries | ✅ | 537 MB (was 947 MB); target 400 MB not reachable (Electron is 290 MB). Signed with a local 'Spool Dev' certificate |
+| README with Mermaid diagrams | ✅ | No GIF yet |
+| GitHub repo and Release | ⏳ | Waiting for your go-ahead |
 
 ## Editing, AI, integrations, later
 Tracked in the next batches: auto-zoom export, AI voice, meeting notes, Confluence export, SDK.

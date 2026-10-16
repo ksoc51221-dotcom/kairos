@@ -339,11 +339,47 @@ Status: **all acceptance checks pass.** `npm test`: **154/154** (was 119). `node
 8. Not exercised in a browser: the AI Actions tab was checked in the browser pane against a fixture server with a stubbed model (generate, preview modal, credential hidden); Send itself and the copy buttons were not clicked there. Sending to real Slack, GitHub, Linear or Jira was **not** done (no tokens, and nothing leaves the machine in tests).
 9. One new dependency, as allowed: `@modelcontextprotocol/sdk` (its `zod` comes with it).
 
-### Phase 5: Ship · Oct 19–20
+### Phase 5: Ship · Oct 19–20 — 🟡 done 2026-10-16 except the GitHub repo and release (you said not yet) and two open test items (results below the tasks)
 1. Package size: exclude non-darwin `onnxruntime-node` binaries and unused dependencies from the packager (`--ignore`). Target < 400 MB. **Also exclude `design/` (Loom reference screenshots), `tests/`, `PLAN.md`, `REVIEW.md`** (the Phase 4 build is 947 MB and contains them). Rebuild picks up the owner sign-in explanation page that the Phase 4 build lacks.
 2. Stable signing. **Ask the user first**: creating a self-signed "Spool Dev" code-signing certificate in the login keychain makes Screen Recording permission survive rebuilds. Without it, permission resets on every build.
 3. README: one-paragraph pitch, GIF, install (`npm install && npm start`, or download the `.app` zip from Releases), first-run permissions, Mermaid architecture diagram (§1) and agent-crew diagram, feature table (from `FEATURES.md`), limits, privacy model.
 4. GitHub Release with a zipped `Spool.app` (ad-hoc signed: document "right-click → Open").
+
+#### Phase 5 results (executed 2026-10-16)
+**First, the PHASE4-CHECK findings you asked for** (unit tests: **161/161**, was 154)
+| Finding | What changed | Test |
+|---|---|---|
+| 1 screenshots skipped the guard | A screenshot is saved closed (`shareable: false`), then read with the same OCR and rules as a recording, covered with a solid black box, and only then opened (`orchestrator.stillJob`, `privacy.scanStill`, queued like other jobs). The thumbnail is regenerated from the covered picture. If the screen reader fails it stays closed. Guard off in settings = opens at once, as for videos. Rules only (no model pass). | 4 unit tests with real ffmpeg pixels; and once by hand with the real Apple Vision on a generated PNG: `password: hunter22` was found and covered |
+| 2 no speech model = stuck video | `main/readiness.js`: checked at launch and each time the launcher opens. The launcher shows "The speech model is not downloaded (150 MB). Recordings you make now stay 'only you can watch' until it is." with a **Download** button and progress; the menu bar shows "⚠ Download the speech model". Ollama missing is a second, softer line. Nothing downloads without a click. | 2 unit tests. **The launcher banner and the tray item were not looked at in the running app** (no launches) |
+| 3 speech claim | REVIEW.md Q&A, FEATURES.md and the README now say what the rules catch: a cue phrase, token-like words, runs of 9+ digits. | text |
+| 6 owner cookie | Named per port (`sp_owner_4747`). **This stops a dev server on another port from colliding with it, not from receiving it:** browsers send `localhost` cookies to every port. It is still HttpOnly and new on every launch. | unit test |
+| 7 MCP ignores link privacy | Said in `mcp/README.md`. | text |
+
+**Packaging** (`scripts/build-mac.js`, `npm run build:mac`, `npm run build:mac:dry`)
+- Left out: `design/`, `tests/`, `scripts/`, `PLAN.md`, `REVIEW.md`, `PHASE4-CHECK.md`, `FEATURES.md`, `README.md`, the lock file, dotfiles, `onnxruntime-node` for linux, win32 and darwin-x64, `onnxruntime-web`, `uiohook-napi` prebuilds for other systems, the unused Tesseract language data, `*.map`, `*.d.ts`, other packages' tests and docs. `electron` moved to `devDependencies`, which drops its own dependencies from the package.
+- **Size: 947 MB → 537 MB (Spool.app). The < 400 MB target is not met and cannot be:** Electron itself is about 290 MB, the Node speech engine 85 MB, ffmpeg 44 MB. The zip for a release will be much smaller than the folder.
+- I tried also dropping the non-LSTM Tesseract cores and **it broke the OCR fallback** (it loads `tesseract-core-relaxedsimd` even in LSTM-only mode); caught by running Tesseract from a staged copy of the trimmed tree (`--stage`), rule removed.
+- Checked inside the trimmed tree and the built app with plain Node (no windows): Whisper transcribes (the built app's own Electron-as-Node, 0.7 s for a short clip), Tesseract reads a test image, `uiohook-napi` loads, the MCP server lists its five tools. `codesign --verify --deep --strict` passes. No `design/`, `tests/`, notes or non-darwin binaries inside.
+- The icon warning from the packager is only about the `.icon` format; the bundled `electron.icns` is byte-identical to `assets/icon.icns`.
+
+**Signing:** you chose to create the certificate. "Spool Dev" (self-signed, code signing, 10 years, trusted for code signing for your user only) is in the login keychain; the throwaway key files were deleted. The app is signed with it. macOS asked for your login password once so `codesign` could use the key. **Because the identity is new, Screen Recording permission resets once on the first launch of this build; later rebuilds keep it.** If you ever see the keychain dialog again, "Always Allow".
+
+**Batched verification** (you were warned; run once, then stopped at your request)
+| Check | Result |
+|---|---|
+| `tests/e2e/speech.js` ×2 | 7/7 both times. Cleared for viewers **28.9 s and 33.9 s** after the job started; the Phase 4 note said 3.6–5.5 s. I did not find out why (the machine was busy with my other runs and Ollama; not re-measured alone). The bleep itself worked: transcript reads "the password is [bleep], and the pin is [bleep]" and Whisper cannot hear them in the published audio |
+| `tests/e2e/actions.js` (new; real qwen3:8b, 6 actions × 3 videos) | **18/18 valid**, 7.8–21 s each, 220 s total |
+| `node tests/e2e/run.js all` | **76/83**. Phase 1–3 scenarios all pass except the focus check (below). Failures: |
+| · B28 "Spool never frontmost" ×4 | **Unresolved, probably confounded.** An **older Spool.app of yours (started 16:03, still running) is frontmost** in several runs ("before Spool, after Spool"), so the check sees it. In the `ui` scenario "Electron" also appears frontmost; I could not tell whether that is the launcher focusing itself as before or a regression, because the other instance was running. Needs a rerun with Spool.app quit |
+| · Privacy Guard ≤ 20 s | **26.1 s** (scan 3.6 s, blur pass 15.4 s, the model judgement ran). Earlier runs: 15.6–18.2 s. Likely load, **not shown to be** |
+| · Fake key found and blurred | **Open problem.** This run the rules did not match the fake key (`sk-live-…`) in the OCR text; the model found something typed "password", and the key area was only partly covered (luma std 93 → 54, previously 102 → 6). I changed nothing in OCR or the rules, so this looks like OCR output varying between runs, which would mean the rules are weaker than the earlier runs suggested. **A rerun to check was cancelled** when you asked me to make the windows go away |
+Captures from the cancelled run were deleted. Nothing was published anywhere.
+
+**Not done**
+- **GitHub repo and release:** not created, as you answered. `dist/Spool-darwin-arm64/Spool.app` is built; the zip is not made yet.
+- **README GIF:** there is no recording of Spool to make one from; Phase 6's demo recording can supply it. The README is written without a broken image.
+- No LICENSE file (package.json says MIT; I did not want to invent a copyright holder).
+- The launcher banner and tray warning, and the new screenshot path in the real app, were not exercised in a running window.
 
 ### Phase 6: Demo · Oct 21 (buffer Oct 22)
 Business plan one-pager, 3-minute demo script, a recorded demo (made with Spool itself), Q&A cheat sheet.

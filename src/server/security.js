@@ -10,13 +10,18 @@ const HEADER = 'x-spool-csrf';
 
 // R1: proof that a loopback request comes from the owner and not from something tunnelling raw TCP to this port. The cookie value is a random
 // per-launch secret. Only a one-time login link, created by the app itself and opened in the owner's browser, can set it.
+// The cookie name carries the port (`sp_owner_4747`): browsers share cookies between every port of `localhost`, so without it a dev server on :3000
+// could overwrite our cookie (or ours its own). The name does not stop a browser from sending the value to that other server; it is HttpOnly
+// and changes on every launch, which is what limits the exposure.
 const OWNER_COOKIE = 'sp_owner';
+const portOf = (host) => (/:(\d+)$/.exec(String(host || '')) || [])[1] || '80';
+const ownerCookieName = (host) => `${OWNER_COOKIE}_${portOf(host)}`;
 const OWNER_SECRET = crypto.randomBytes(24).toString('hex');
 function ownerCookieOk(value) {
   if (typeof value !== 'string' || value.length !== OWNER_SECRET.length) return false;
   return crypto.timingSafeEqual(Buffer.from(value), Buffer.from(OWNER_SECRET));
 }
-const ownerCookie = () => `${OWNER_COOKIE}=${OWNER_SECRET}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly`;
+const ownerCookie = (host) => `${ownerCookieName(host)}=${OWNER_SECRET}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly`;
 const codes = new Map(); // one-time login codes -> expiry
 const CODE_TTL_MS = 120_000;
 function newLoginCode(now = Date.now()) {
@@ -84,4 +89,4 @@ function lockout({ now = Date.now, free = 5, base = 30_000, max = 900_000 } = {}
   };
 }
 
-module.exports = { lockout, OWNER_COOKIE, ownerCookieOk, ownerCookie, newLoginCode, redeemLoginCode, ownerLoginPath, safeNext, rateLimit, TOKEN, HEADER, SAFE, sameOrigin, tokenOk, guardWrites, guardSameOrigin };
+module.exports = { lockout, OWNER_COOKIE, ownerCookieName, ownerCookieOk, ownerCookie, newLoginCode, redeemLoginCode, ownerLoginPath, safeNext, rateLimit, TOKEN, HEADER, SAFE, sameOrigin, tokenOk, guardWrites, guardSameOrigin };

@@ -22,7 +22,7 @@ test.after(async () => { await srv.close(); store.close(); });
 function call(method, url, { headers = {}, body, host, noOwner } = {}) {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? null : JSON.stringify(body);
-    const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: host || `127.0.0.1:${port}`, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...(noOwner ? headers : withOwner(headers)) } }, (res) => {
+    const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: host || `127.0.0.1:${port}`, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...(noOwner ? headers : withOwner(headers, host || port)) } }, (res) => {
       let buf = ''; res.on('data', (d) => (buf += d)); res.on('end', () => { let json = null; try { json = JSON.parse(buf); } catch {} resolve({ status: res.statusCode, headers: res.headers, text: buf, json }); });
     });
     req.on('error', reject); if (data) req.write(data); req.end();

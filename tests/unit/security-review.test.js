@@ -27,7 +27,7 @@ test.after(async () => { await srv.close(); store.close(); });
 function call(method, url, { headers = {}, body, owner = true } = {}) {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? null : JSON.stringify(body);
-    const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: `127.0.0.1:${port}`, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...(owner ? withOwner(headers) : headers) } }, (res) => {
+    const req = http.request({ host: '127.0.0.1', port, method, path: url, headers: { Host: `127.0.0.1:${port}`, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}), ...(owner ? withOwner(headers, port) : headers) } }, (res) => {
       let buf = ''; res.on('data', (d) => (buf += d)); res.on('end', () => { let json = null; try { json = JSON.parse(buf); } catch {} resolve({ status: res.statusCode, headers: res.headers, text: buf, json }); });
     });
     req.on('error', reject); if (data) req.write(data); req.end();
@@ -40,9 +40,9 @@ test('R1: loopback plus a Host header is not enough to be the owner; the owner c
   const bare = { socket: { remoteAddress: '127.0.0.1' }, headers: { host: 'localhost:4747' } };
   assert.equal(auth.isOwner(bare), false, 'a raw TCP tunnel looks exactly like this');
   assert.equal(auth.isOwner({ ...bare, headers: { ...bare.headers, cookie: 'sp_owner=guess' } }), false);
-  assert.equal(auth.isOwner({ ...bare, headers: { ...bare.headers, cookie: withOwner().cookie } }), true);
-  assert.equal(auth.isOwner({ ...bare, headers: { ...bare.headers, cookie: withOwner().cookie, 'x-forwarded-for': '1.2.3.4' } }), false, 'cookie plus proxy header: still no');
-  assert.equal(auth.isOwner({ socket: { remoteAddress: '192.168.1.5' }, headers: { host: 'localhost:4747', cookie: withOwner().cookie } }), false, 'the cookie from another machine: still no');
+  assert.equal(auth.isOwner({ ...bare, headers: { ...bare.headers, cookie: withOwner({}, 'localhost:4747').cookie } }), true);
+  assert.equal(auth.isOwner({ ...bare, headers: { ...bare.headers, cookie: withOwner({}, 'localhost:4747').cookie, 'x-forwarded-for': '1.2.3.4' } }), false, 'cookie plus proxy header: still no');
+  assert.equal(auth.isOwner({ socket: { remoteAddress: '192.168.1.5' }, headers: { host: 'localhost:4747', cookie: withOwner({}, 'localhost:4747').cookie } }), false, 'the cookie from another machine: still no');
   const noCookie = await call('GET', '/api/videos', { owner: false });
   assert.equal(noCookie.status, 403, 'the library list is closed without the cookie, even from loopback with a localhost Host');
   assert.equal((await call('GET', '/api/videos')).status, 200);
@@ -52,13 +52,21 @@ test('R1: the one-time login link sets the cookie once, then is dead; its redire
   const link = security.ownerLoginPath('/v/abc');
   const ok = await call('GET', link, { owner: false });
   assert.equal(ok.status, 302); assert.equal(ok.headers.location, '/v/abc');
-  const set = ok.headers['set-cookie'].join(';'); assert.match(set, /sp_owner=[0-9a-f]{48}/); assert.match(set, /HttpOnly/);
+  const set = ok.headers['set-cookie'].join(';'); assert.match(set, /sp_owner_\d+=[0-9a-f]{48}/); assert.match(set, /HttpOnly/);
   const again = await call('GET', link, { owner: false }); assert.equal(again.status, 403, 'second use fails');
   assert.equal((await call('GET', '/owner-login?code=nope', { owner: false })).status, 403);
   for (const to of ['//evil.example', '/\\evil.example', 'https://evil.example', 'javascript:1']) assert.equal(security.safeNext(to), '/', to);
   const tunnel = await call('GET', security.ownerLoginPath('/'), { owner: false, headers: { 'x-forwarded-for': '1.2.3.4' } });
   assert.equal(tunnel.status, 403, 'a proxied request cannot even use a valid code');
   assert.equal((await call('GET', security.ownerLoginPath('/'), { owner: false, headers: { 'sec-fetch-site': 'cross-site' } })).status, 403, 'nor can another website');
+});
+test('finding 6: the owner cookie is named after the port, so another localhost server cannot stand in for it', () => {
+  const at = (port, cookie) => ({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: `localhost:${port}`, cookie } });
+  const mine = withOwner({ Host: 'localhost:4747' }).cookie;
+  assert.match(mine, /^sp_owner_4747=/);
+  assert.equal(auth.isOwner(at(4747, mine)), true);
+  assert.equal(auth.isOwner(at(3000, mine)), false, 'the 4747 cookie does not open another port of this app');
+  assert.equal(auth.isOwner(at(4747, mine.replace('sp_owner_4747', 'sp_owner'))), false, 'the old, unscoped name no longer counts');
 });
 test('R1: login codes expire', () => {
   const c = security.newLoginCode(1000); assert.equal(security.redeemLoginCode(c, 1000 + 121_000), false);
@@ -79,7 +87,7 @@ test('R2: a failed video is never served to a viewer, even with a half-written v
 test('R3: thumbnail and GIF cannot be made while the guard is checking, and a blur removes the ones already made', async () => {
   const v = mk({ shareable: false, duration: 10 }, { 'video.mp4': 'x', 'thumb-custom.jpg': 'secret frame', 'preview.gif': 'secret gif' });
   for (const [m, u] of [['POST', 'thumbnail'], ['POST', 'gif']]) assert.equal((await call(m, `/api/videos/${v.id}/${u}`, { body: { at: 1 }, headers: { 'x-spool-csrf': security.TOKEN } })).status, 409, u);
-  const put = await new Promise((resolve) => { const r = http.request({ host: '127.0.0.1', port, method: 'PUT', path: `/api/videos/${v.id}/thumbnail`, headers: { Host: `127.0.0.1:${port}`, ...withOwner({ 'x-spool-csrf': security.TOKEN, 'content-type': 'image/png' }) } }, (res) => { res.resume(); resolve(res.statusCode); }); r.end(Buffer.from('png')); });
+  const put = await new Promise((resolve) => { const r = http.request({ host: '127.0.0.1', port, method: 'PUT', path: `/api/videos/${v.id}/thumbnail`, headers: { Host: `127.0.0.1:${port}`, ...withOwner({ 'x-spool-csrf': security.TOKEN, 'content-type': 'image/png' }, port) } }, (res) => { res.resume(); resolve(res.statusCode); }); r.end(Buffer.from('png')); });
   assert.equal(put, 409);
   store.update(v.id, { thumbAt: null, gifAt: 2 });
   await orchestrator.dropDerivedPictures(v.id, store.videoDir(v.id), path.join(store.videoDir(v.id), 'video.mp4'));
@@ -193,4 +201,47 @@ test('R1: a bookmark or old tab on this machine gets an explanation, not JSON; s
   assert.equal(page.status, 403); assert.match(page.text, /Open library/); assert.match(page.headers['content-type'], /html/);
   const api = await call('GET', '/api/videos', { owner: false, headers: { accept: 'application/json' } }); assert.equal(api.json.error, 'owner only');
   const tunnel = await call('GET', '/', { owner: false, headers: { accept: 'text/html', 'x-forwarded-for': '1.2.3.4' } }); assert.equal(tunnel.json?.error, 'owner only', 'a proxied visitor learns nothing about how to sign in');
+});
+
+// ---- finding 1 (PHASE4-CHECK): screenshots go through the Privacy Guard ----
+const { ffmpeg } = require('../../src/agents/media');
+const whitePng = (f, w = 400, h = 200) => spawnSync(ffmpeg, ['-y', '-f', 'lavfi', '-i', `color=white:s=${w}x${h}`, '-frames:v', '1', f]);
+// mean grey level (0 black .. 255 white) of a region of a PNG
+const mean = (f, x, y, w, h) => { const r = spawnSync(ffmpeg, ['-v', 'error', '-i', f, '-vf', `crop=${w}:${h}:${x}:${y},format=gray`, '-f', 'rawvideo', '-'], { maxBuffer: 1 << 24 }); return r.stdout.reduce((a, b) => a + b, 0) / r.stdout.length; };
+const fakeRead = (lines) => async (frames) => frames.map((f) => ({ t: f.t, width: f.width, height: f.height, lines }));
+const keyLine = { text: 'token: sk-abcdefgh12345678', words: [{ text: 'token:', x0: 0.1, y0: 0.4, x1: 0.2, y1: 0.5 }, { text: 'sk-abcdefgh12345678', x0: 0.25, y0: 0.4, x1: 0.8, y1: 0.5 }] };
+const still = (extra = {}) => { const v = mk({ type: 'image', shareable: false, width: 400, height: 200, ...extra }); whitePng(path.join(store.videoDir(v.id), 'image.png')); fs.writeFileSync(path.join(store.videoDir(v.id), 'thumb.jpg'), 'old thumb'); return v; };
+
+test('finding 1: a screenshot with a key on it is blurred, then cleared for viewers', async () => {
+  const v = still(), f = path.join(store.videoDir(v.id), 'image.png');
+  assert.equal(auth.access({ socket: { remoteAddress: '192.168.1.9' }, headers: { host: 'x:4747' } }, store.get(v.id)), 'checking', 'closed before the guard has run');
+  await orchestrator.stillJob({ videoId: v.id }, { read: fakeRead([keyLine]) });
+  const after = store.get(v.id);
+  assert.equal(after.shareable, true); assert.equal(after.redactions.length, 1); assert.equal(after.redactions[0].type, 'api key');
+  assert.ok(mean(f, 120, 80, 180, 20) < 5, 'the key is covered by a solid fill');
+  assert.ok(mean(f, 10, 150, 100, 30) > 250, 'the rest of the picture is untouched');
+  assert.notEqual(fs.readFileSync(path.join(store.videoDir(v.id), 'thumb.jpg'), 'utf8'), 'old thumb', 'the thumbnail is regenerated from the covered picture');
+  assert.equal(fs.existsSync(path.join(store.videoDir(v.id), 'original.png')), false, 'the unblurred picture is not kept');
+});
+test('finding 1: a clean screenshot is cleared untouched; keepOriginal keeps the unblurred copy', async () => {
+  const v = still(); await orchestrator.stillJob({ videoId: v.id }, { read: fakeRead([{ text: 'File Edit View', words: [{ text: 'File', x0: 0, y0: 0, x1: 0.1, y1: 0.1 }] }]) });
+  assert.equal(store.get(v.id).shareable, true); assert.deepEqual(store.get(v.id).redactions, []);
+  store.setSettings({ keepOriginal: true });
+  const k = still(); await orchestrator.stillJob({ videoId: k.id }, { read: fakeRead([keyLine]) });
+  store.setSettings({ keepOriginal: false });
+  assert.ok(mean(path.join(store.videoDir(k.id), 'original.png'), 120, 80, 180, 20) > 250, 'owner-only copy is the unblurred picture');
+});
+test('finding 1: if the screen reader fails, the screenshot stays closed', async () => {
+  const v = still();
+  await orchestrator.stillJob({ videoId: v.id }, { read: async () => { throw new Error('vision-ocr 3'); } });
+  assert.equal(store.get(v.id).shareable, false); assert.match(store.get(v.id).stage, /could not read/);
+  await orchestrator.stillJob({ videoId: v.id }, { read: async () => [] }); // a result that does not cover the picture
+  assert.equal(store.get(v.id).shareable, false);
+  const asViewer = await call('GET', `/media/${v.id}/image.png`, { headers: viewer }); assert.equal(asViewer.status, 423);
+  assert.equal((await call('GET', `/media/${v.id}/image.png`)).status, 200, 'the owner still sees it');
+});
+test('finding 1: with the Privacy Guard turned off, a screenshot opens at once (same as a recording)', async () => {
+  store.setSettings({ privacyGuard: false }); const v = still();
+  await orchestrator.stillJob({ videoId: v.id }, { read: async () => { throw new Error('must not run'); } });
+  store.setSettings({ privacyGuard: true }); assert.equal(store.get(v.id).shareable, true);
 });
