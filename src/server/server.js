@@ -7,7 +7,7 @@ const extras = require('./extras');
 const { pub } = require('./util');
 const { processVideo } = require('../agents/orchestrator');
 
-const routes = ['viewer', 'library', 'media', 'owner', 'settings', 'editor'].map((n) => require(`./routes/${n}`));
+const routes = ['viewer', 'library', 'media', 'owner', 'settings', 'editor', 'actions'].map((n) => require(`./routes/${n}`));
 
 // port 0 picks a free port (tests). `ready` resolves once the server is listening, with the port it got.
 function startServer({ port, host, models, openLauncher } = {}) {

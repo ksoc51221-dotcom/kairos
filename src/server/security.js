@@ -7,6 +7,29 @@ const crypto = require('crypto');
 
 const TOKEN = crypto.randomBytes(24).toString('hex'); // new on every launch
 const HEADER = 'x-spool-csrf';
+
+// R1: proof that a loopback request comes from the owner and not from something tunnelling raw TCP to this port. The cookie value is a random
+// per-launch secret. Only a one-time login link, created by the app itself and opened in the owner's browser, can set it.
+const OWNER_COOKIE = 'sp_owner';
+const OWNER_SECRET = crypto.randomBytes(24).toString('hex');
+function ownerCookieOk(value) {
+  if (typeof value !== 'string' || value.length !== OWNER_SECRET.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(value), Buffer.from(OWNER_SECRET));
+}
+const ownerCookie = () => `${OWNER_COOKIE}=${OWNER_SECRET}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly`;
+const codes = new Map(); // one-time login codes -> expiry
+const CODE_TTL_MS = 120_000;
+function newLoginCode(now = Date.now()) {
+  for (const [c, t] of codes) if (t < now) codes.delete(c);
+  const code = crypto.randomBytes(18).toString('hex'); codes.set(code, now + CODE_TTL_MS); return code;
+}
+function redeemLoginCode(code, now = Date.now()) {
+  const t = codes.get(String(code)); codes.delete(String(code));
+  return t !== undefined && t >= now;
+}
+// Where the app sends the owner: /owner-login redeems the code (once), sets the cookie and redirects to `to`.
+const ownerLoginPath = (to = '/') => `/owner-login?code=${newLoginCode()}&to=${encodeURIComponent(to)}`;
+const safeNext = (to) => (typeof to === 'string' && /^\/(?![/\\])/.test(to) ? to : '/');
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 // True when the request plausibly came from one of our own pages, from the address bar, or from a client that is not a browser.
@@ -50,4 +73,15 @@ function rateLimit({ burst = 20, perSec = 2, skip = () => false, now = Date.now 
   };
 }
 
-module.exports = { rateLimit, TOKEN, HEADER, SAFE, sameOrigin, tokenOk, guardWrites, guardSameOrigin };
+// R10: wrong-password lockout per video and address. After 5 misses the address waits 30 s, doubling each further miss up to 15 min, so a guess loop
+// costs hours instead of the ~7,000 tries an hour the plain rate limit allowed. The unlock route also uses the async scrypt, so a guess never blocks the server.
+function lockout({ now = Date.now, free = 5, base = 30_000, max = 900_000 } = {}) {
+  const m = new Map();
+  return {
+    wait(key) { const e = m.get(key); return e && e.until > now() ? Math.ceil((e.until - now()) / 1000) : 0; },
+    fail(key) { const e = m.get(key) || { n: 0, until: 0 }; e.n++; if (e.n >= free) e.until = now() + Math.min(max, base * 2 ** (e.n - free)); m.set(key, e); },
+    ok(key) { m.delete(key); },
+  };
+}
+
+module.exports = { lockout, OWNER_COOKIE, ownerCookieOk, ownerCookie, newLoginCode, redeemLoginCode, ownerLoginPath, safeNext, rateLimit, TOKEN, HEADER, SAFE, sameOrigin, tokenOk, guardWrites, guardSameOrigin };

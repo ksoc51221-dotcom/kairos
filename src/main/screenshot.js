@@ -53,12 +53,13 @@ const cancelAnnotate = () => { if (alive(W.annotate)) W.annotate.close(); };
 const copyAnnotated = (url) => clipboard.writeImage(nativeImage.createFromDataURL(url));
 function saveAnnotated(url) {
   const img = nativeImage.createFromDataURL(url), sz = img.getSize();
-  const v = store.create({ type: 'image', title: `Screenshot ${new Date().toLocaleString()}`, titleAuto: false, status: 'ready', stage: 'done', width: sz.width, height: sz.height });
+  const v = store.create({ type: 'image', title: `Screenshot ${new Date().toLocaleString()}`, titleAuto: false, status: 'ready', stage: 'done', shareable: true, // a screenshot is a PNG the owner annotated himself: no Privacy Guard pass for stills yet
+ width: sz.width, height: sz.height });
   fs.writeFileSync(path.join(store.videoDir(v.id), 'image.png'), img.toPNG());
   fs.writeFileSync(path.join(store.videoDir(v.id), 'thumb.jpg'), img.resize({ width: 480 }).toJPEG(80));
   clipboard.writeText(config.origin(`/v/${v.id}`));
   cancelAnnotate();
-  shell.openExternal(config.origin(`/v/${v.id}`));
+  shell.openExternal(config.ownerOrigin(`/v/${v.id}`));
 }
 
 module.exports = { start, pickArea, pickCrop, areaResult, openAnnotator, cancelAnnotate, copyAnnotated, saveAnnotated };

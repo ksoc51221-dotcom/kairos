@@ -21,7 +21,7 @@ function register() {
   handle('app:relaunch', permissions.relaunch);
   handle('settings:get', () => store.getSettings());
   handle('settings:set', (patch) => store.setSettings(patch));
-  handle('library:open', () => shell.openExternal(config.origin('/')));
+  handle('library:open', () => shell.openExternal(config.ownerOrigin('/')));
   handle('screenshot:start', screenshot.start);
   handle('sources:list', (opts) => session.listSources(opts));
   handle('perm:status', () => (process.platform !== 'darwin' ? permissions.status() : { ...permissions.status(), host: permissions.hostName() }));

@@ -14,7 +14,7 @@ function mount(app, ctx) {
   });
   app.put('/api/settings', own, (q, res) => {
     const cur = settings(), b = q.body, patch = {};
-    for (const k of ['ownerName', 'defaultPrivacy', 'linkExpiryDays', 'disableDownloads', 'retentionDays', 'privacyGuard', 'keepOriginal', 'model', 'follows']) if (k in b) patch[k] = b[k];
+    for (const k of ['ownerName', 'defaultPrivacy', 'linkExpiryDays', 'disableDownloads', 'retentionDays', 'privacyGuard', 'speechGuard', 'keepOriginal', 'model', 'follows']) if (k in b) patch[k] = b[k];
     if ('defaultPrivacy' in b && !['link', 'email', 'private'].includes(b.defaultPrivacy)) return res.status(400).json({ error: 'The default can be link, email or private. A password has to be set per video.' }); // B6
     if (b.brand) patch.brand = { ...cur.brand, ...b.brand };
     if (b.integrations) { const m = { ...cur.integrations }; for (const [k, v] of Object.entries(b.integrations)) m[k] = { ...(m[k] || {}), ...Object.fromEntries(Object.entries(v).filter(([, x]) => !/^••••/.test(String(x)))) }; patch.integrations = m; }

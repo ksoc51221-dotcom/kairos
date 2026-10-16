@@ -2,7 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const store = require('../../store');
-const { isOwner, requireOwner, gated, checkPw, effectivePrivacy, access, unlockCookie, GATE_STATUS } = require('../auth');
+const { isOwner, fromOwnerMachine, requireOwner, gated, checkPwAsync, effectivePrivacy, access, unlockCookie, GATE_STATUS } = require('../auth');
 const security = require('../security');
 const extras = require('../extras');
 const { viewModel } = require('../viewmodel');
@@ -11,6 +11,7 @@ const { pub, page, esc, lanIp } = require('../util');
 function mount(app, ctx) {
   const settings = () => store.getSettings();
   const limit = security.rateLimit({ skip: isOwner }); // B22
+  const lock = security.lockout(); // R10
 
   // ---- pages with link previews (Open Graph / oEmbed) ----
   const origin = (req) => `${req.protocol}://${req.headers.host}`;
@@ -38,17 +39,26 @@ function mount(app, ctx) {
   // `csrf` is only handed to the owner's own pages; other origins cannot read this response (no CORS headers), so they never see it.
   app.get('/api/me', (req, res) => { const s = settings(), own = isOwner(req); res.json({ owner: own, name: own ? s.ownerName : null, brand: s.brand, lan: s.lan ? lanIp() : null, port: ctx.port, csrf: own ? security.TOKEN : undefined }); });
   app.get('/branding/logo.png', (_q, res) => { const f = path.join(store.brandingDir(), 'logo.png'); fs.existsSync(f) ? res.sendFile(f) : res.sendStatus(404); });
+  // R1: the app opens this link for the owner (a one-time code, valid for 2 minutes). It sets the owner cookie; without it a loopback request is just a viewer.
+  app.get('/owner-login', security.guardSameOrigin, (q, res) => {
+    if (!fromOwnerMachine(q)) return res.sendStatus(403);
+    if (!security.redeemLoginCode(q.query.code)) return res.status(403).type('html').send('<!doctype html><meta charset="utf-8"><title>Spool</title><body style="font:16px system-ui;padding:3rem"><h2>This sign-in link has expired</h2><p>Open Spool from the menu bar (Open library) to get a new one.</p>');
+    res.setHeader('Set-Cookie', [security.ownerCookie(), 'sp_asviewer=0; Path=/; Max-Age=0']);
+    res.redirect(security.safeNext(q.query.to));
+  });
   // these two flip a cookie on a GET, so they get the same-origin check too
   app.get('/view-as/:mode', requireOwner, security.guardSameOrigin, (q, res) => { res.setHeader('Set-Cookie', `sp_asviewer=${q.params.mode === 'viewer' ? 1 : 0}; Path=/; SameSite=Lax`); res.redirect(q.query.to || '/'); });
   app.get('/stop-viewing-as', security.guardSameOrigin, (_q, res) => { res.setHeader('Set-Cookie', 'sp_asviewer=0; Path=/; Max-Age=0'); res.redirect('/'); });
 
   // ---- viewer API (everything here is gated by the link's privacy settings) ----
   app.get('/api/v/:id', gated, (q, res) => res.json(viewModel(q.video, q.owner)));
-  app.post('/api/v/:id/unlock', limit, (q, res) => {
+  app.post('/api/v/:id/unlock', limit, async (q, res) => {
     const v = store.get(q.params.id); if (!v) return res.sendStatus(404);
-    const p = effectivePrivacy(v);
+    const p = effectivePrivacy(v), key = `${v.id}|${q.socket.remoteAddress}`;
     if (p.mode === 'password') {
-      if (!checkPw(q.body.password, p.passwordHash)) { store.log(v.id, 'Wrong password attempt', q.body.name || ''); return res.status(401).json({ error: 'Wrong password' }); }
+      const w = lock.wait(key); if (w) { res.setHeader('Retry-After', String(w)); return res.status(429).json({ error: `Too many wrong passwords. Try again in ${w} s.` }); }
+      if (!(await checkPwAsync(q.body.password, p.passwordHash))) { lock.fail(key); store.log(v.id, 'Wrong password attempt', q.body.name || ''); return res.status(401).json({ error: 'Wrong password' }); }
+      lock.ok(key);
     } else if (p.mode === 'email') {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q.body.email || '')) return res.status(400).json({ error: 'Enter a valid email' });
     } else return res.json({ ok: true });

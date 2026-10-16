@@ -43,14 +43,18 @@ function ensureVision(cachePath) {
 // One process per chunk of files; each prints one JSON line per file as it finishes.
 function runVision(bin, files) {
   return new Promise((resolve, reject) => {
-    const p = spawn(bin, files), out = new Map(); let buf = '', err = '';
+    const p = spawn(bin, files), out = new Map(); let buf = '', err = '', bad = null;
     p.stdout.on('data', (d) => {
       buf += d; let i;
-      while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); try { const j = JSON.parse(line); out.set(j.file, j.lines); } catch {} }
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 1); if (!line.trim()) continue;
+        try { const j = JSON.parse(line); if (typeof j.file !== 'string' || !Array.isArray(j.lines)) throw new Error('unexpected shape'); out.set(j.file, j.lines); }
+        catch (e) { bad = `a result line did not parse (${e.message})`; } // R4: a garbled line is a failure, never "nothing found"
+      }
     });
     p.stderr.on('data', (d) => (err += d));
     p.on('error', reject);
-    p.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(`vision-ocr ${code}: ${err.slice(-200)}`))));
+    p.on('close', (code) => (code !== 0 ? reject(new Error(`vision-ocr ${code}: ${err.slice(-200)}`)) : bad ? reject(new Error(`vision-ocr: ${bad}`)) : resolve(out)));
   });
 }
 
@@ -62,11 +66,12 @@ async function visionFrames(bin, frames, onProgress) {
     // small batches keep progress moving and cap the memory one process holds
     for (let i = 0; i < c.length; i += 4) {
       const batch = c.slice(i, i + 4), m = await runVision(bin, batch.map((f) => f.file));
-      batch.forEach((f) => result.set(f.file, m.get(f.file) || []));
+      // R4: a frame the reader skipped is an error. An empty list would read as "this frame has no text" and clear the video.
+      batch.forEach((f) => { if (!m.has(f.file)) throw new Error(`vision-ocr returned no result for ${path.basename(f.file)}`); result.set(f.file, m.get(f.file)); });
       onProgress(done += batch.length, frames.length);
     }
   }));
-  return frames.map((f) => ({ t: f.t, width: f.width, height: f.height, lines: result.get(f.file) || [] }));
+  return frames.map((f) => ({ t: f.t, width: f.width, height: f.height, lines: result.get(f.file) }));
 }
 
 // ---- tesseract (fallback) ----
@@ -107,7 +112,9 @@ async function ocrFrames(frames, { cachePath, workers = 2, onProgress = () => {}
     try { return Object.assign(await visionFrames(bin, frames, onProgress), { engine: 'vision' }); }
     catch (e) { console.warn('vision-ocr failed, falling back to tesseract:', e.message); }
   }
-  return Object.assign(await tesseractFrames(frames, { cachePath, workers, onProgress }), { engine: 'tesseract' });
+  const out = await tesseractFrames(frames, { cachePath, workers, onProgress });
+  if (out.length !== frames.length || out.some((f) => !f || !Array.isArray(f.lines))) throw new Error('tesseract did not read every frame'); // R4
+  return Object.assign(out, { engine: 'tesseract' });
 }
 
-module.exports = { ocrFrames, ensureVision, extractLines };
+module.exports = { ocrFrames, ensureVision, extractLines, visionFrames };

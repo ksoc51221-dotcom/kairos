@@ -17,6 +17,7 @@ const privacy = require('./privacy');
 const { insights } = require('./insights');
 const { makeGuide, plan } = require('./guide');
 const editJob = require('./edit-job');
+const speechGuard = require('./speech-guard');
 
 let dataDir, say = (...a) => console.log(...a), busy = () => false;
 // Loading a 5 GB model competes with screen capture for memory and the GPU (measured: it costs frames), so the model is only warmed when no
@@ -38,7 +39,13 @@ function init(dir, { log, isBusy } = {}) {
 // `edit` and `words` are the editor's jobs (Phase 3): apply an edit list, and time every word of a video that has none.
 async function processJobs(job) {
   const run = { ai: rerunJob, process: processJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }) }[job.kind] || processJob;
-  try { return await run(job); } finally { warmWhenIdle(2000); }
+  try { return await run(job); } finally { if (job.kind !== 'edit' && job.kind !== 'words') cleanLeftovers(job.videoId); warmWhenIdle(2000); }
+}
+// R11: sample frames (the user's screen), half-written blur and bleep files must not outlive the job, whether it finished or threw.
+function cleanLeftovers(id) {
+  if (!id || !store.get(id)) return;
+  const dir = store.videoDir(id);
+  for (const f of ['work', 'video.blur.mp4', 'video.mute.mp4']) fs.rmSync(path.join(dir, f), { recursive: true, force: true });
 }
 const processVideo = (id) => queue.enqueue(id, 'process');
 const rerunAI = (id) => queue.enqueue(id, 'ai');
@@ -119,7 +126,7 @@ async function processJob(job) {
     fs.rmSync(work, { recursive: true, force: true }); fs.mkdirSync(work, { recursive: true });
     const t1 = Date.now(); let plan;
     try { plan = await encodeRecording(id, dir, video, settings.privacyGuard && !process.env.SPOOL_SKIP_AI ? scanDir : null); }
-    catch (e) { say('composite failed', id, e); set({ status: 'failed', stage: 'Encoding failed' }); return; }
+    catch (e) { say('composite failed', id, e); fs.rmSync(video, { force: true }); fs.rmSync(work, { recursive: true, force: true }); set({ status: 'failed', stage: 'Encoding failed' }); return; } // the raw tracks stay: they are the only copy
     mark('composite', t1);
     const t2 = Date.now();
     meta = plan ? { duration: plan.total, width: plan.size.w, height: plan.size.h } : await probe(video);
@@ -133,15 +140,25 @@ async function processJob(job) {
     v = store.get(id);
   }
 
-  // --- 2. Privacy Guard (+ blur pass) → shareable --------------------------------------------------------------------------------
-  let scan = null, redactions = v.redactions || [];
+  // --- 2. Privacy Guard: the screen (OCR → blur) and the speech (transcript rules → bleep) → shareable ---------------------------
+  // R6: Whisper runs next to the screen scan, because the guard listens too. Viewers get the video when BOTH have finished and cleaned it.
+  let scan = null, redactions = v.redactions || [], tr = null, speech0 = null;
+  const listen = settings.privacyGuard && settings.speechGuard !== false;
+  const needSpeech = !reached(v, 'transcribed');
+  const transcribeNow = async () => {
+    if (!hasAudioStream(video)) { log('transcriber', 'skipped', 'no audio in this recording'); return { reason: 'no-audio' }; }
+    if (!transcribeModel.modelStatus(models).cached && !(await online())) { log('transcriber', 'skipped', 'waiting for the speech model: connect once, or use Settings → AI → Download models'); return { reason: 'no-model' }; } // B17
+    const t5 = Date.now(), r = await guarded(log, 'transcriber', (d) => transcribe(video, work, models, d, null, { words: true }));
+    return r ? { tr: r, ms: Date.now() - t5 } : { reason: 'failed' };
+  };
   if (!reached(v, 'shared')) {
     if (!settings.privacyGuard) { log('privacy', 'skipped', 'turned off in settings'); set({ shareable: true, pipe: 'shared' }); }
     else {
       const t3 = Date.now();
       fs.mkdirSync(work, { recursive: true });
+      const speech = listen && needSpeech ? transcribeNow() : null; speech0 = speech;
       scan = await guarded(log, 'privacy', (d) => privacy.scan({ video, scanDir, workDir: work, duration: meta.duration, width: meta.width, height: meta.height, cachePath: models, onStatus: d, log: say }));
-      const failClosed = () => { scan = null; set({ pipe: 'shared', shareable: false, stage: 'Privacy Guard failed: only you can watch this video' }); }; // viewers stay blocked, the owner can watch
+      const failClosed = (why = 'Privacy Guard failed: only you can watch this video') => { scan = null; set({ pipe: 'shared', shareable: false, stage: why }); }; // viewers stay blocked, the owner can watch
       if (!scan) failClosed();
       else {
         mark('privacyScan', t3);
@@ -163,26 +180,52 @@ async function processJob(job) {
             if (settings.keepOriginal) fs.copyFileSync(video, path.join(dir, 'original.mp4'));
             fs.renameSync(blur, video);
             await frameAt(video, Math.min(1, Math.max(0, meta.duration - 0.5)), path.join(dir, 'thumb.jpg'), 480).catch(() => {});
+            await dropDerivedPictures(id, dir, video); // R3
             mark('privacyBlur', t4);
           }
-          log('privacy', 'done', blurred ? `${redactions.length} sensitive item${redactions.length > 1 ? 's' : ''} blurred` : 'nothing sensitive found');
-          set({ redactions, shareable: true, pipe: 'shared', stage: 'Reading speech' });
-          mark('shareable', t0);
+          // the speech half: the transcript must exist before the video opens
+          let open = true, heard = '';
+          if (speech) {
+            const sp = await speech;
+            if (sp.tr) {
+              const g = speechGuard.guardTranscript(sp.tr);
+              if (g.count) {
+                try {
+                  const t7 = Date.now(), out = path.join(dir, 'video.mute.mp4');
+                  if (settings.keepOriginal && !fs.existsSync(path.join(dir, 'original.mp4'))) fs.copyFileSync(video, path.join(dir, 'original.mp4'));
+                  await speechGuard.bleepAudio(video, out, g.intervals, meta.duration); fs.renameSync(out, video); mark('speechBleep', t7);
+                } catch (e) { say('bleep failed', id, e); open = false; heard = 'could not bleep a spoken secret'; }
+              }
+              if (open) {
+                tr = { text: g.text, segments: g.segments, ...(g.words ? { words: g.words } : {}) };
+                set({ transcript: tr.text, segments: tr.segments, ...(tr.words ? { words: tr.words } : {}), speechRedactions: g.intervals.map((iv) => ({ from: +iv.from.toFixed(2), to: +iv.to.toFixed(2), type: iv.type })) });
+                log('transcriber', 'done', `${tr.segments.length} segments${g.count ? `, ${g.count} spoken secret${g.count > 1 ? 's' : ''} bleeped` : ''}`); mark('transcribe', t3);
+                heard = g.count ? `${g.count} spoken secret${g.count > 1 ? 's' : ''} bleeped` : 'nothing sensitive said';
+              }
+            } else if (sp.reason === 'no-audio') heard = 'no audio';
+            else { open = false; heard = sp.reason === 'no-model' ? 'could not listen: the speech model is missing' : 'could not listen: transcription failed'; }
+          } else if (!listen) heard = 'speech not checked (turned off in settings)';
+          const rulesOnly = !scan.modelRan;
+          log('privacy', 'done', `${blurred ? `${redactions.length} sensitive item${redactions.length > 1 ? 's' : ''} blurred` : 'nothing sensitive found'}${rulesOnly ? ' · rules-only check, the local model was not loaded' : ''}${heard ? ` · ${heard}` : ''}`);
+          set({ redactions, guard: { model: scan.modelRan, speech: !listen ? 'off' : open ? (heard.startsWith('no audio') ? 'no-audio' : 'checked') : 'failed' }, pipe: speech && open ? 'transcribed' : 'shared',
+            ...(open ? { shareable: true, stage: 'Writing the AI notes' } : { shareable: false, stage: `Privacy Guard ${heard}: only you can watch this video` }) });
+          if (open) mark('shareable', t0);
+          else if (speech) set({ pipe: 'transcribed' }); // do not retry on every restart; "Re-run AI crew" starts the guard again
         }
       }
     }
+    if (speech0) await speech0.catch(() => {}); // never leave Whisper running into the next stage
     fs.rmSync(scanDir, { recursive: true, force: true }); // sample frames are the user's screen: gone as soon as they have been read
     v = store.get(id);
   }
 
-  // --- 3. Transcriber ------------------------------------------------------------------------------------------------------------
-  let tr = v.transcript !== undefined && reached(v, 'transcribed') ? { text: v.transcript, segments: v.segments || [] } : null;
+  // --- 3. Transcriber (only when the guard is off, was skipped, or listening is turned off; otherwise it ran above) ------------------
+  if (!tr) tr = v.transcript !== undefined && reached(v, 'transcribed') ? { text: v.transcript, segments: v.segments || [] } : null;
   if (!reached(v, 'transcribed')) {
     const t5 = Date.now();
     fs.mkdirSync(work, { recursive: true });
-    if (!hasAudioStream(video)) log('transcriber', 'skipped', 'no audio in this recording');
-    else if (!transcribeModel.modelStatus(models).cached && !(await online())) log('transcriber', 'skipped', 'waiting for the speech model: connect once, or use Settings → AI → Download models'); // B17
-    else tr = await guarded(log, 'transcriber', (d) => transcribe(video, work, models, d, null, { words: true }));
+    const r = await transcribeNow();
+    tr = r.tr || null;
     if (tr) { set({ transcript: tr.text, segments: tr.segments, ...(tr.words ? { words: tr.words } : {}) }); log('transcriber', 'done', `${tr.segments.length} segments`); mark('transcribe', t5); }
     set({ pipe: 'transcribed', stage: 'Writing the AI notes' });
   }
@@ -193,6 +236,16 @@ async function processJob(job) {
   mark('ai', t6); mark('total', t0);
   set({ pipe: 'done' });
   fs.rmSync(work, { recursive: true, force: true });
+}
+
+// R3: a custom thumbnail or preview GIF the owner made while the guard was still running was cut from the unblurred file. After a blur they are
+// regenerated from the blurred one (thumbnail at the chosen time) or deleted (an uploaded picture, the GIF); the owner can make a GIF again.
+async function dropDerivedPictures(id, dir, video) {
+  const v = store.get(id) || {}, custom = path.join(dir, 'thumb-custom.jpg');
+  fs.rmSync(path.join(dir, 'preview.gif'), { force: true });
+  fs.rmSync(custom, { force: true });
+  if (typeof v.thumbAt === 'number') await frameAt(video, v.thumbAt, custom, 480).catch(() => fs.rmSync(custom, { force: true }));
+  store.update(id, { gifAt: null, ...(fs.existsSync(custom) ? {} : { thumbAt: null }) });
 }
 
 const online = () => fetch('https://huggingface.co', { method: 'HEAD', signal: AbortSignal.timeout(3000) }).then(() => true, () => false);
@@ -242,9 +295,9 @@ async function runAgents(id, { segments, text, scan, meta, finalVideo, work }) {
 async function rerunJob(job) {
   const id = job.videoId, v = store.get(id); if (!v) return;
   const dir = store.videoDir(id);
-  if (!v.shareable && v.shareable !== undefined && fs.existsSync(path.join(dir, 'video.mp4'))) { store.update(id, { pipe: 'composited' }); return processJob(job); }
+  if (v.shareable !== true && fs.existsSync(path.join(dir, 'video.mp4'))) { store.update(id, { pipe: 'composited' }); return processJob(job); }
   store.update(id, { stage: 'Re-running AI crew', crew: v.crew.map((c) => (['planner', 'insights', 'writer', 'critic'].includes(c.id) ? { ...c, status: 'queued', detail: '' } : c)) });
   await runAgents(id, { segments: v.segments || [], text: v.transcript || '', scan: null, meta: { duration: v.duration }, finalVideo: path.join(dir, 'video.mp4'), work: null });
 }
 
-module.exports = { init, processVideo, rerunAI, applyEdits, timeWords, CREW, ORDER };
+module.exports = { dropDerivedPictures, cleanLeftovers, init, processVideo, rerunAI, applyEdits, timeWords, CREW, ORDER };

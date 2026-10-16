@@ -28,6 +28,13 @@ const VIDEO_DEFAULTS = () => ({ type: 'video', comments: [], reactions: {}, reac
 
 function normalize(raw) {
   const d = { videos: {}, folders: {}, spaces: {}, notifications: [], activity: [], settings: {}, jobs: [], ...raw };
+  // R7: the viewer gate is closed unless a video says `shareable: true`. Recordings made before the Privacy Guard existed have no flag, so once, and only
+  // once, the finished ones are marked cleared. Anything unfinished or failed stays closed.
+  d.migrations = { ...(d.migrations || {}) };
+  if (!d.migrations.shareable) {
+    for (const v of Object.values(d.videos)) if (v.shareable === undefined && v.status === 'ready') v.shareable = true;
+    d.migrations.shareable = Date.now();
+  }
   for (const id of Object.keys(d.videos)) d.videos[id] = { ...VIDEO_DEFAULTS(), ...d.videos[id] }; // records from older versions get new fields
   return d;
 }

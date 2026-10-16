@@ -10,7 +10,9 @@ const security = require('../../src/server/security');
 test.before(() => store.init(fs.mkdtempSync(path.join(os.tmpdir(), 'spool-auth-')), { log: () => {} }));
 test.after(() => store.close());
 
-const req = (o = {}) => ({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: 'localhost:4747' }, method: 'GET', ...o, headers: { host: 'localhost:4747', ...(o.headers || {}) } });
+const { withOwner, cookie } = require('./owner');
+const req = (o = {}) => ({ socket: { remoteAddress: '127.0.0.1' }, method: 'GET', ...o, headers: withOwner({ host: 'localhost:4747', ...(o.headers || {}) }) });
+const bare = (o = {}) => ({ socket: { remoteAddress: '127.0.0.1' }, method: 'GET', ...o, headers: { host: 'localhost:4747', ...(o.headers || {}) } }); // no owner cookie
 const res = () => { const r = { code: 200, body: null, status(c) { r.code = c; return r; }, json(b) { r.body = b; return r; }, send(b) { r.body = b; return r; } }; return r; };
 
 test('owner = this machine, not proxied, localhost host name, not previewing', () => {
@@ -68,7 +70,7 @@ test('effectivePrivacy: workspace defaults apply, expiry derives from the worksp
 
 test('access gates: private, expired, password, email', () => {
   const viewer = (cookie) => req({ socket: { remoteAddress: '192.168.1.9' }, headers: { host: '192.168.1.2:4747', cookie } });
-  const mk = (privacy) => store.create({ title: 'G', privacy });
+  const mk = (privacy) => store.create({ title: 'G', privacy, shareable: true });
   assert.equal(auth.access(viewer(), mk({ mode: 'link' })), 'ok');
   assert.equal(auth.access(viewer(), mk({ mode: 'private' })), 'private');
   assert.equal(auth.access(viewer(), mk({ mode: 'link', expiresAt: Date.now() - 1000 })), 'expired');

@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
   const tray = new Tray(nativeImage.createEmpty()); tray.setTitle('● Spool');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'New recording…  (⌥⇧R)', click: win.showLauncher }, { label: 'Screenshot  (⌥⇧A)', click: screenshot.start },
-    { label: 'Open library', click: () => shell.openExternal(config.origin('/')) }, { type: 'separator' },
+    { label: 'Open library', click: () => shell.openExternal(config.ownerOrigin('/')) }, { type: 'separator' },
     { label: 'Copy diagnostics', click: () => clipboard.writeText(`Spool diagnostics\nperms: ${JSON.stringify(permissions.report())}\n${logger.tail(60)}`) },
     { label: 'Show log file', click: () => shell.showItemInFolder(logger.file) }, { type: 'separator' }, { role: 'quit' },
   ]));

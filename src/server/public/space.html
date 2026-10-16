@@ -7,6 +7,6 @@
 fetch('/api/me').then((r) => r.json()).then((me) => { UI.brand(me.brand); document.getElementById('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${UI.esc(me.brand.name)}</span>`); });
 fetch('/api/space/' + location.pathname.split('/').pop()).then((r) => r.ok ? r.json() : Promise.reject()).then((s) => {
   document.getElementById('n').textContent = s.name; document.title = s.name + ' · Spool';
-  document.getElementById('g').innerHTML = s.videos.map((v) => `<a class="card" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')"></div><div class="meta"><div class="t">${v.locked ? '🔒 ' : ''}${UI.esc(v.title)}</div><div class="s">${v.views} view${v.views === 1 ? '' : 's'} · ${UI.ago(v.createdAt)} · ${UI.dur(v.duration)}</div></div></a>`).join('') || '<div class="chip" style="margin-top:20px">No videos in this space yet.</div>';
+  document.getElementById('g').innerHTML = s.videos.map((v) => `<a class="card" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')"></div><div class="meta"><div class="t">${v.locked ? '🔒 ' : ''}${UI.esc(v.title)}</div><div class="s">${v.locked ? 'Open it to unlock' : `${v.views} view${v.views === 1 ? '' : 's'} · ${UI.ago(v.createdAt)} · ${UI.dur(v.duration)}`}</div></div></a>`).join('') || '<div class="chip" style="margin-top:20px">No videos in this space yet.</div>';
 }).catch(() => (document.getElementById('n').textContent = 'Space not found'));
 </script></body></html>

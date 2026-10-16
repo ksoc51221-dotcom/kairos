@@ -26,13 +26,16 @@ const busy = (v) => !v || v.status !== 'ready' || (v.stage && v.stage !== 'done'
 
 function mount(app, ctx) {
   const video = (q, res) => { const v = store.get(q.params.id); if (!v || v.type === 'image') { res.sendStatus(404); return null; } return v; };
+  // R3: a thumbnail or GIF cut from video.mp4 before the Privacy Guard has finished would be cut from the unblurred picture, and viewers are served it.
+  // So they can only be made once the guard has cleared the (already blurred) file.
+  const guarded = (v, res) => { if (v.shareable === true) return false; res.status(409).json({ error: 'The Privacy Guard is still checking this video. Pick a thumbnail or make the preview GIF when it is done.' }); return true; };
   app.get('/edit/:id', own, page('editor.html'));
 
   // everything the editor needs in one request
   app.get('/api/videos/:id/editor', own, (q, res) => {
     const v = video(q, res); if (!v) return;
     res.json({ ...viewModel(v, true), words: v.words || null, wordsError: v.wordsError || null, canUndo: !!v.editPrev && fs.existsSync(path.join(store.videoDir(v.id), 'video.prev.mp4')), busy: busy(v),
-      library: store.list().filter((o) => o.id !== v.id && o.type !== 'image' && o.status === 'ready' && o.shareable !== false).map((o) => ({ id: o.id, title: o.title, duration: o.duration })) });
+      library: store.list().filter((o) => o.id !== v.id && o.type !== 'image' && o.status === 'ready' && o.shareable === true).map((o) => ({ id: o.id, title: o.title, duration: o.duration })) });
   });
   app.get('/api/videos/:id/peaks', own, async (q, res) => {
     const v = video(q, res); if (!v) return;
@@ -62,7 +65,7 @@ function mount(app, ctx) {
   // the edit list (a draft until Apply)
   app.put('/api/videos/:id/edits', own, (q, res) => {
     const v = video(q, res); if (!v) return;
-    const e = sanitizeEdits(q.body, { id: v.id, duration: v.duration, lookup: (id) => { const o = store.get(id); return o && o.type !== 'image' && o.status === 'ready' && o.shareable !== false ? { duration: o.duration, ready: true } : null; } });
+    const e = sanitizeEdits(q.body, { id: v.id, duration: v.duration, lookup: (id) => { const o = store.get(id); return o && o.type !== 'image' && o.status === 'ready' && o.shareable === true ? { duration: o.duration, ready: true } : null; } });
     res.json(viewModel(store.update(v.id, { edits: { ...(v.edits || {}), ...e } }), true));
   });
   app.post('/api/videos/:id/edits/apply', own, (q, res) => {
@@ -81,12 +84,12 @@ function mount(app, ctx) {
 
   // thumbnail (a frame, or an uploaded picture) and the 3 s GIF preview
   app.post('/api/videos/:id/thumbnail', own, async (q, res) => {
-    const v = video(q, res); if (!v) return;
+    const v = video(q, res); if (!v || guarded(v, res)) return;
     const at = Math.min(Math.max(0, +q.body.at || 0), Math.max(0, v.duration - 0.1));
     try { await frameAt(path.join(store.videoDir(v.id), 'video.mp4'), at, path.join(store.videoDir(v.id), 'thumb-custom.jpg'), 480); store.update(v.id, { thumbAt: at }); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.put('/api/videos/:id/thumbnail', own, express.raw({ type: 'image/*', limit: '8mb' }), async (q, res) => {
-    const v = video(q, res); if (!v) return;
+    const v = video(q, res); if (!v || guarded(v, res)) return;
     if (!Buffer.isBuffer(q.body) || !q.body.length) return res.status(400).json({ error: 'Send an image' });
     const dir = store.videoDir(v.id), tmp = path.join(dir, 'thumb-upload.bin');
     try { fs.writeFileSync(tmp, q.body); await runFfmpeg(['-y', '-i', tmp, '-vf', 'scale=480:-2', '-frames:v', '1', '-q:v', '3', path.join(dir, 'thumb-custom.jpg')]); res.json({ ok: true }); }
@@ -94,7 +97,7 @@ function mount(app, ctx) {
   });
   app.delete('/api/videos/:id/thumbnail', own, (q, res) => { const v = video(q, res); if (!v) return; fs.rmSync(path.join(store.videoDir(v.id), 'thumb-custom.jpg'), { force: true }); store.update(v.id, { thumbAt: null }); res.sendStatus(204); });
   app.post('/api/videos/:id/gif', own, async (q, res) => {
-    const v = video(q, res); if (!v) return;
+    const v = video(q, res); if (!v || guarded(v, res)) return;
     const at = Math.min(Math.max(0, +q.body.at || 0), Math.max(0, v.duration - 3)), dir = store.videoDir(v.id);
     try {
       await runFfmpeg(['-y', '-ss', String(at), '-t', '3', '-i', path.join(dir, 'video.mp4'), '-vf', 'fps=12,scale=480:-2:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4', '-loop', '0', path.join(dir, 'preview.gif')]);

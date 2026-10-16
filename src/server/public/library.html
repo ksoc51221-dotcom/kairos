@@ -233,6 +233,7 @@ async function renderWorkspace(m) {
       ${frow('Logo', `<input type="file" id="b-logo" accept="image/png,image/jpeg">`, b.logo ? 'A logo is set.' : '')}${frow('Hide product branding', `<input type="checkbox" class="sw" id="b-hide" ${b.hideBranding ? 'checked' : ''}>`, 'Removes the name from the player header and embed watermark.')}</div>
     <div class="sec"><h3>Privacy & security</h3><p class="d">Workspace-wide controls.</p>
       ${frow('Privacy Guard', `<input type="checkbox" class="sw" id="s-pg" ${s.privacyGuard ? 'checked' : ''}>`, 'Blur secrets and personal data. Until it has checked a video, only you can watch it.')}
+      ${frow('Privacy Guard listens too', `<input type="checkbox" class="sw" id="s-sg" ${s.speechGuard !== false ? 'checked' : ''}>`, 'Bleeps spoken passwords, keys and card numbers, and removes them from the transcript and captions. Needs the speech model; if it cannot listen, viewers stay blocked.')}
       ${frow('Keep the unblurred original', `<input type="checkbox" class="sw" id="s-ko" ${s.keepOriginal ? 'checked' : ''}>`, 'Off: when something is blurred, the unblurred file is deleted. On: it is kept on this computer (owner only, never served to viewers).')}
       ${frow('Disable downloads', `<input type="checkbox" class="sw" id="s-dd" ${s.disableDownloads ? 'checked' : ''}>`, 'Viewers cannot download any video. You still can.')}
       ${frow('Delete videos after', `<input id="s-ret" type="number" min="0" value="${s.retentionDays}">`, 'Days. 0 keeps everything. Applies automatically, hourly.')}</div>
@@ -247,7 +248,7 @@ async function renderWorkspace(m) {
     <div class="savebar"><span id="saved" class="chip"></span><button class="btn pri" id="save">Save</button></div></div>`;
   $('save').onclick = async () => {
     const v = (i) => $(i).value;
-    await saveSettings(() => ({ privacyGuard: $('s-pg').checked, keepOriginal: $('s-ko').checked, disableDownloads: $('s-dd').checked, retentionDays: +v('s-ret') || 0, model: v('s-model'),
+    await saveSettings(() => ({ privacyGuard: $('s-pg').checked, speechGuard: $('s-sg').checked, keepOriginal: $('s-ko').checked, disableDownloads: $('s-dd').checked, retentionDays: +v('s-ret') || 0, model: v('s-model'),
       brand: { name: v('b-name'), accent: v('b-acc'), hideBranding: $('b-hide').checked },
       integrations: { slack: { hook: v('i-slack') }, github: { repo: v('i-ghr'), token: v('i-ght') }, linear: { key: v('i-lin'), teamId: v('i-lint') }, jira: { site: v('i-jsite'), email: v('i-jmail'), token: v('i-jtok'), project: v('i-jkey') } } }));
     const f = $('b-logo').files[0]; if (f) await fetch('/api/branding/logo', { method: 'PUT', body: f });

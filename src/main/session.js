@@ -386,7 +386,7 @@ async function finish({ timeline, stats } = {}) {
       console.log('SELFTEST_DONE', s.id, s.dir);
       if (events.listenerCount('processed')) events.emit('processed', { id: s.id, dir: s.dir, timeline: tl }); else app.quit();
     });
-  if (!config.SELFTEST) shell.openExternal(config.origin(`/v/${s.id}`));
+  if (!config.SELFTEST) shell.openExternal(config.ownerOrigin(`/v/${s.id}`));
   return s.id;
 }
 

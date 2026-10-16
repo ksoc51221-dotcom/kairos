@@ -7,6 +7,8 @@ try { SELFTEST = process.env.SPOOL_SELFTEST ? JSON.parse(process.env.SPOOL_SELFT
 
 const PORT = +process.env.SPOOL_PORT || DEFAULT_PORT;
 const origin = (p = '') => `http://localhost:${PORT}${p}`;
+// R1: a link for the OWNER's browser: it signs this browser in as the owner (one-time code), then lands on `p`. Never copy it to the clipboard or share it.
+const ownerOrigin = (p = '/') => origin(require('../server/security').ownerLoginPath(p));
 const dataDir = (app) => process.env.SPOOL_DATA || app.getPath('userData');
 
-module.exports = { SELFTEST, PORT, origin, dataDir };
+module.exports = { SELFTEST, PORT, origin, ownerOrigin, dataDir };

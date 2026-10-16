@@ -20,6 +20,8 @@ const PATTERNS = [
   { type: 'phone', re: /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/g },
   { type: 'password', re: /(?:password|passwd|pwd|secret|passcode)\s*[:=]\s*(\S+)/gi, group: 1 },
   { type: 'secret', re: /\b(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{28,}\b/g },
+  // R9: an AWS secret access key is 40 characters of base64 and often contains / or +, which the rule above does not allow
+  { type: 'secret', re: /(?<![A-Za-z0-9/+=])(?=[A-Za-z0-9/+=]*\d)(?=[A-Za-z0-9/+=]*[A-Za-z])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])/g },
 ];
 
 // character range of `value` inside line text -> union box of the words it overlaps
@@ -51,7 +53,9 @@ function regexFindings(line) {
 const LLM_BUDGET_MS = +process.env.SPOOL_PRIVACY_LLM_MS || 10000; // the rules are the floor; the model is a bonus that must not hold up publishing
 
 async function llmFindings(uniqueLines, log) {
-  if (!uniqueLines.length || !(await llm.available())) return [];
+  llmFindings.lastRan = false;
+  if (!uniqueLines.length) { llmFindings.lastRan = true; return []; } // nothing left for the model to judge
+  if (!(await llm.available())) return [];
   if (!(await llm.loaded())) { llm.warm(); log('LLM pass skipped: the model is not loaded yet (rules only for this video)'); return []; }
   const numbered = uniqueLines.slice(0, 60).map((t, i) => `${i}: ${t.slice(0, 140)}`).join('\n');
   try {
@@ -66,6 +70,7 @@ async function llmFindings(uniqueLines, log) {
       schema: { type: 'object', properties: { hits: { type: 'array', items: { type: 'object',
         properties: { i: { type: 'integer' }, type: { type: 'string' }, value: { type: 'string' } }, required: ['i', 'type', 'value'] } } }, required: ['hits'] },
     });
+    llmFindings.lastRan = true;
     return (res.hits || []).filter((h) => uniqueLines[h.i] && h.value && uniqueLines[h.i].includes(h.value))
       .map((h) => ({ line: uniqueLines[h.i], type: String(h.type).slice(0, 30), value: h.value }));
   } catch (e) { log(`LLM pass skipped: ${e.message}`); return []; }
@@ -108,20 +113,48 @@ function pickFrames(hashBuf, count, { fps = SCAN_FPS, maxSame = 2, maxGap = 2 } 
   return kept.map((f, i) => ({ index: f.index, t: f.t, until: i + 1 < kept.length ? kept[i + 1].t : count / fps }));
 }
 
+// R8b: f9999.jpg must come before f10000.jpg; a plain sort() puts it after, and the hash frames (which are in time order) no longer line up.
+const frameNumber = (f) => parseInt(f.slice(1), 10);
+const sortFrames = (names) => names.filter((f) => /^f\d+\.jpg$/.test(f)).sort((a, b) => frameNumber(a) - frameNumber(b));
+
+// R4: how many sampled frames a recording of `duration` seconds must have produced. Fewer means extraction failed part-way and the rest of the
+// video was never looked at, so the guard fails closed instead of reporting "nothing found".
+function assertCoverage({ jpgs, hashFrames, duration, fps = SCAN_FPS }) {
+  const need = duration > 0 ? Math.max(1, Math.floor(duration * fps) - 2) : 0;
+  if (jpgs < need) throw new Error(`only ${jpgs} of at least ${need} sample frames were extracted, so the whole video was not checked`);
+  if (hashFrames < need) throw new Error(`only ${hashFrames} of at least ${need} frame hashes were written, so the whole video was not checked`);
+  return need;
+}
+
+// The ffmpeg filter graph that hides each interval's box. R9: a solid black fill, not a blur: a box blur of large text can be partly reversible.
+function blurGraph(intervals, width, height, pad = 0.012) {
+  const chain = []; let src = '0:v';
+  intervals.forEach((iv, i) => {
+    const x = Math.max(0, Math.floor((iv.box.x0 - pad) * width)), y = Math.max(0, Math.floor((iv.box.y0 - pad * 1.2) * height));
+    const w = Math.min(width - x, Math.ceil((iv.box.x1 - iv.box.x0 + pad * 2) * width)), h = Math.min(height - y, Math.ceil((iv.box.y1 - iv.box.y0 + pad * 2.4) * height));
+    chain.push(`[${src}]drawbox=x=${x}:y=${y}:w=${w}:h=${h}:color=black@1:t=fill:enable='between(t,${iv.from.toFixed(2)},${iv.to.toFixed(2)})'[v${i}]`);
+    src = `v${i}`;
+  });
+  return { graph: chain.join(';'), last: src };
+}
+
 // Scan a recording for secrets and personal data. Needs a folder of sampled frames (`scanDir`: f0001.jpg… + hash.raw) or, failing that, the video to sample.
 // Returns { report, masked, redact(outPath), stats }.
 async function scan({ video, scanDir, workDir, duration, width, height, cachePath, onStatus = () => {}, log = () => {} }) {
   const t0 = Date.now();
   if (!scanDir || !fs.existsSync(path.join(scanDir, 'hash.raw'))) { scanDir = path.join(workDir, 'scan'); onStatus('sampling frames'); await extractScanFrames(video, scanDir); }
-  const jpgs = fs.readdirSync(scanDir).filter((f) => /^f\d+\.jpg$/.test(f)).sort();
+  const jpgs = sortFrames(fs.readdirSync(scanDir));
   const hashBuf = fs.readFileSync(path.join(scanDir, 'hash.raw'));
-  const count = Math.min(jpgs.length, Math.floor(hashBuf.length / (HASH_W * HASH_H)));
+  const hashFrames = Math.floor(hashBuf.length / (HASH_W * HASH_H));
+  assertCoverage({ jpgs: jpgs.length, hashFrames, duration });
+  const count = Math.min(jpgs.length, hashFrames);
   const picked = pickFrames(hashBuf, count);
   const fw = Math.min(SCAN_WIDTH, width), fh = Math.round((fw * height) / width);
   const frames = picked.map((f) => ({ t: f.t, until: f.until, file: path.join(scanDir, jpgs[f.index]), width: fw, height: fh }));
   onStatus(`reading ${frames.length} of ${count} frames`);
   const tOcr = Date.now();
   const ocr = await ocrFrames(frames, { cachePath, onProgress: (d, n) => onStatus(`reading screen ${d}/${n}`) });
+  if (ocr.length !== frames.length || ocr.some((f) => !f || !Array.isArray(f.lines))) throw new Error('the screen reader did not return a result for every frame'); // R4
   const ocrMs = Date.now() - tOcr;
   ocr.forEach((f, i) => { f.until = frames[i].until; });
 
@@ -161,12 +194,12 @@ async function scan({ video, scanDir, workDir, duration, width, height, cachePat
   // 2) LLM judgement on unique lines the rules didn't already cover, time-boxed. Run it with refine() while the first blur pass is encoding
   // (the model uses the GPU, the encoder the media engine), so a clean video waits for max(blur, model) rather than blur + model.
   // Returns { changed } : true when the model found something the rules did not, so the caller must blur again with `intervals`.
-  let llmMs = 0, llmHits = 0;
+  let llmMs = 0, llmHits = 0, modelRan = false;
   const refine = async () => {
     const covered = new Set(found.map((f) => f.value));
     const uniq = [...new Set(ocr.flatMap((f) => f.lines.map((l) => l.text)))].filter((t) => t.length >= 4 && ![...covered].some((v) => t.includes(v)));
     onStatus('asking the model what is sensitive');
-    const tLlm = Date.now(), hits = await llmFindings(uniq, log); llmMs = Date.now() - tLlm; llmHits = hits.length;
+    const tLlm = Date.now(), hits = await llmFindings(uniq, log); llmMs = Date.now() - tLlm; llmHits = hits.length; modelRan = llmFindings.lastRan === true;
     const before = found.length;
     for (const h of hits) ocr.forEach((f, fi) => f.lines.forEach((l) => {
       if (l.text !== h.line) return;
@@ -181,23 +214,16 @@ async function scan({ video, scanDir, workDir, duration, width, height, cachePat
   const redact = async (outPath, { onProgress } = {}) => {
     const intervals = cur.intervals;
     if (!intervals.length) return false;
-    const pad = 0.012;
-    const chain = []; let src = '0:v';
-    intervals.forEach((iv, i) => {
-      const x = Math.max(0, Math.floor((iv.box.x0 - pad) * width)), y = Math.max(0, Math.floor((iv.box.y0 - pad * 1.2) * height));
-      const w = Math.min(width - x, Math.ceil((iv.box.x1 - iv.box.x0 + pad * 2) * width)), h = Math.min(height - y, Math.ceil((iv.box.y1 - iv.box.y0 + pad * 2.4) * height));
-      const r = Math.max(1, Math.min(30, Math.floor(Math.min(w, h) / 2) - 1));
-      chain.push(`[${src}]split[a${i}][b${i}];[b${i}]crop=${w}:${h}:${x}:${y},boxblur=${r}:3:${Math.floor(r / 2)}:3[c${i}];[a${i}][c${i}]overlay=${x}:${y}:enable='between(t,${iv.from.toFixed(2)},${iv.to.toFixed(2)})'[v${i}]`);
-      src = `v${i}`;
-    });
-    const script = path.join(workDir, 'blur.filter'); fs.writeFileSync(script, chain.join(';'));
+    const { graph, last: src } = blurGraph(intervals, width, height);
+    const script = path.join(workDir, 'blur.filter'); fs.writeFileSync(script, graph);
     await runFfmpeg(['-y', '-i', video, '-filter_complex_script', script, '-map', `[${src}]`, '-map', '0:a?', ...videoArgs(height), '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', outPath],
       { duration, onProgress });
     return true;
   };
   return {
     get report() { return cur.report; }, get masked() { return cur.masked; }, refine, redact,
-    get stats() { return { sampled: count, read: frames.length, engine: ocr.engine, ocrMs, llmMs, llmHits, elapsedMs: Date.now() - t0 }; },
+    get modelRan() { return modelRan; },
+    get stats() { return { sampled: count, modelRan, read: frames.length, engine: ocr.engine, ocrMs, llmMs, llmHits, elapsedMs: Date.now() - t0 }; },
   };
 }
-module.exports = { scan, regexFindings, pickFrames, dhash, hamming, extractScanFrames };
+module.exports = { scan, regexFindings, pickFrames, dhash, hamming, extractScanFrames, sortFrames, assertCoverage, blurGraph, PATTERNS };

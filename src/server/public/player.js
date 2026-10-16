@@ -23,11 +23,12 @@
     const g = e.data?.gate;
     const msg = { private: ['This video is private', 'Only the owner can watch it.'], expired: ['This link has expired', 'Ask the owner for a new one.'],
       nopassword: ['This video is locked', "The owner hasn't set a password for it yet. Ask them to open the Share dialog and choose one."],
-      checking: ['Almost ready', 'The Privacy Guard is checking this video for sensitive information. It opens by itself when it is done.'] }[g];
+      checking: ['Almost ready', 'The Privacy Guard is checking this video for sensitive information. It opens by itself when it is done.'],
+      failed: ['This video is not available', 'Processing this recording did not finish. Ask the owner to record it again.'] }[g];
     if (g === 'checking') setTimeout(onOk, 3000);
     if (msg) { root.innerHTML = `<div class="gate"><h2>${msg[0]}</h2><p>${msg[1]}</p></div>`; return; }
     const pw = g === 'password', v = viewer();
-    root.innerHTML = `<form class="gate"><h2>${esc(e.data.title || 'Protected video')}</h2><p>${pw ? 'Enter the password to watch.' : 'Enter your name and email to watch.'}</p>
+    root.innerHTML = `<form class="gate"><h2>Protected video</h2><p>${pw ? 'Enter the password to watch.' : 'Enter your name and email to watch.'}</p>
       ${pw ? '<input id="gpw" type="password" placeholder="Password" autofocus>' : `<input id="gname" placeholder="Your name" value="${esc(v.name || '')}"><input id="gemail" type="email" placeholder="Email" value="${esc(v.email || '')}">`}
       <button class="btn pri">Watch</button><div class="err" id="gerr"></div></form>`;
     root.querySelector('form').onsubmit = async (ev) => {

@@ -39,7 +39,7 @@ Recording (Electron renderer, hidden)          Processing (main process, ffmpeg 
 Rules that follow from this:
 1. **No canvas compositing during recording.** The screen track is recorded directly from `getDisplayMedia` with the OS-drawn cursor (smooth, native frame clock).
 2. **Exactly one lossy encode before publishing:** the composite step, on the hardware encoder at a high bitrate. MediaRecorder intermediates use a very high bitrate (about visually lossless).
-3. **The owner sees the video as soon as the composite finishes** (target ≤ 8 s for a 24 s clip). Viewers stay blocked until the Privacy Guard passes. This keeps it fail-closed for viewers only.
+3. **The owner sees the video as soon as the composite finishes** (target ≤ 8 s for a 24 s clip). Viewers stay blocked until the Privacy Guard passes, on the screen **and on the speech** (Phase 4). This keeps it fail-closed for viewers only.
 4. **Cursor effects, auto-zoom and overlays are rendered in the player at playback time** from `timeline.json`, so they cost nothing at record time. Burning them into a download happens later, as an export.
 5. The live bubble, ring, controls, countdown and outline windows are **always `setContentProtection(true)`**, so they never appear in the screen track. The drawing overlay is the one exception: it must be captured, so it stays capturable.
 
@@ -282,15 +282,65 @@ Page `server/public/editor.html` (owner-only). Non-destructive: edits are a list
 - After Stop, `shell.openExternal` still opens the watch page in the browser, which brings the browser forward (a product choice, unchanged).
 - The Electron windows (launcher, bubble toolbar) were only checked as far as their tokens already match the reference.
 
-### Phase 4: AI actions + MCP · Oct 18
+### Phase 4: AI actions + MCP · Oct 18 — ✅ done 2026-10-16 (results below the acceptance line)
+**Do first: security fixes from `REVIEW.md`** (a read-only review done 2026-10-16. Opus re-checked findings 1, 2 and 4 in the code, and all three are real). Fix them in this order, each with a unit test:
+- **R2** `auth.access`: `status === 'failed'` must not skip the gate. Non-owners get a blocked state, and media is never served while `shareable !== true`.
+- **R4** `privacy.scan` / `ocr.visionFrames`: fail closed when frames are missing, OCR results are missing or a frame doesn't parse. A missing result is an error, not `[]`.
+- **R3** After a blur, delete or regenerate `thumb-custom.jpg` and `preview.gif` from the blurred file. Reject thumbnail and GIF requests while `shareable !== true`.
+- **R7** Whitelist privacy modes (anything unknown counts as `private`). Run a one-time migration that marks old videos `shareable: true`, then gate on `shareable !== true`.
+- **R1** The owner check must not rely on headers alone. Electron sets an HttpOnly `sp_owner` cookie with a random per-launch secret, and owner routes need it **and** loopback.
+- **R8b** Sort scan frames numerically. **R9** Replace `boxblur` with a solid `drawbox` fill, add a visible "rules-only check" label when the model wasn't loaded, and add the 40-character AWS-secret pattern.
+- **R5** Spaces and the password gate must not reveal titles of locked videos.
+- **R6 is a feature, not just a fix:** **"Privacy Guard listens too."** Run the secret rules on the transcript **before** `shareable`, and mute the audio and hide the caption text for those words. This means transcribing before the gate. Measure the effect on the 20 s "viewers can watch" figure and report it. Demo line: "Loom would publish your password if you said it out loud. Spool bleeps it."
+- R10 and R11 only if time allows.
+Then update the Q&A lines at the bottom of `REVIEW.md` so they are true.
+
 1. "AI Actions" tab: one-click outputs from transcript + guide + screen text: SOP doc, PR description, bug report, Jira/Linear issue body, follow-up email/message, meeting recap. Each is an agent with its own prompt and JSON schema, run through `agents/llm.js`, cached per video.
 2. Send to: Slack (incoming webhook), GitHub issue, Linear issue (GraphQL), Jira issue (REST v3). Tokens stay local; every send needs an explicit click and shows a preview first.
 3. **Spool MCP server** (`mcp/server.js`, stdio, `@modelcontextprotocol/sdk`): tools `list_videos`, `search_videos`, `get_transcript`, `get_guide`, `get_action_plan`. README shows `claude mcp add spool -- node mcp/server.js`. This is the strongest "agentic structure" demo.
 4. Record for agents: build an "Action Plan" (voice + clicks + window titles + guide screenshots) as a markdown prompt to paste into Claude or Cursor.
 **Acceptance:** Claude Code can list and read a Spool transcript over MCP. Each action produces valid JSON for 3 different test videos.
 
+#### Phase 4 results (executed 2026-10-16, Apple M2, one batched Electron run at the end)
+Status: **all acceptance checks pass.** `npm test`: **154/154** (was 119). `node tests/e2e/run.js pipeline`: **19/19**. `node tests/e2e/speech.js` (headless, real Whisper and `say` audio, no windows): **7/7**, run 5 times. Real local model (qwen3:8b), 6 actions × 3 videos: **18/18 valid** (17/18 on the first pass: the first call after idle timed out at 120 s while the model loaded; fixed by a 300 s allowance when the model is cold, then that action passed in 17 s).
+
+**Security fixes, in the order of `REVIEW.md` (each has a unit test in `tests/unit/security-review.test.js` that fails without it)**
+| Finding | What changed | Check |
+|---|---|---|
+| R2 | `access()` returns `failed` (HTTP 410) for a failed video, and anything but `shareable === true` is `checking`. | Viewer gets 410 for video, download, thumbnail, page data and captions of a failed video that has a `video.mp4` on disk, even with `shareable: true`. |
+| R4 | Frame coverage is checked (`assertCoverage`: at least `floor(duration × 2) − 2` frames and hashes). A skipped, missing or garbled Vision result is an error (falls back to Tesseract, then fails closed). | Fake OCR helper that exits 0 but skips a frame, prints junk, or exits 3: all reject. |
+| R3 | After a blur the custom thumbnail is regenerated from the blurred file at `thumbAt` (an uploaded picture and the GIF are deleted). Thumbnail, upload and GIF requests answer 409 while the video is not cleared. | Both paths tested. |
+| R7 | Privacy modes are whitelisted (anything else is `private`), a missing `createdAt` counts as expired, and the gate is closed unless `shareable === true`. A one-time migration (`db.migrations.shareable`) marks old finished videos cleared; unfinished and failed ones stay closed. | Modes `team`, `unlisted`, `public`, `LINK`; the migration runs once and never overrides an explicit `false`. |
+| R1 | Owner = loopback + localhost Host **+ HttpOnly `sp_owner` cookie** (random secret, new on every launch). The app opens the owner's browser through a one-time sign-in link (`/owner-login?code=…`, valid 2 min, single use, same-origin only, the redirect cannot leave the site). `shell.openExternal` calls use it; the clipboard link for viewers does not. | Loopback + `Host: localhost` without the cookie is a viewer (what a raw TCP tunnel looks like). |
+| R8b | Sample frames sort numerically. | `f9999` before `f10000`. |
+| R9 | Hidden text gets a solid black `drawbox`, not a blur. AWS 40-character secret keys (with `/` and `+`) are a rule. The owner sees "Rules-only check" when the model was not loaded. | Filter graph test; the pipeline run shows the blurred regions at luma std 0. |
+| R5 | A space shows `Locked video` with no length or views for anything a viewer cannot open; the password gate no longer returns the title. | Private, checking and password videos in one space. |
+| R6 | **Privacy Guard listens too** (below). | Real speech through the real pipeline. |
+| R10 | Wrong-password lockout per video and address (5 free tries, then 30 s doubling to 15 min, HTTP 429) and async scrypt. | |
+| R11 | `work/`, `video.blur.mp4` and `video.mute.mp4` are removed after every job, finished or thrown. | |
+
+**R6, "Privacy Guard listens too" (`agents/speech-guard.js`)**: Whisper now runs **next to** the screen scan, and viewers get the video only when both have finished. The transcript goes through the same secret rules as the screen plus spoken phrasing ("the password is …", "my pin is …", "api key is …", a run of 9+ spoken digits). Hits are bleeped in `video.mp4` (the picture is copied, only the audio is re-encoded: 0.2 s for a 10 s clip) and replaced by `[bleep]` in the transcript, the word timings and the captions, before anything is saved. If the speech check cannot run on a video that has audio (model missing offline, Whisper failed), viewers stay blocked and the owner is told why. **Measured (24 s Screen + Cam, 1080p, the Phase 2 clip): Stop → viewers can watch 16.9 s** (scan 3.0 s, blur pass 6.8 s; Phase 2 measured 18.2 s, Phase 3 15.6 s alone and 24.9 s on a busy machine), because Whisper's 2.6 s hides inside the blur pass. That clip has only a test tone, so Whisper had nothing to transcribe; with real speech (`tests/e2e/speech.js`, a 10 s `say` clip with a spoken password and PIN) the video was cleared **3.6–5.5 s** after the job started, the transcript read "the password is [bleep], and the pin is [bleep], then click the Deploy button", and Whisper re-transcribing the published audio no longer heard either secret.
+
+**Features**
+- **AI Actions tab** (owner only): SOP, PR description, bug report, issue body, follow-up message, meeting recap (`agents/actions.js`). Each has its own prompt and JSON schema; answers are validated (types, enums, required, non-empty) before they are cached, with one retry that tells the model what was wrong. Cached per video, marked stale when the transcript changes. Only runs on videos the Privacy Guard has cleared.
+- **Send to** Slack (webhook), GitHub issue, Linear (GraphQL) and Jira (REST v3, Atlassian Document Format) (`agents/integrations.js`). Tokens stay in settings and are write-only in the UI. The Send button first opens a preview of the exact request with credentials hidden (a Slack webhook shows only its host); the server only sends a request that was previewed in the last 10 minutes, once, for that video. Tested against a real local endpoint, and against canned GitHub/Linear/Jira responses (links, GraphQL errors, HTTP errors).
+- **MCP server** (`mcp/server.js`, `@modelcontextprotocol/sdk` 1.32): `list_videos`, `search_videos`, `get_transcript`, `get_guide`, `get_action_plan`, read-only from `db.json`, so it works with Spool closed. Only cleared videos are readable, and search never matches the others. The test starts it over real stdio with the SDK client. The bundled copy inside `Spool.app` answers `tools/list`. `claude mcp add spool -- node mcp/server.js` (see `mcp/README.md`).
+- **Record for agents / Action Plan**: markdown brief (what was said, what was asked, steps with timestamps, click positions per step as a screen region and percentages, screenshot file paths, transcript), from the AI Actions tab (copy or download), `GET /api/videos/:id/action-plan`, and the MCP tool.
+- Gate fix found on the way: the viewer page only handled 401/403, so a viewer who opened a link while the Privacy Guard was checking got no "Almost ready" message. It now handles any gate answer, including the new 410.
+
+**Not done / caveats (read these)**
+1. **Window titles are not in the Action Plan.** The recorder does not capture them, and reading them needs the macOS Accessibility permission. Click positions, voice and screenshots are in.
+2. **The speech guard is rule-based.** It catches phrasing like "password is …", token-like words, e-mail addresses, long digit runs. It does not catch a secret said without a cue ("hunter2" on its own), and Whisper may transcribe a spoken key in a form the rules do not match. It over-blanks a caption when the two Whisper passes disagree. Test audio is `say` (clean speech), not a real microphone.
+3. **R8a not done** (a short-lived secret on an otherwise static screen can fall between sampled frames; `maxGap` is still 2 s). Lowering it to 1 s would add about 3 s of OCR to the 17 s budget. **R4's "zero lines across a whole video is suspicious" not done**: a blank desktop or a camera-only recording legitimately has no text. **R9's "hold sharing until the model is warm" and a "named by user" blocklist not done** (the owner now sees the rules-only label). **R10's "describe e-mail mode honestly in the UI" not done.**
+4. **R11:** raw tracks are kept when the composite fails, on purpose: they are the only copy of the recording. A partial `video.mp4` is deleted.
+5. **R1 consequence:** a bookmark to `http://localhost:4747` or a tab from before the last launch is a viewer until you use **Open library** from the menu bar; it now shows a page saying so instead of JSON. The sign-in lasts until Spool quits.
+6. **Spool.app was built before the last two edits** (the sign-in explanation page in `auth.js` and its test); I did not rebuild a second time. Until the next build, a stale tab on the packaged app shows `{"error":"owner only"}` instead of the explanation. `npm start` has it.
+7. **Spool.app was rebuilt once (947 MB), so Screen Recording permission has been reset: re-grant it on the first launch.** It is not launched or tested after the build: the bundled MCP server was started over stdio (it lists its five tools) and `codesign --verify` passes. The bundle includes `design/` (the Loom reference screenshots), `tests/`, `PLAN.md` and `REVIEW.md`: exclude them in Phase 5 (`--ignore`), as the repository must not ship Loom screenshots.
+8. Not exercised in a browser: the AI Actions tab was checked in the browser pane against a fixture server with a stubbed model (generate, preview modal, credential hidden); Send itself and the copy buttons were not clicked there. Sending to real Slack, GitHub, Linear or Jira was **not** done (no tokens, and nothing leaves the machine in tests).
+9. One new dependency, as allowed: `@modelcontextprotocol/sdk` (its `zod` comes with it).
+
 ### Phase 5: Ship · Oct 19–20
-1. Package size: exclude non-darwin `onnxruntime-node` binaries and unused dependencies from the packager (`--ignore`). Target < 400 MB.
+1. Package size: exclude non-darwin `onnxruntime-node` binaries and unused dependencies from the packager (`--ignore`). Target < 400 MB. **Also exclude `design/` (Loom reference screenshots), `tests/`, `PLAN.md`, `REVIEW.md`** (the Phase 4 build is 947 MB and contains them). Rebuild picks up the owner sign-in explanation page that the Phase 4 build lacks.
 2. Stable signing. **Ask the user first**: creating a self-signed "Spool Dev" code-signing certificate in the login keychain makes Screen Recording permission survive rebuilds. Without it, permission resets on every build.
 3. README: one-paragraph pitch, GIF, install (`npm install && npm start`, or download the `.app` zip from Releases), first-run permissions, Mermaid architecture diagram (§1) and agent-crew diagram, feature table (from `FEATURES.md`), limits, privacy model.
 4. GitHub Release with a zipped `Spool.app` (ad-hoc signed: document "right-click → Open").

@@ -75,6 +75,9 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; } td, th { padd
 .fade { animation: fadein 150ms var(--ease); } @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .viewas { background: var(--good-tile); color: var(--good); text-align: center; font-size: 14px; padding: 8px; font-weight: 600; } .viewas a { text-decoration: underline; margin-left: 8px; }
 .imgview { display: grid; place-items: center; background: #0e0e10; } .imgview img { max-width: 100%; max-height: 70vh; }
+.md { white-space: pre-wrap; word-break: break-word; font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--wash); border-radius: 10px; padding: 14px 16px; margin: 10px 0; max-height: 340px; overflow: auto; }
+.axrow { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid var(--line); } .axrow .lab { flex: 1; min-width: 0; font: 500 16px/1.25 var(--font); } .axrow small { display: block; color: var(--mute); font: 400 13px/1.3 var(--font); margin-top: 2px; }
+.axrow .tile { width: 44px; height: 44px; border-radius: 12px; flex: none; } .axbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; } .prev dt { font-weight: 600; margin-top: 12px; } .prev dd { margin: 4px 0 0; }
 /* share modal (reference: share-modal.webp) */
 .sm .hd { display: flex; align-items: center; gap: 22px; } .sm .hd h3 { flex: 1; } .sm .lk { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; font: 500 16px var(--font); cursor: pointer; padding: 6px; border-radius: 8px; } .sm .lk:hover { background: var(--wash); } .sm .lk.on { color: var(--accent); }
 .sm .to { margin-top: 22px; position: relative; } .sm .to .field { font-size: 17px; padding: 15px 16px; border-radius: 10px; border-color: var(--line); }
@@ -125,7 +128,7 @@ async function boot() {
   $('ownerBtns').hidden = !me.owner; $('vcopy').hidden = me.owner; $('later').hidden = !me.owner; $('who').textContent = UI.initials(me.name || me.brand.name);
   $('title').readOnly = !me.owner;
   try { vm = await api(`/api/v/${id}`); }
-  catch (e) { if (e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
+  catch (e) { if (e.data?.gate || e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
   tab = me.owner ? 'edit' : 'activity';
   if (vm.type === 'image') { $('stage').className = 'stage imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('cc').hidden = $('speed').hidden = true; }
   else { ctl = attach({ stage: $('stage'), video: $('v'), vm }); }
@@ -153,7 +156,7 @@ function listen() {
 
 // ---- tabs: Edit · Activity · Generate · Transcript · Settings (owner); Activity · Generate · Transcript (viewers) ----
 const hasGen = () => !!(vm.summary || vm.chapters?.length || vm.tasks?.length || vm.guide);
-function tabsFor() { const t = []; if (me.owner) t.push(['edit', 'Edit']); t.push(['activity', 'Activity']); if (me.owner || hasGen()) t.push(['generate', 'Generate']); t.push(['transcript', 'Transcript']); if (me.owner) t.push(['settings', 'Settings']); return t; }
+function tabsFor() { const t = []; if (me.owner) t.push(['edit', 'Edit']); t.push(['activity', 'Activity']); if (me.owner || hasGen()) t.push(['generate', 'Generate']); if (me.owner && vm.type !== 'image') t.push(['actions', 'AI Actions']); t.push(['transcript', 'Transcript']); if (me.owner) t.push(['settings', 'Settings']); return t; }
 const scrollOf = {};
 function renderTabs() {
   const t = tabsFor(), sig = t.map((x) => x[0]).join();
@@ -213,6 +216,11 @@ function renderNotes() {
   if (me.owner && vm.status === 'ready' && vm.shareable === false) n.push(`<div class="banner"><div class="spin"></div><span><b>Privacy Guard is checking…</b> You can watch now. Viewers can watch when it's done.</span></div>`);
   else if (busy && me.owner) n.push(`<div class="banner"><div class="spin"></div>${esc(vm.stage)}…</div>`);
   if (vm.redactionCount) n.push(`<div><span class="shield" title="Blurred by the Privacy Guard before anyone could watch">🛡 ${vm.redactionCount} sensitive item${vm.redactionCount > 1 ? 's' : ''} blurred by Privacy Guard</span></div>`);
+  if (me.owner && vm.speechRedactions) n.push(`<div><span class="shield" title="Spoken passwords, keys or numbers were bleeped in the audio and removed from the transcript and captions">🛡 ${vm.speechRedactions} spoken secret${vm.speechRedactions > 1 ? 's' : ''} bleeped by Privacy Guard</span></div>`);
+  if (me.owner && vm.guard && vm.status === 'ready' && vm.shareable) {
+    const w = []; if (!vm.guard.model) w.push('Rules-only check: the local model was not loaded, so names and addresses were not judged.'); if (vm.guard.speech === 'off') w.push('Speech was not checked (turned off in Settings).');
+    if (w.length) n.push(`<div class="chip" title="Keep the model loaded in Ollama (it warms up 45 s after the app starts) for the fuller check">⚠ ${esc(w.join(' '))}</div>`);
+  }
   const html = n.join('');
   if ($('notes').dataset.h !== html) { $('notes').innerHTML = html; $('notes').dataset.h = html; }
 }
@@ -223,6 +231,7 @@ function renderPanel() {
   if (tab === 'edit') renderEdit(p);
   else if (tab === 'activity') renderActivity(p, bind);
   else if (tab === 'generate') renderGenerate(p, bind);
+  else if (tab === 'actions') renderActions(p);
   else if (tab === 'transcript') {
     p.dataset.k = 'transcript';
     p.innerHTML = vm.segments?.length ? `<div class="ghead"><input class="field" id="tq" placeholder="Search transcript…"></div><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
@@ -362,6 +371,64 @@ $('vcopy').onclick = copyLink; $('copy').onclick = copyLink;
 $('share').onclick = () => openShare();
 $('moreBtn').onclick = () => popover($('moreBtn'), `<a class="mi" href="/edit/${id}">${I('scissors')}Edit video</a><a class="mi" href="/media/${id}/download">${I('download')}Download</a><button class="mi" id="mLater">${I('bookmark')}Watch later</button><a class="mi" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">${I('eye')}Preview as viewer</a><button class="mi danger" id="mDel">${I('trash')}Delete</button>`,
   (pp, close) => { pp.querySelector('#mLater').onclick = () => { close(); patch({ watchLater: !vm.watchLater }); }; pp.querySelector('#mDel').onclick = () => { close(); deleteVideo(); }; }, 'down', true);
+
+// ---- AI Actions: one-click documents from the recording, the Action Plan for coding agents, and Send to ----
+const AXICON = { sop: 'doc', pr: 'embed', bug: 'eye', issue: 'check', email: 'mail', recap: 'comment' };
+const ax = { list: null, targets: [], ready: false, open: null, results: {}, busy: {}, err: '', loadedFor: '' };
+async function loadActions() {
+  try { const r = await api(`/api/videos/${id}/actions`); Object.assign(ax, { list: r.actions, targets: r.targets, ready: r.ready, err: '' }); } catch (e) { ax.err = e.message; ax.list = ax.list || []; }
+  lastKey = ''; render();
+}
+async function openAction(a) {
+  ax.open = ax.open === a ? null : a; lastKey = ''; render();
+  if (ax.open && !ax.results[a] && ax.list.find((x) => x.id === a)?.cached) { try { ax.results[a] = await api(`/api/videos/${id}/actions/${a}`); lastKey = ''; render(); } catch {} }
+}
+async function runAction(a, force) {
+  ax.busy[a] = true; ax.open = a; lastKey = ''; render();
+  try { ax.results[a] = await api(`/api/videos/${id}/actions/${a}`, { method: 'POST', body: { force: !!force } }); toast('Done'); } catch (e) { toast(e.message); }
+  ax.busy[a] = false; await loadActions();
+}
+function renderActions(p) {
+  p.dataset.k = 'actions';
+  const sig = `${id}:${vm.duration}:${(vm.segments || []).length}:${vm.shareable}`;
+  if (ax.loadedFor !== sig) { ax.loadedFor = sig; loadActions(); }
+  if (!ax.list) { p.innerHTML = '<div class="empty">Loading…</div>'; return; }
+  const t = ax.targets;
+  const rows = ax.list.map((a) => {
+    const r = ax.results[a.id], busy = ax.busy[a.id], open = ax.open === a.id;
+    return `<div class="axrow"><span class="tile">${I(AXICON[a.id] || 'doc')}</span><div class="lab">${esc(a.label)}<small>${esc(a.blurb)}${a.cached ? (a.cached.stale ? ' · <b>transcript changed since</b>' : ` · made ${UI.ago(a.cached.at)}`) : ''}</small></div>
+      <button class="btn sm ${a.cached ? '' : 'pri'}" data-ax="${a.id}" ${busy || !ax.ready ? 'disabled' : ''}>${busy ? 'Writing…' : a.cached ? (open ? 'Hide' : 'Open') : 'Generate'}</button></div>` +
+      (open && r ? `<div class="card2" style="margin-top:10px"><div class="md" id="axmd">${esc(r.markdown)}</div><div class="axbar"><button class="btn sm" data-axcopy="${a.id}">Copy</button><button class="btn sm" data-axre="${a.id}">${a.cached?.stale ? 'Regenerate (transcript changed)' : 'Regenerate'}</button>
+        <span class="chip" style="align-self:center">Send to</span>${t.map((x) => `<button class="btn sm" data-axsend="${a.id}|${x.id}" ${x.ready ? '' : 'disabled'} title="${x.ready ? 'Shows exactly what will be sent first' : 'Add ' + esc(x.needs) + ' in Settings → Workspace → Integrations'}">${esc(x.label)}</button>`).join('')}</div></div>` : '');
+  }).join('');
+  p.innerHTML = `<div class="powered">Powered by AI ${I('sparkle')}</div><div class="sh"><h3>AI Actions</h3><span class="pill">${I('sparkle')} On this computer</span></div>
+    ${ax.ready ? '' : '<div class="banner">Available once the Privacy Guard has cleared the video and it has a transcript.</div>'}${ax.err ? `<div class="err">${esc(ax.err)}</div>` : ''}
+    <div class="card2"><h4>Record for agents</h4><p>Turn this recording into a brief for Claude Code, Cursor or any coding agent: what you said, the steps shown with screenshot files, where you clicked.</p>
+      <div class="axbar"><button class="btn pri sm" id="planCopy" ${ax.ready ? '' : 'disabled'}>Copy action plan</button><a class="btn sm" href="/api/videos/${id}/action-plan?download=1">Download .md</a></div>
+      <p class="chip" style="margin-top:8px">Or let an agent read it itself: <code>claude mcp add spool -- node mcp/server.js</code></p></div>
+    ${rows}`;
+  p.querySelectorAll('[data-ax]').forEach((b) => (b.onclick = () => (ax.list.find((x) => x.id === b.dataset.ax).cached ? openAction(b.dataset.ax) : runAction(b.dataset.ax))));
+  p.querySelectorAll('[data-axre]').forEach((b) => (b.onclick = () => runAction(b.dataset.axre, true)));
+  p.querySelectorAll('[data-axcopy]').forEach((b) => (b.onclick = async () => { await navigator.clipboard.writeText(ax.results[b.dataset.axcopy].markdown); copied(b); }));
+  p.querySelectorAll('[data-axsend]').forEach((b) => (b.onclick = () => previewSend(...b.dataset.axsend.split('|'))));
+  if ($('planCopy')) $('planCopy').onclick = async () => { try { const r = await fetch(`/api/videos/${id}/action-plan`); if (!r.ok) throw new Error((await r.json()).error); await navigator.clipboard.writeText(await r.text()); copied($('planCopy')); } catch (e) { toast(e.message); } };
+}
+// Send to: nothing leaves this computer until the person has seen the exact request (credentials hidden) and pressed Send.
+async function previewSend(action, target) {
+  let pv; try { pv = await api(`/api/videos/${id}/send/preview`, { body: { action, target } }); } catch (e) { toast(e.message); return; }
+  const m = $('modal'); m.hidden = false;
+  const close = () => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', onKey, true); }, onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey, true);
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Send to ${esc(pv.label)}"><h3>Send to ${esc(pv.label)}?</h3><p style="color:var(--mute)">${esc(pv.summary)}. This is exactly what will be sent; your key is hidden here.</p>
+    <dl class="prev"><dt>Request</dt><dd>${esc(pv.method)} ${esc(pv.url)}</dd><dt>Headers</dt><dd><div class="md">${esc(Object.entries(pv.headers).map(([k, v]) => `${k}: ${v}`).join('\n'))}</div></dd><dt>Body</dt><dd><div class="md">${esc(JSON.stringify(pv.body, null, 2))}</div></dd></dl>
+    <div class="axbar" style="justify-content:flex-end"><button class="btn" id="px-no">Cancel</button><button class="btn pri" id="px-go">Send</button></div></div>`;
+  m.onclick = (e) => { if (e.target === m) close(); }; $('px-no').onclick = close; $('px-go').focus();
+  $('px-go').onclick = async () => {
+    $('px-go').disabled = true; $('px-go').textContent = 'Sending…';
+    try { const r = await api(`/api/videos/${id}/send`, { body: { token: pv.token } }); close(); toast(r.link ? `Sent: ${r.link}` : `Sent (${r.detail})`); if (r.link) navigator.clipboard?.writeText(r.link).catch(() => {}); }
+    catch (e) { $('px-go').disabled = false; $('px-go').textContent = 'Send'; toast(e.message); }
+  };
+}
 
 // ---- share (reference: share-modal.webp): people, general access, then Copy link · Share at time · Set password · Share ----
 const ACCESS = { link: ['Public', 'Anyone can find and view', 'globe'], email: ['Ask for email', 'Viewers enter their email to watch', 'mail'], password: ['Password', 'Viewers need the password', 'lock'], private: ['Only me', 'Nobody else can open it', 'lock'] };

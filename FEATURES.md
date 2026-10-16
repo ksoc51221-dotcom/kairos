@@ -64,5 +64,24 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Burn cursor effects / zoom into the file | ⏳ | Player only |
 | Custom player controls + hover thumbnails (U13) | ⏳ | Not started |
 
-## Editing, AI, integrations
-Tracked in the next batches: auto-zoom, AI voice, AI workflows (SOP, PR, issue, email), meeting notes, Confluence export, MCP server, Record-for-agents action plan, Slack/GitHub/Linear/Jira, SDK, bug-report mode.
+## Privacy hardening (Phase 4, from the security review)
+| Feature | Status | Notes |
+|---|---|---|
+| Privacy Guard listens too: spoken passwords, keys, PINs and card numbers are bleeped and removed from transcript and captions | ✅ | Rule-based; a secret said without a cue can slip through. Costs no measurable time (16.9 s Stop → viewers, was 15.6–18.2 s) |
+| Owner = this machine **and** a per-launch sign-in cookie | ✅ | A raw TCP tunnel to the port is just a viewer. Open the library from the menu bar to sign in |
+| Failed or unfinished videos are never served to viewers; unknown privacy modes close the link | ✅ | One-time migration marks old finished videos cleared |
+| Thumbnails and GIFs made before a blur are regenerated or deleted | ✅ | Blocked while the guard is still checking |
+| Guard fails closed on missing frames or OCR results; solid black fill instead of a blur; AWS secret keys | ✅ | "Rules-only check" shown when the model was not loaded |
+| Spaces and the password gate show no titles of locked videos; wrong-password lockout | ✅ | |
+| Frames a short-lived secret can fall between (2 s sampling gap); window titles | ⏳ | Documented limits |
+
+## AI Actions, integrations, agents (Phase 4)
+| Feature | Status | Notes |
+|---|---|---|
+| AI Actions: SOP, PR description, bug report, issue, follow-up message, meeting recap | ✅ | Local model, validated JSON, cached per video, 18/18 valid on 3 videos |
+| Send to Slack, GitHub, Linear, Jira with a preview first | 🟡 | Request building, preview and sending tested against local endpoints and canned responses; not sent to the real services |
+| Spool MCP server (list, search, transcript, guide, action plan) | ✅ | Tested over stdio with the SDK client; read-only; cleared videos only |
+| Record for agents: Action Plan brief (voice, steps, clicks, screenshots) | 🟡 | No window titles (not recorded) |
+
+## Editing, AI, integrations, later
+Tracked in the next batches: auto-zoom export, AI voice, meeting notes, Confluence export, SDK.

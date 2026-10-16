@@ -33,7 +33,10 @@ function mount(app, ctx = {}) {
   // a space is a shareable page listing the videos a viewer is allowed to open
   app.get('/api/space/:id', (q, res) => {
     const sp = ids().spaces[q.params.id]; if (!sp) return res.sendStatus(404);
-    const vids = store.list().filter((v) => (v.spaces || []).includes(sp.id) && v.status === 'ready').map((v) => ({ id: v.id, title: v.title, duration: v.duration, views: v.views, createdAt: v.createdAt, locked: access(q, v) !== 'ok' }));
+    // R5: a viewer learns nothing about a video they cannot open: no title (written by the model from the transcript), length or view count.
+    const vids = store.list().filter((v) => (v.spaces || []).includes(sp.id) && v.status === 'ready').map((v) => (access(q, v) === 'ok'
+      ? { id: v.id, title: v.title, duration: v.duration, views: v.views, createdAt: v.createdAt, locked: false }
+      : { id: v.id, title: 'Locked video', locked: true }));
     res.json({ id: sp.id, name: sp.name, videos: vids });
   });
 
