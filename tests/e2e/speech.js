@@ -5,7 +5,7 @@ const fs = require('fs'), os = require('os'), path = require('path'), { spawnSyn
 const root = path.join(__dirname, '..', '..');
 const store = require(path.join(root, 'src/store')), orchestrator = require(path.join(root, 'src/agents/orchestrator')), { ffmpeg } = require(path.join(root, 'src/pipeline/encode'));
 const transcribe = require(path.join(root, 'src/agents/transcribe'));
-const realData = process.env.SPOOL_REAL_DATA || path.join(os.homedir(), 'Library', 'Application Support', 'Spool');
+const realData = process.env.SPOOL_REAL_DATA || path.join(os.homedir(), 'Library', 'Application Support', 'spool');
 const results = []; const check = (name, ok, detail = '') => { results.push(ok); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`); };
 const run = (cmd, args) => { const r = spawnSync(cmd, args, { encoding: 'utf8' }); if (r.status !== 0) throw new Error(`${cmd} ${r.stderr.slice(-300)}`); return r; };
 

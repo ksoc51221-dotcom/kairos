@@ -1,4 +1,4 @@
-const C = window.SPOOL, I = window.SpoolIcons, $ = (id) => document.getElementById(id);
+const C = window.SPOOL, I = window.IrisIcons, $ = (id) => document.getElementById(id);
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const PAD = 8; // transparent margin around the bar inside its window
 let paused = false, total = 0, pen = false, penColor = C.PEN_COLORS[0], rewindOpen = false, hasCam = true;

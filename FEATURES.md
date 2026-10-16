@@ -80,13 +80,13 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 |---|---|---|
 | AI Actions: SOP, PR description, bug report, issue, follow-up message, meeting recap | ✅ | Local model, validated JSON, cached per video, 18/18 valid on 3 videos |
 | Send to Slack, GitHub, Linear, Jira with a preview first | 🟡 | Request building, preview and sending tested against local endpoints and canned responses; not sent to the real services |
-| Spool MCP server (list, search, transcript, guide, action plan) | ✅ | Tested over stdio with the SDK client; read-only; cleared videos only |
+| Iris MCP server (list, search, transcript, guide, action plan) | ✅ | Tested over stdio with the SDK client; read-only; cleared videos only |
 | Record for agents: Action Plan brief (voice, steps, clicks, screenshots) | 🟡 | No window titles (not recorded) |
 
 ## Packaging (Phase 5)
 | Feature | Status | Notes |
 |---|---|---|
-| Signed Spool.app without design/, tests, notes or other platforms' binaries | ✅ | 537 MB (was 947 MB); target 400 MB not reachable (Electron is 290 MB). Signed with a local 'Spool Dev' certificate |
+| Signed Iris.app without design/, tests, notes or other platforms' binaries | ✅ | 537 MB (was 947 MB); target 400 MB not reachable (Electron is 290 MB). Signed with a local 'Spool Dev' certificate |
 | README with Mermaid diagrams | ✅ | No GIF yet |
 | GitHub repo and Release | ⏳ | Waiting for your go-ahead |
 

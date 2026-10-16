@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>NSCameraUsageDescription</key><string>Spool puts your face in the recording when you choose Screen + Cam or Cam only.</string>
-  <key>NSMicrophoneUsageDescription</key><string>Spool records your voice for your videos and for speaker-note dictation.</string>
-  <key>NSAudioCaptureUsageDescription</key><string>Spool can record your computer's audio when you turn on system audio.</string>
-  <key>NSScreenCaptureUsageDescription</key><string>Spool records your screen.</string>
+  <key>NSCameraUsageDescription</key><string>Iris puts your face in the recording when you choose Screen + Cam or Cam only.</string>
+  <key>NSMicrophoneUsageDescription</key><string>Iris records your voice for your videos and for speaker-note dictation.</string>
+  <key>NSAudioCaptureUsageDescription</key><string>Iris can record your computer's audio when you turn on system audio.</string>
+  <key>NSScreenCaptureUsageDescription</key><string>Iris records your screen.</string>
 </dict></plist>

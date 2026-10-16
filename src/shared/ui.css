@@ -1,4 +1,4 @@
-/* Shared design tokens and components for every Spool window (U1, U2). Import with <link rel="stylesheet" href="../../shared/ui.css">.
+/* Shared design tokens and components for every Iris window (U1, U2). Import with <link rel="stylesheet" href="../../shared/ui.css">.
    The look is the "loom" skin below. Every colour, radius, shadow and font lives in this one block: nothing outside this file may hard-code a
    colour, so a later skin (data-skin="spool") is one more block here. The Loom values were sampled from design/loom-ref/ (never guessed).
    That screenshot is tagged Display P3 (cICP 0c0d0001), so they are written as color(display-p3 ...): the same numbers reproduce the same

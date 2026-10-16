@@ -1,4 +1,4 @@
-// Read-only access to the Spool library for the MCP server. It reads db.json from disk, so it works whether or not the Spool app is running, and it
+// Read-only access to the Iris library for the MCP server. It reads db.json from disk, so it works whether or not the Iris app is running, and it
 // never writes. Content (transcript, guide, plan) is only returned for videos the Privacy Guard has cleared: the same rule viewers live by.
 const fs = require('fs');
 const os = require('os');
@@ -7,12 +7,12 @@ const { buildActionPlan } = require('../src/agents/action-plan');
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-// Where the app keeps its library. SPOOL_DATA overrides (the same variable the app honours); otherwise the platform default for an app named Spool.
+// Where the app keeps its library. SPOOL_DATA overrides (the same variable the app honours); otherwise the platform default for an app named Iris.
 function dataDir(env = process.env, platform = process.platform, home = os.homedir()) {
   if (env.SPOOL_DATA) return env.SPOOL_DATA;
-  if (platform === 'darwin') return path.join(home, 'Library', 'Application Support', 'Spool');
-  if (platform === 'win32') return path.join(env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'Spool');
-  return path.join(env.XDG_CONFIG_HOME || path.join(home, '.config'), 'Spool');
+  if (platform === 'darwin') return path.join(home, 'Library', 'Application Support', 'spool');
+  if (platform === 'win32') return path.join(env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'spool');
+  return path.join(env.XDG_CONFIG_HOME || path.join(home, '.config'), 'spool');
 }
 const libraryDir = (dir = dataDir()) => path.join(dir, 'library');
 
@@ -20,7 +20,7 @@ function readDb(lib = libraryDir()) {
   for (const f of ['db.json', 'db.json.bak']) {
     try { const j = JSON.parse(fs.readFileSync(path.join(lib, f), 'utf8')); if (j && typeof j.videos === 'object') return j; } catch {}
   }
-  throw new Error(`No Spool library found at ${lib}. Open the Spool app once and record something, or set SPOOL_DATA.`);
+  throw new Error(`No Iris library found at ${lib}. Open the Iris app once and record something, or set SPOOL_DATA.`);
 }
 
 const cleared = (v) => v.shareable === true && v.status === 'ready';
@@ -33,7 +33,7 @@ function listVideos(lib, { limit = 20 } = {}) {
 
 function need(lib, id) {
   const v = readDb(lib).videos[id]; if (!v) throw new Error(`No video with id ${id}. Use list_videos to see ids.`);
-  if (!cleared(v)) throw new Error(v.shareable === true ? `Video ${id} is not ready yet (status: ${v.status}).` : `Video ${id} has not been cleared by the Privacy Guard, so its content is not available. Open it in Spool and wait for the check to finish.`);
+  if (!cleared(v)) throw new Error(v.shareable === true ? `Video ${id} is not ready yet (status: ${v.status}).` : `Video ${id} has not been cleared by the Privacy Guard, so its content is not available. Open it in Iris and wait for the check to finish.`);
   return v;
 }
 

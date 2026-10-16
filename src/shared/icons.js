@@ -1,6 +1,6 @@
-// Inline SVG icons in one stroke style (24x24 grid, 2px round strokes), drawn for Spool. Loaded by renderer windows as window.SpoolIcons.
-//   SpoolIcons.svg('home')        -> '<svg class="i" ...>...</svg>'
-//   SpoolIcons.fill(rootElement)  -> replaces every [data-icon="name"] with its svg
+// Inline SVG icons in one stroke style (24x24 grid, 2px round strokes), drawn for Iris. Loaded by renderer windows as window.IrisIcons.
+//   IrisIcons.svg('home')        -> '<svg class="i" ...>...</svg>'
+//   IrisIcons.fill(rootElement)  -> replaces every [data-icon="name"] with its svg
 (function (root) {
   const P = {
     home: '<path d="M3.5 11 12 3.5 20.5 11"/><path d="M5.5 9.5V20h5v-6h3v6h5V9.5"/>',
@@ -34,5 +34,5 @@
   };
   const svg = (name, extra = '') => `<svg class="i ${extra}" viewBox="0 0 24 24" aria-hidden="true">${P[name] || ''}</svg>`;
   const fill = (el = document) => el.querySelectorAll('[data-icon]').forEach((n) => { n.innerHTML = svg(n.dataset.icon); n.removeAttribute('data-icon'); });
-  root.SpoolIcons = { svg, fill, names: Object.keys(P) };
+  root.IrisIcons = { svg, fill, names: Object.keys(P) };
 })(typeof self !== 'undefined' ? self : this);

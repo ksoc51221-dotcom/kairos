@@ -1,8 +1,8 @@
 // Pure helpers for the 60 Hz cursor feed: no Electron, no clock of their own, so they are unit-tested.
-// Loaded with require() in the main process (as window.SpoolCursor it would work in a renderer too).
+// Loaded with require() in the main process (as window.IrisCursor it would work in a renderer too).
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.SpoolCursor = factory();
+  else root.IrisCursor = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   // Decides which samples reach timeline.json.
   //   moving   every tick is kept (that is the 60 Hz feed)

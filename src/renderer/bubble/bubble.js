@@ -1,4 +1,4 @@
-const C = window.SPOOL, I = window.SpoolIcons;
+const C = window.SPOOL, I = window.IrisIcons;
 const cam = document.getElementById('cam'), ring = document.getElementById('ring'), v = document.getElementById('v');
 let st = { w: 200, h: 200, shape: 'circle', filter: 'none', frame: 'ring' };
 function apply(s) {

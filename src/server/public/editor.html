@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edit · Spool</title><link rel="stylesheet" href="/static/app.css"><style>
+<title>Edit · Iris</title><link rel="stylesheet" href="/static/app.css"><style>
 /* The editor (owner only). Non-destructive: everything below changes a draft edit list that is saved as you go; "Apply edits" renders a new
    video.mp4 once, with one level of undo. Preview skips the cut ranges, so what you hear is what Apply will make. */
 body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
@@ -252,12 +252,12 @@ function tInsert(p) {
     ${ins.length ? `<div class="sub">In this edit</div>${ins.map((x, k) => { const o = vm.library.find((l) => l.id === x.videoId); return `<div class="lib"><div class="nm">${esc(o?.title || x.videoId)}<br><small>at ${mmss(x.at)} · ${mmss(x.end - x.start)}</small></div><button class="btn sm" data-rm="${k}">Remove</button></div>`; }).join('')}` : ''}
     <div class="sub">Your videos</div>
     ${vm.library.map((o) => `<div class="lib"><img src="/media/${o.id}/thumb.jpg" alt=""><div class="nm">${esc(o.title)}<br><small>${mmss(o.duration, 0)}</small></div><button class="btn sm" data-at="${o.id}" data-d="${o.duration}">At playhead</button><button class="btn sm" data-end="${o.id}" data-d="${o.duration}">At the end</button></div>`).join('') || '<p class="hint">No other videos yet.</p>'}
-    <div class="sub">A new recording</div><p class="hint">Record a clip with Spool; when it has finished processing it appears in the list above.</p><button class="btn" id="rec">${I('video')}Record a new clip</button>`;
+    <div class="sub">A new recording</div><p class="hint">Record a clip with Iris; when it has finished processing it appears in the list above.</p><button class="btn" id="rec">${I('video')}Record a new clip</button>`;
   const add = (vid, d, where) => { const next = { ...D, inserts: [...D.inserts, { videoId: vid, at: where, start: 0, end: round3(+d), duration: round3(+d) }] }; commit(next); toast('Inserted. Apply the edits to render it.'); };
   p.querySelectorAll('[data-at]').forEach((b) => (b.onclick = () => add(b.dataset.at, b.dataset.d, round3($('v').currentTime))));
   p.querySelectorAll('[data-end]').forEach((b) => (b.onclick = () => add(b.dataset.end, b.dataset.d, dur)));
   p.querySelectorAll('[data-rm]').forEach((b) => (b.onclick = () => commit({ ...D, inserts: D.inserts.filter((_, k) => k !== +b.dataset.rm) })));
-  $('rec').onclick = async () => { try { await post('/api/launcher/open'); toast('Spool is open: record your clip'); setTimeout(async () => { vm.library = (await api(`/api/videos/${id}/editor`)).library; if (tab === 'insert') renderPanel(); }, 8000); } catch (e) { toast(e.message); } };
+  $('rec').onclick = async () => { try { await post('/api/launcher/open'); toast('Iris is open: record your clip'); setTimeout(async () => { vm.library = (await api(`/api/videos/${id}/editor`)).library; if (tab === 'insert') renderPanel(); }, 8000); } catch (e) { toast(e.message); } };
 }
 
 // ----- overlays: text, arrow, box, blur, with start and end; {{variables}} -----

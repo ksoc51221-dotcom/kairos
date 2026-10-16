@@ -1,5 +1,5 @@
 // Recorder menu: source → camera → microphone → Start, with Effects / Quality / Notes / More in the toolbar underneath.
-const C = window.SPOOL, I = window.SpoolIcons, $ = (id) => document.getElementById(id);
+const C = window.SPOOL, I = window.IrisIcons, $ = (id) => document.getElementById(id);
 const MARGIN = 6; // transparent margin around the card, for its shadow
 
 // What the user has chosen. `source` is what is recorded; the camera row decides between Screen and Screen + Cam.
@@ -186,7 +186,7 @@ spool.on('preview:style', (p) => { Object.assign(st, p); save(); if (openPanel =
 async function checkPerm() {
   const p = await spool.invoke('perm:status'), bad = p.screen !== 'granted' && mode() !== 'cam';
   $('perm').hidden = !bad; $('start').disabled = bad;
-  if (bad) $('permtxt').innerHTML = `macOS needs your OK first. Click <b>Open Settings</b>, switch on <b>${esc(p.host || 'Spool')}</b> under Screen &amp; System Audio Recording, then click <b>Restart Spool</b>.`;
+  if (bad) $('permtxt').innerHTML = `macOS needs your OK first. Click <b>Open Settings</b>, switch on <b>${esc(p.host || 'Iris')}</b> under Screen &amp; System Audio Recording, then click <b>Restart Iris</b>.`;
 }
 
 // ---------- start ----------

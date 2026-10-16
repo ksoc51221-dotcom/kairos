@@ -9,14 +9,14 @@ const { viewModel } = require('../viewmodel');
 const { page } = require('../util');
 
 // B14: while the owner previews as a viewer, "/" used to answer with a raw JSON 403 and they were stuck. Now it explains and offers the way back.
-const PREVIEW_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Previewing as a viewer · Spool</title>
-<link rel="stylesheet" href="/static/app.css"></head><body><div class="gate"><h2>You're previewing as a viewer</h2><p>The library and settings are hidden while you look at Spool the way a viewer does.</p>
+const PREVIEW_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Previewing as a viewer · Iris</title>
+<link rel="stylesheet" href="/static/app.css"></head><body><div class="gate"><h2>You're previewing as a viewer</h2><p>The library and settings are hidden while you look at Iris the way a viewer does.</p>
 <a class="btn pri" href="/stop-viewing-as">Back to owner view</a></div></body></html>`;
 
 function mount(app, ctx = {}) {
   const ids = () => store.load();
-  // "Record a video" in the library opens Spool's launcher (an explicit click, so taking focus is expected). Only the desktop app wires this up.
-  app.post('/api/launcher/open', own, (_q, res) => (ctx.openLauncher ? (ctx.openLauncher(), res.sendStatus(204)) : res.status(501).json({ error: 'Open Spool from the menu bar to record.' })));
+  // "Record a video" in the library opens Iris's launcher (an explicit click, so taking focus is expected). Only the desktop app wires this up.
+  app.post('/api/launcher/open', own, (_q, res) => (ctx.openLauncher ? (ctx.openLauncher(), res.sendStatus(204)) : res.status(501).json({ error: 'Open Iris from the menu bar to record.' })));
 
   // owner pages
   app.get(['/', '/settings'], (req, res, next) => (previewingAsViewer(req) ? res.type('html').send(PREVIEW_PAGE) : next()), own, page('library.html'));

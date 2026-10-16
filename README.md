@@ -1,8 +1,8 @@
-# Spool
+# Iris
 
 **A screen recorder that keeps your secrets off the internet, and turns every recording into something an agent can use.**
 
-Spool records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it: they write the title, summary and chapters, draft a step-by-step guide with screenshots, and turn the recording into a pull-request description, a bug report or an SOP. Everything runs on your Mac. There is no account and no cloud; the speech model, the screen reader and the language model are all local.
+Iris records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it: they write the title, summary and chapters, draft a step-by-step guide with screenshots, and turn the recording into a pull-request description, a bug report or an SOP. Everything runs on your Mac. There is no account and no cloud; the speech model, the screen reader and the language model are all local.
 
 Two things set it apart from a cloud recorder:
 
@@ -11,7 +11,7 @@ Two things set it apart from a cloud recorder:
 
 ## Install
 
-**From a release** (Apple silicon Mac): download `Spool-mac-arm64.zip` from the Releases page, unzip, move `Spool.app` to Applications. The app is signed but not notarised, so open it the first time with **right-click → Open**.
+**From a release** (Apple silicon Mac): download `Iris-mac-arm64.zip` from the Releases page, unzip, move `Iris.app` to Applications. The app is signed but not notarised, so open it the first time with **right-click → Open**.
 
 **From source** (Node 20 or newer; tested on Node 24):
 
@@ -36,7 +36,7 @@ The first recording needs the **speech model** (about 150 MB, downloaded once). 
 
 ## How it works
 
-Recording and publishing are separate. Spool records the screen and camera as two full-quality tracks, then composites once, on the hardware encoder.
+Recording and publishing are separate. Iris records the screen and camera as two full-quality tracks, then composites once, on the hardware encoder.
 
 ```mermaid
 flowchart LR
@@ -113,14 +113,14 @@ The full checklist, with what is tested and what is not, is in [FEATURES.md](FEA
 ### Use it from Claude Code
 
 ```bash
-claude mcp add spool -- node /absolute/path/to/spool/mcp/server.js
+claude mcp add iris -- node /absolute/path/to/spool/mcp/server.js
 ```
 
-Then: *"List my Spool videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
+Then: *"List my Iris videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
 
 ## Privacy model
 
-- **Local first.** Recordings, transcripts and models stay in `~/Library/Application Support/Spool`. Nothing is uploaded. The only network use is downloading the speech model once, and any Send-to action you click.
+- **Local first.** Recordings, transcripts and models stay in `~/Library/Application Support/spool`. Nothing is uploaded. The only network use is downloading the speech model once, and any Send-to action you click.
 - **Viewers are gated.** Every request from anyone but you goes through one function. It says "blocked" unless the Privacy Guard has cleared the video. "You" means this machine *and* a per-launch sign-in cookie that only the app hands out, so a tunnel to the port is just another viewer.
 - **Secrets are covered, not trusted to a blur.** What the guard finds on screen gets a solid black box, the blurred file replaces the original, and thumbnails and GIFs made earlier are regenerated or deleted. Screenshots go through the same pass.
 - **Send-to tokens** stay in local settings and are write-only in the UI. Every send shows the exact request first.
@@ -142,8 +142,8 @@ These are real. Plan around them.
 
 ```bash
 npm test            # unit tests: no windows, no network, about 20 s
-npm run test:e2e    # records your real screen: windows appear and Spool takes over the display for a while
-npm run build:mac   # package, trim and sign dist/Spool-darwin-arm64/Spool.app
+npm run test:e2e    # records your real screen: windows appear and Iris takes over the display for a while
+npm run build:mac   # package, trim and sign dist/Iris-darwin-arm64/Iris.app
 npm run build:mac:dry   # list what would ship and its size, without building
 ```
 

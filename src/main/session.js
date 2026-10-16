@@ -40,7 +40,7 @@ function flushEvents() {
 
 // ---------------- speaker notes ----------------
 // B28: the teleprompter ('prompt') is opened while the user is presenting another app, so it must not pull focus away from it (that app would stop
-// receiving keystrokes, and Spool would stay frontmost until the recording ended). Clicking into it still works at once (acceptFirstMouse).
+// receiving keystrokes, and Iris would stay frontmost until the recording ended). Clicking into it still works at once (acceptFirstMouse).
 // Editing ('edit', from the launcher) is the user asking to type, so it takes focus.
 const showNotes = (w, mode) => (mode === 'prompt' ? w.showInactive() : w.show());
 function openNotes(mode) {
@@ -198,7 +198,7 @@ function toggleTool(t, arg) {
   if (!S) return;
   log('tool', t);
   if (t === 'pen') {
-    S.pen = !S.pen; const w = ensureDraw(); if (!w.isVisible()) w.showInactive(); w.setIgnoreMouseEvents(!S.pen); w.webContents.send('draw:mode', S.pen); // B28: no w.focus() here. Drawing is mouse input and works without it; taking focus pulled the presenter's app out of the keyboard and Spool never gave it back
+    S.pen = !S.pen; const w = ensureDraw(); if (!w.isVisible()) w.showInactive(); w.setIgnoreMouseEvents(!S.pen); w.webContents.send('draw:mode', S.pen); // B28: no w.focus() here. Drawing is mouse input and works without it; taking focus pulled the presenter's app out of the keyboard and Iris never gave it back
 
     emit(['d', epoch(), S.pen ? 1 : 0]);
   } else if (t === 'pen-color') send('draw', 'draw:color', arg);

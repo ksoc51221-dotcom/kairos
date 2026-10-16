@@ -1,4 +1,4 @@
-/* Spool web skin (watch page, library, settings, share modal, editor, embed). The Loom look, re-sampled on 2026-10-15 from design/loom-ref/ (accent is blue now).
+/* Iris web skin (watch page, library, settings, share modal, editor, embed). The Loom look, re-sampled on 2026-10-15 from design/loom-ref/ (accent is blue now).
    Those screenshots carry a Display P3 profile, so each token has an sRGB fallback and the sampled P3 numbers where the browser supports them: the
    same numbers reproduce the same colours on screen. Nothing outside this block may hard-code a colour (the user's accent colour, set in Settings, replaces
    --accent at runtime). The Electron windows use the matching tokens in src/shared/ui.css. */

@@ -151,7 +151,7 @@ const named = (n) => windowsNow().filter((w) => w.title === n);
 const until = async (fn, ms = 4000, step = 25) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await fn()) return Date.now() - t0; await wait(step); } return null; };
 const inLauncher = (js) => W.launcher.webContents.executeJavaScript(js);
 const clickStart = () => inLauncher('document.getElementById("start").click()');
-const BUBBLE = 'Spool camera', COUNTDOWN = 'Spool countdown';
+const BUBBLE = 'Iris camera', COUNTDOWN = 'Iris countdown';
 const videoCount = () => store.list().length;
 const dirsOnDisk = () => { try { return fs_.readdirSync(path.join(store.videoDir('x'), '..')).filter((n) => n !== 'x').length; } catch { return 0; } };
 
