@@ -5,7 +5,8 @@
 //   mode, seconds, script [[ms, action, arg]], quality, cursorFx, clickFx, patch (noise window: steady frames + demanding content),
 //   guards (flat green windows placed under the bubble, control bar and ring, to prove they are not in the capture),
 //   windowSource:'patch' (records the noise window itself as a window source: no screen content involved),
-//   ui:{prefs} (starts through the real launcher: sets these preferences, opens it and clicks Start Recording).
+//   ui:{prefs} (starts through the real launcher: sets these preferences, opens it and clicks Start Recording),
+//   gestures (the hand-gesture recognizer runs in the bubble for the whole recording; script action ['gesture', label] stands in for a held sign).
 // Results are printed as one line:  SELFTEST_RESULT {json}  which tests/e2e/run.js turns into measurements.
 const { app, BrowserWindow, desktopCapturer, nativeImage, screen } = require('electron');
 const store = require('../store');
@@ -123,7 +124,7 @@ async function runRecording(t) {
   console.log('SELFTEST started:', ok, JSON.stringify(S?.info));
   if (!ok) { console.log('SELFTEST_FAIL start'); closeHelpers(); app.exit(1); return; }
 
-  for (const [ms, a, arg] of t.script || []) setTimeout(() => { if (['pen', 'cursor', 'notes', 'cam'].includes(a)) session.toggleTool(a, arg); else session.control(a, arg); }, ms);
+  for (const [ms, a, arg] of t.script || []) setTimeout(() => { if (['pen', 'cursor', 'notes', 'cam'].includes(a)) session.toggleTool(a, arg); else if (a === 'gesture') session.gesture(arg); else session.control(a, arg); }, ms);
   let overlays = null;
   setTimeout(() => {
     overlays = overlayState(); // what was on screen at the end of capture
@@ -133,7 +134,7 @@ async function runRecording(t) {
 
   session.events.once('processed', ({ id, dir, timeline }) => {
     clearTimeout(watchdog);
-    console.log('SELFTEST_RESULT ' + JSON.stringify({ id, dir, display: { x: b.x, y: b.y, width: b.width, height: b.height, scaleFactor: display.scaleFactor }, guards, overlays, patch: t.patch ? rel(patchRect) : null,
+    console.log('SELFTEST_RESULT ' + JSON.stringify({ id, dir, gesture: S.gesture || null, display: { x: b.x, y: b.y, width: b.width, height: b.height, scaleFactor: display.scaleFactor }, guards, overlays, patch: t.patch ? rel(patchRect) : null,
       secrets: secretRects, ringAt: t.ringAt ? { x: t.ringAt.x - b.x, y: t.ringAt.y - b.y } : null, timeline: { duration: timeline.duration, segments: timeline.segments, stats: timeline.stats, cursorSamples: timeline.cursor.length, clicks: timeline.clicks.length,
         bubbleKeyframes: timeline.bubble.length, bubble: timeline.bubble, drawing: timeline.drawing, mode: timeline.mode, quality: timeline.quality, bubbleSpace: timeline.bubbleSpace, screen: timeline.screen, cam: timeline.cam, audio: timeline.audio, mime: timeline.mime } }));
     setTimeout(() => app.quit(), 300);

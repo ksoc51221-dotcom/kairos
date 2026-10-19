@@ -46,6 +46,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Bubble moves, resizes and shape changes ease in the published video (0.2 s glide; style/size changes cross-fade) | 🟡 | Unit-tested incl. a real ffmpeg run; cross-fade, not a true size morph; not watched in a real recording |
 | Default bubble: landscape rounded rectangle, top-left, ~18% of a 1440 pt screen | ✅ | New installs only |
 | Kairos logo (pinwheel on a white tile) as app and Dock icon; fades in and out for 2.2 s each time the app is opened | 🟡 | Splash never takes focus or clicks and is excluded from recordings; shown on a user launch and when the app is opened again, not at login. Not yet seen in the running app |
+| Hand gestures (beta): hold ✋ 1 s to pause or resume, 👍 1 s to stop, while recording with the camera on. Off by default (More → Recording settings). MediaPipe runs in the bubble, offline, 8 recognitions a second on a ≤ 320 px frame | 🟡 | Hold logic unit-tested; frame pacing unchanged with it on (std 1.5 ms, 57.7 fps). Real-hand recognition not yet tried by anyone: the e2e camera is fake. Two signs only, by design |
 | Hide the dock while recording | ❌ | Only "hide the menu bar" exists; the dock is a system setting |
 
 ## Library, sharing, privacy

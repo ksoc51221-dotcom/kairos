@@ -17,6 +17,7 @@ const IGNORE = [
   /^\/node_modules\/onnxruntime-web(\/|$)/,                                      // browser build of the same engine; the Node build above is what runs
   /^\/node_modules\/uiohook-napi\/prebuilds\/(linux|win32|darwin-x64)[^/]*(\/|$)/,        // mouse hook: this Mac only
   /^\/node_modules\/@tesseract\.js-data\/eng\/4\.0\.0(\/|$)/,                 // OCR language data: only 4.0.0_best_int is read (ocr.js LANG_PATH)
+  /^\/node_modules\/@mediapipe\/tasks-vision\/(wasm|vision_bundle\.(cjs|js)|README\.md)(\/|$)/, // gestures: only vision_bundle.mjs is read from the package; the WASM and the model ship from assets/models
   /\.map$/, /\.d\.ts$/, /^\/node_modules\/.*\/(test|tests|docs|examples?)\//,    // source maps, type files, other packages' tests and docs
 ];
 const ignored = (rel) => IGNORE.some((re) => re.test(rel));

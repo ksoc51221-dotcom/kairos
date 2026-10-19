@@ -46,6 +46,8 @@ function register() {
   handle('rec:finish', (payload) => session.finish(payload));
   on('tool', session.toggleTool);
   on('bubble:action', session.bubbleAction);
+  on('gesture:command', session.gesture);       // Phase 8: the bubble confirmed a held hand sign
+  on('gesture:stats', session.gestureStats);
   on('controls:layout', session.controlsLayout);
   on('countdown:done', session.countdownDone);
   on('countdown:skip', session.countdownSkip);

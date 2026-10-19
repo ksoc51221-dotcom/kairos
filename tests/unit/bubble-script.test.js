@@ -9,12 +9,14 @@ test('bubble.js loads without throwing and registers its handlers', () => {
     set: () => true, apply: () => undefined,
   });
   const ctx = {
-    window: { SPOOL: C, KairosIcons: { fill() {} } },
-    document: { getElementById: el, querySelectorAll: () => [], body: { classList: { toggle() {} } } },
+    window: { SPOOL: C, KairosIcons: { fill() {} }, KairosGestures: require('../../src/shared/gestures') },
+    location: { href: 'file:///app/src/renderer/bubble/index.html' }, URL,
+    document: { getElementById: el, querySelectorAll: () => [], createElement: el, body: { classList: { toggle() {} } } },
     spool: { on: (n, f) => { handlers[n] = f; }, send() {} },
     navigator: { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [] }) } },
     addEventListener() {}, console,
   };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../src/renderer/bubble/bubble.js'), 'utf8'), ctx);
   assert.ok(handlers['bubble:init'] && handlers['bubble:style'] && handlers['bubble:hover'], 'handlers registered: ' + Object.keys(handlers));
+  assert.ok(handlers['gesture:load'] && handlers['gesture:run'] && handlers['gesture:toast'], 'gesture handlers registered: ' + Object.keys(handlers));
 });

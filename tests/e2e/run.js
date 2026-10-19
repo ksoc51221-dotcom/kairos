@@ -3,7 +3,7 @@
 // bundled ffmpeg and prints PASS/FAIL per check with the measured numbers. Screen scenarios capture the real screen, so:
 //   - frames are only ever read as numbers (pixels.js), never looked at
 //   - the whole capture folder is deleted at the end (pass --keep to keep it)
-//   node tests/e2e/run.js [acceptance|cam|all] [--keep]
+//   node tests/e2e/run.js [acceptance|gestures|cam|all] [--keep]   (names can be joined with commas)
 // Run unattended with `caffeinate -d -i node tests/e2e/run.js ...`: if the display sleeps, capture stops and runs hang for minutes.
 // Needs macOS Screen Recording permission for the app that launches it (the same one `npm start` uses).
 const { spawn } = require('child_process');
@@ -29,6 +29,10 @@ const SCENARIOS = {
   // The same recording on whatever is on the screen right now (no noise patch): reported, not judged, because a mostly still desktop
   // legitimately produces fewer frames and far fewer bits than the acceptance numbers ask for.
   idle: { config: { mode: 'screen-cam', seconds: 5 }, expected: 5.0, screen: true, informational: true },
+  // PLAN.md Phase 8: the acceptance recording with the hand-gesture recognizer running in the bubble the whole time (8 recognitions a second on a 320 px frame).
+  // The camera is fake, so there is no hand to see; the pause and the resume are sent as the gesture command the bubble would send once a palm is held
+  // for 1 s (session.gesture), which proves the route into the recorder. The numbers to watch are the same as acceptance: >= 55 fps, pts-delta std < 4 ms.
+  gestures: { config: { mode: 'screen-cam', seconds: 10, gestures: true, script: [[3000, 'gesture', 'Open_Palm'], [4000, 'gesture', 'Open_Palm'], [6000, 'rewind', 2]], patch: true, guards: true }, expected: 6.0, screen: true },
   cam: { config: { mode: 'cam', seconds: 3 }, expected: 3.0, screen: false },
   // Records one of the test's own windows as a window source (no screen content at all). Also covers: the default bottom-left bubble for window
   // recordings, the pen overlay being created lazily and logged (B20), the pause shortcut path toggle-pause (B9), and no cursor feed for windows.
@@ -161,6 +165,12 @@ async function acceptance(name, scenario, dataDir) {
     }
   }
   if (!scenario.config.ui) check('published video has audio', !!vid.audio);
+  if (scenario.config.gestures) {
+    const g = r.gesture;
+    console.log(`  gestures: ${g ? `${g.frames} recognitions over the 10 s run (8 a second asked for), ${f(g.avgMs, 1)} ms average, ${f(g.maxMs, 1)} ms slowest, model ready in ${g.loadMs} ms` : 'no report from the bubble'}`);
+    check('gestures: the recognizer loaded and ran in the bubble (>= 40 recognitions, no error)', !!g && g.frames >= 40 && !g.error, g ? `${g.frames} recognitions${g.error ? ', error: ' + g.error : ''}` : 'no report');
+    check('gestures: pause and resume arrived through the gesture command (2 or more segments)', tl.segments.length >= 2, `${tl.segments.length} segments`);
+  }
 
   // ---- re-composite the same real tracks at the quality presets (no new screen capture) ----
   if (scenario.screen && !scenario.window && !scenario.ui && !scenario.informational) {
@@ -208,7 +218,7 @@ async function acceptance(name, scenario, dataDir) {
 }
 
 (async () => {
-  const names = which === 'all' ? Object.keys(SCENARIOS) : [which];
+  const names = which === 'all' ? Object.keys(SCENARIOS) : which.split(','); // 'acceptance,gestures' runs two in one go
   const base = fs.mkdtempSync(path.join(process.env.SPOOL_E2E_DIR || os.tmpdir(), 'spool-e2e-'));
   let crashed = null;
   try {

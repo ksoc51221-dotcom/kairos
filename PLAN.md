@@ -624,3 +624,67 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 - The app was renamed Spool → Iris → Hermes → **Kairos** (2026-10-20). Kairos everywhere user-facing and in code names (`KairosIcons`, `/Applications/Kairos.app`, MCP server name `kairos`). Unchanged on purpose: the bundle id `app.hermes.recorder` (so macOS keeps the Screen Recording, Camera and Microphone permissions), the library folder (`~/Library/Application Support/spool`, now pinned in code), `SPOOL_*` variables and the repo folder name. The tray said "Quit spool" because `app.name` came from package.json; `app.setName('Kairos')` fixes it. Renderer errors now go to `spool.log` (`renderer:<window>`).
 - From the Margin judge scorecard (62/100): README rewritten around the problem, users, screenshot, 5-minute setup, models-and-safety table; `npm run doctor`; Settings > AI model picker listing installed Ollama models with a missing-model warning; `PITCH.md` (90 s demo script with a 12 s hook, 3-minute pitch, Q&A defense). Tests 172/172. No e2e run.
 - Still open from the scorecard: a real screenshot or GIF from the running app (the README image is the stub render), a demo video, and the GitHub repo and release (waiting for the user's go-ahead).
+
+---
+
+## Phase 8: Hand-gesture commands, MVP only · 2026-10-20 (half a day, hard stop) — ✅ built and installed 2026-10-20 (results and demo note at the end of this section)
+**Goal: a minimal working demo, not a full feature.** While recording with the camera on, two held hand signs control Kairos. Features freeze after this phase; Phase 6 (demo, business plan, repo) comes next.
+
+**Scope (nothing more):**
+- **✋ Open palm held 1 s → pause/resume. 👍 Thumb up held 1 s → stop** (then the normal pipeline and agents run).
+- Engine: MediaPipe Gesture Recognizer (`@mediapipe/tasks-vision`, its canned `Open_Palm` and `Thumb_Up` labels). This is the one new dependency allowed. Ship the `.task` model file and the WASM files **inside the app** (`assets/models/`), so it works offline. No CDN at runtime.
+- Run it in the **bubble window** on the camera preview it already has: about 8 recognitions per second, on a small frame (≤ 320 px), and only while a recording is live and the toggle is on.
+- **Hold-to-confirm:**
+  - The same label must be held at score ≥ 0.6 for 1 s. Breaking the hold for over 200 ms resets the timer.
+  - A 2 s cooldown after a command fires.
+  - A thin ring fills around the bubble while you hold, then a small toast says "Paused ✋" or "Stopping 👍".
+  - Put this logic in a pure function in `shared/gestures.js` with unit tests: hold, break, cooldown, low score.
+- A toggle **"Hand gestures (beta)"** in More → Recording settings, **off by default**.
+- Commands go through the existing session controls (`rec:control` pause, resume, stop) and the existing shortcut path. No new recording logic.
+
+**Must not break:**
+- Frame pacing. Run the `screen-cam` acceptance scenario once with gestures on. The pts-delta std must stay < 4 ms and fps ≥ 55; otherwise drop to 5 recognitions per second, and if it still fails, cut the feature.
+- B28: gestures never take focus.
+
+**Out of scope:** more gestures, custom gestures, using gestures outside a recording, and pointing to zoom.
+
+**Done when:**
+- unit tests pass
+- one batched e2e run (warn the user first, use caffeinate) shows the pacing numbers with gestures on
+- rebuild once, quit Kairos, install to `/Applications/Kairos.app`, commit
+- a short "how to demo it" note goes in PLAN.md, so the user can rehearse: hold a palm to pause, thumbs up to stop
+
+### Phase 8 results · 2026-10-20
+
+**What was built (nothing beyond the scope above):**
+- `src/shared/gestures.js`: the pure `step()` function (hold 1 s, score ≥ 0.6, a gap over 200 ms restarts, 2 s cooldown) and the label → control map. 11 unit tests in `tests/unit/gestures.test.js`: hold, break (forgiven and not), low score, cooldown, switching sign, purity.
+- The bubble window (`bubble.js`) loads MediaPipe's Gesture Recognizer from `assets/models/` (`gesture_recognizer.task` 8.4 MB, `wasm/vision_wasm_internal.{js,wasm}` 13.8 MB; `vision_bundle.mjs` from the one new dependency `@mediapipe/tasks-vision` 1.1.1). No network at runtime. It reads the model while the countdown runs, then recognizes 8 times a second on a frame ≤ 320 px, only after capture has begun, only with the toggle on and the camera not switched off.
+- A thin ring fills around the bubble while a sign is held; a pill on the camera's lower edge says "Paused ✋", "Resumed ✋" or "Stopping 👍". Both live inside the bubble window (content-protected, never focused).
+- `session.gesture()` turns a confirmed sign into `toggle-pause` (the ⌥⇧P message) or `stop` (the ⌥⇧S message). No new recording logic.
+- Launcher: More → Recording settings → **Hand gestures (beta)**, off by default, saved with the other preferences.
+- The packager leaves out the unused MediaPipe WASM variants and maps (the app reads its WASM from `assets/models/`).
+
+**Measured (one batched run, `caffeinate`, Apple M2, 1440×900 @2x, fake camera, noise patch on screen; `acceptance` = gestures off, `gestures` = on, back to back):**
+
+| | gestures off | gestures on | Limit |
+|---|---|---|---|
+| Frame rate (both segments) | 57.5 / 57.5 fps | 57.5 / 57.7 fps | ≥ 55 |
+| pts-delta std (both segments) | 1.15 / 1.83 ms | 1.62 / 1.48 ms | < 4 ms |
+| Bitrate | 31.2 / 30.3 Mb/s | 35.2 / 36.6 Mb/s | ≥ 12 |
+| Published video | 60.0 fps | 60.0 fps | ≥ 55 |
+| Focus (B28) | Kairos never frontmost | Kairos never frontmost | never |
+
+- Pacing was not hurt, so **8 recognitions a second stays** (no need for the 5 per second fallback). In the bubble: 73 recognitions in the 10 s run, 24.9 ms average each (96 ms slowest, the first frame), model ready in 177 ms. One CPU core at about 20% in the bubble process, nothing in the recorder.
+- 56 of 58 checks passed. Both failures are the same check, **"capture works: the noise patch is in the track"**, and it fails identically in the gestures-off baseline of the same run, so it is not caused by this phase. Cause (read from the code, not re-run): since the landscape bubble became 16:9 and larger, the green guard window under the bubble covers most of the noise patch (`selftest.js` puts the patch at 40,60; the bubble now spans about 20–540 × 44–337). The pacing numbers above are real but on a lighter screen than the worst case the test was designed for. Fix, one line, not done because it needs another screen run: move `patchRect.x` right of the bubble (about `wa.x + 560`).
+- Unit tests: 184/184.
+
+**Not verified by me:** recognition of a real hand. The e2e camera is fake, so the 2 signs were injected as the command the bubble sends after a confirmed hold (`session.gesture`); the model runs on every frame but never sees a hand. The hold logic is unit-tested and the model is MediaPipe's own canned `Open_Palm` / `Thumb_Up`, but the first real-hand check is yours: see the demo note.
+
+**How to demo it (rehearse this once before the video):**
+1. More → Recording settings → switch on **Hand gestures (beta)**. Camera on (Screen + Cam, or Camera only). Good light, hand about an arm's length from the camera, palm facing it with the fingers spread.
+2. Press Record. After the countdown, hold **✋ an open palm** for 1 second. A white ring fills around the bubble, then "Paused ✋" appears. The recording is paused.
+3. Hold the palm again for 1 second to resume ("Resumed ✋"). Wait 2 seconds between signs (the cooldown), or the second one is ignored on purpose.
+4. Hold **👍 a thumb up** for 1 second: "Stopping 👍", and the normal pipeline and agents run.
+5. If the ring never starts: the hand is too small or too dark in the frame, or the camera is off. If it fills and resets: keep the hand still, the hold restarts after a 0.2 s loss. Say it out loud on the video: "it runs on the camera preview only while I record, nothing leaves the Mac."
+6. Features are frozen after this phase. Next is Phase 6 (demo, business plan, repo).
+

@@ -8,6 +8,7 @@ const fs = require('fs');
 const store = require('../store');
 const orchestrator = require('../agents/orchestrator');
 const C = require('../shared/constants');
+const GESTURES = require('../shared/gestures');
 const { writeTimeline } = require('../pipeline/segments');
 const { makeFilter, nextDelay } = require('../shared/cursor');
 const config = require('./config');
@@ -102,6 +103,7 @@ function createBubble(display, fake) {
     win_.webContents.send('bubble:init', { camId: bs().camId, fake: !!fake });
     send('bubble', 'bubble:style', bubbleStyle());
     pushBubble();
+    if (S?.opts.gestures) send('bubble', 'gesture:load');
   });
   // The camera is a drag region, and macOS delivers no mouse events (so no :hover) inside one. Main watches the cursor instead and tells the page
   // when it is over the camera or the panel under it. The panel stays up 250 ms after the cursor leaves, long enough to cross the gap to it.
@@ -218,7 +220,7 @@ function toggleTool(t, arg) {
   } else if (t === 'pen-color') send('draw', 'draw:color', arg);
   else if (t === 'cursor') { S.cursorOn = !S.cursorOn; if (S.cursorOn) ensureRing(); else if (alive(W.ring)) W.ring.close(); }
   else if (t === 'notes') { if (alive(W.notes)) W.notes.close(); else openNotes('prompt'); setTimeout(broadcastTools, 150); }
-  else if (t === 'cam') { S.bubble.camOn = !S.bubble.camOn; if (alive(W.bubble)) (S.bubble.camOn ? W.bubble.showInactive() : W.bubble.hide()); pushBubble(); }
+  else if (t === 'cam') { S.bubble.camOn = !S.bubble.camOn; if (alive(W.bubble)) (S.bubble.camOn ? W.bubble.showInactive() : W.bubble.hide()); pushBubble(); syncGestures(); }
   broadcastTools();
 }
 
@@ -360,6 +362,7 @@ async function start(opts) {
     shortcuts.registerSession({ onTogglePause: () => send('recorder', 'rec:control', 'toggle-pause'), onStop: () => send('recorder', 'rec:control', 'stop'), onPen: () => toggleTool('pen') });
     broadcastTools();
     S.live = true; // capture has begun (the launcher-driven self-test waits for this)
+    syncGestures();
     return true;
   } catch (e) {
     const cancelled = e === CANCELLED || !!S?.cancelled, id = S?.id;
@@ -377,12 +380,14 @@ function reuseBubble() {
   W.bubble.setBounds(here ? { x: b.x, y: b.y, width: nw, height: nh } : { x: home.x, y: home.y, width: nw, height: nh });
   send('bubble', 'bubble:style', st);
   if ((S.opts.camId || '') !== PB.camId) send('bubble', 'bubble:init', { camId: S.opts.camId || '', fake: !!S.opts.fakeCam });
+  if (S.opts.gestures) send('bubble', 'gesture:load');
 }
 
 // Closes every overlay and stops the feeds. Returns the cursor sampler's numbers.
 // `keepBubble`: the start was cancelled and the launcher is coming back, so its camera preview stays up (with the style this session had).
 function end({ keepBubble = false } = {}) {
   const cursor = stopCursor(); shortcuts.unregisterSession();
+  if (keepBubble) send('bubble', 'gesture:run', false); // the preview bubble outlives the session: it must not keep watching for signs
   for (const n of ['bubble', 'controls', 'countdown', 'outline', 'draw', 'ring', 'notes']) if (alive(W[n]) && !(keepBubble && n === 'bubble')) W[n].close();
   if (S) { clearTimeout(S.flushTimer); clearTimeout(S.bubbleTimer); if (keepBubble) Object.assign(PB, { size: S.bubble.size, shape: S.bubble.shape, filter: S.bubble.filter, frame: S.bubble.frame }); }
   S = null; win.releaseOverlay('session');
@@ -419,6 +424,20 @@ async function discard() {
 
 // control messages from the control bar, shortcuts and tests go straight to the recorder, which owns the state
 const control = (a, arg) => send('recorder', 'rec:control', a, arg);
+
+// ---------------- hand gestures (Phase 8) ----------------
+// The bubble window runs the recognizer and the hold timer (shared/gestures.js); this side only decides whether signs are wanted right now and
+// turns a confirmed one into the same message the keyboard shortcuts send. No recording logic lives here, and no window is focused.
+const gesturesWanted = () => !!(S && S.live && S.opts.gestures && S.bubble.camOn !== false); // a live recording, the toggle on, the camera not switched off
+const syncGestures = () => send('bubble', 'gesture:run', gesturesWanted());
+function gesture(label) {
+  const cmd = GESTURES.COMMANDS[label];
+  if (!cmd || !gesturesWanted()) return; // a stray message, or one that arrived as the recording ended
+  log('gesture', label, S.paused ? '(paused)' : '');
+  send('bubble', 'gesture:toast', label === 'Thumb_Up' ? 'Stopping 👍' : S.paused ? 'Resumed ✋' : 'Paused ✋');
+  control(cmd.control);
+}
+function gestureStats(st) { if (S) S.gesture = st; } // the last numbers the bubble reported (frames, ms per recognition, model load); the self-test prints them
 const recorderError = (msg) => log('recorder error', msg);
 // The launcher went away. Unless that is because recording is starting, its camera preview goes with it.
 function launcherHidden() { if (!S) { closeBubble(); if (alive(W.countdown)) W.countdown.close(); } }
@@ -426,6 +445,6 @@ const currentBubbleRect = () => (S && alive(W.bubble) ? bubbleRect() : null); //
 
 module.exports = {
   events, isActive, getS, listSources, start, end, finish, discard, control, toggleTool, bubbleAction, previewSet, launcherHidden, controlsLayout, countdownDone, countdownSkip, countdownPainted, cancelStart, openNotes, closeNotes, broadcastTools,
-  chunk, segmentEnd, dropSegments, resetSegments, recorderError, bubbleRect: currentBubbleRect,
-  tick: (t) => send('controls', 'rec:tick', t), paused: (p, t) => send('controls', 'rec:paused', p, t), mic: (on) => send('controls', 'rec:mic', on),
+  chunk, segmentEnd, dropSegments, resetSegments, recorderError, bubbleRect: currentBubbleRect, gesture, gestureStats,
+  tick: (t) => send('controls', 'rec:tick', t), paused: (p, t) => { if (S) S.paused = !!p; send('controls', 'rec:paused', p, t); }, mic: (on) => send('controls', 'rec:mic', on),
 };

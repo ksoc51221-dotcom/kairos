@@ -9,7 +9,7 @@ const st = {
   camOn: false, camId: '', camName: '',
   micOn: true, micId: '', micName: '',
   shape: 'landscape', size: 260, filter: 'none', frame: 'ring',
-  quality: C.DEFAULT_QUALITY, sysAudio: false, hideMenu: false, cursorFx: false, clickFx: true, pg: true, countdown: true,
+  quality: C.DEFAULT_QUALITY, sysAudio: false, hideMenu: false, cursorFx: false, clickFx: true, pg: true, countdown: true, gestures: false,
   pub: true, defPub: true,     // the lock: this video is public (link) or private. Reset to the workspace default every time the bar opens
 };
 const devices = { cams: [], mics: [] };
@@ -24,14 +24,14 @@ function load(c) {
   if (st.source === 'window' || st.source === 'custom') st.source = 'screen'; // a window id or crop from a past session is not valid any more
   st.camOn = p.camOn !== undefined ? p.camOn : mode === 'screen-cam';
   st.micOn = p.micOn !== undefined ? p.micOn : true;
-  for (const k of ['camId', 'camName', 'micId', 'micName', 'shape', 'size', 'filter', 'frame', 'sysAudio', 'hideMenu', 'clickFx', 'countdown']) if (p[k] !== undefined) st[k] = p[k];
+  for (const k of ['camId', 'camName', 'micId', 'micName', 'shape', 'size', 'filter', 'frame', 'sysAudio', 'hideMenu', 'clickFx', 'countdown', 'gestures']) if (p[k] !== undefined) st[k] = p[k];
   st.size = ({ 140: 180, 200: 260, 300: 380 })[st.size] ?? st.size; // the S / M / L stops grew: a size saved at the old stops keeps its place
   if (p.v === 2) { st.quality = p.quality; st.cursorFx = !!p.cursorFx; }
   st.pg = c.privacyGuard !== false;
   st.defPub = st.pub = (c.defaultPrivacy || 'link') !== 'private';
 }
 function save() {
-  const keys = ['source', 'camOn', 'micOn', 'camId', 'camName', 'micId', 'micName', 'shape', 'size', 'filter', 'frame', 'quality', 'sysAudio', 'hideMenu', 'cursorFx', 'clickFx', 'countdown'];
+  const keys = ['source', 'camOn', 'micOn', 'camId', 'camName', 'micId', 'micName', 'shape', 'size', 'filter', 'frame', 'quality', 'sysAudio', 'hideMenu', 'cursorFx', 'clickFx', 'countdown', 'gestures'];
   const prefs = { v: 2 }; for (const k of keys) prefs[k] = st[k];
   spool.invoke('settings:set', { prefs, privacyGuard: st.pg });
   syncPreview();
@@ -108,6 +108,7 @@ function paintSettings(body) {
   t.appendChild(toggle('Cursor ring while I present (only I see it)', 'cursorFx'));
   t.appendChild(toggle('Record clicks for effects in the player', 'clickFx'));
   t.appendChild(toggle('Privacy Guard: cover secrets automatically', 'pg'));
+  const gt = toggle('Hand gestures (beta)', 'gestures'); gt.title = 'While recording with the camera on: hold ✋ for 1 s to pause or resume, 👍 for 1 s to stop'; t.appendChild(gt);
   pad.appendChild(t);
   const k = document.createElement('div'); k.className = 'keys';
   k.innerHTML = [['⌥⇧R', 'bar'], ['⌥⇧P', 'pause'], ['⌥⇧S', 'stop'], ['⌥⇧D', 'pen'], ['⌥⇧A', 'screenshot']].map(([a, b]) => `<span><kbd>${a}</kbd> ${b}</span>`).join('');
@@ -259,7 +260,7 @@ async function start(forAgent = false) {
     const ok = await spool.invoke('record:start', {
       mode: m, sourceId, crop, camId: st.camId, micId: st.micId, micOn: st.micOn && devices.mics.length > 0,
       windowSource: st.source === 'window', quality: st.quality, systemAudio: st.sysAudio, hideMenuBar: st.hideMenu && m !== 'cam',
-      clickAt: performance.timeOrigin + clickT, cursorFx: st.cursorFx, clickFx: st.clickFx, bubble: { size: st.size, shape: st.shape, filter: st.filter, frame: st.frame },
+      clickAt: performance.timeOrigin + clickT, cursorFx: st.cursorFx, clickFx: st.clickFx, gestures: st.gestures && m !== 'screen', bubble: { size: st.size, shape: st.shape, filter: st.filter, frame: st.frame },
       countdown: st.countdown, forAgent, privacy: st.pub === st.defPub ? null : st.pub ? 'link' : 'private',
     });
     if (ok === false) { busy(false); startMeter(); } // the bar is hidden when recording really starts; stay usable if it did not

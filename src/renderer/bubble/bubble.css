@@ -6,6 +6,14 @@ html, body { height: 100%; overflow: hidden; }
 #cam { overflow: hidden; background: var(--surface); -webkit-app-region: drag; box-shadow: var(--shadow-pop); }
 #cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; transition: filter var(--t-pop) var(--ease); } /* mirrored preview only: the file is not mirrored */
 #ring { pointer-events: none; }
+/* Hand gestures (Phase 8): a thin ring just outside the camera fills clockwise while a sign is held, then a small pill says what happened.
+   Both live inside this window, which is content-protected and never takes focus, so neither is recorded and neither steals the keyboard (B28). */
+#hold { position: absolute; left: 6px; top: 6px; box-sizing: border-box; padding: 3px; pointer-events: none; opacity: 0; transition: opacity 120ms var(--ease);
+  background: conic-gradient(from 0deg, var(--pill-on) var(--p, 0deg), transparent 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+#toast { position: absolute; left: 10px; display: flex; justify-content: center; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity var(--t-pop) var(--ease), transform var(--t-pop) var(--ease); }
+#toast.on { opacity: 1; transform: none; }
+#toast b { padding: 7px 14px; border-radius: var(--r-pill); background: var(--glass); box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--glass-line); font: 600 13px/1 var(--font); color: var(--ink-strong); }
 
 #panel { position: absolute; left: 10px; width: 232px; padding: 12px 14px 10px; border-radius: 22px; background: var(--glass); box-shadow: var(--shadow-bar), inset 0 0 0 1px var(--glass-line);
   opacity: 0; pointer-events: none; transform: translateY(-4px); transition: opacity var(--t-pop) var(--ease), transform var(--t-pop) var(--ease); }
