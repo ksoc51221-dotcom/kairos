@@ -611,3 +611,11 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 - The bar is about 548 px wide, wider than Loom's.
 - Shape and size now live only in the bubble panel; Library and Screenshot shortcuts moved into Recording settings.
 - "Hide the dock" is not implemented (only the menu bar can be hidden).
+
+**Item 4 (during recording), added after the first commit:**
+- The composite now eases bubble moves: each move glides over 0.2 s (smoothstep, or until the next keyframe if sooner). A size, shape, filter or frame change that follows straight on from the previous one cross-fades over 0.2 s (old bubble lingers, new one fades in). It is a cross-fade, not a true size morph. After a hidden gap (camera off) there is no fade.
+- The hover panel already worked mid-recording by design: its actions go through `bubbleAction`, which pushes a keyframe on every change and uses `toggleTool('cam')` for power. Not driven in a real recording; no e2e covers it.
+- New default: landscape rounded rectangle (size 200 = 260 pt wide, 18% of a 1440 pt display), top-left. It applies to new installs only: a saved shape or position wins.
+- Unchanged and still passing in e2e: the control bar and countdown are content-protected, so they never appear in the video. The bubble floats on every app (B25) unchanged.
+- Tests: 171/171 unit (composite snapshot regenerated, 2 new tests, one real-ffmpeg run covers the fade graph). No second e2e was run; the rebuilt app is installed but its mid-recording bubble changes are unverified in the real app.
+

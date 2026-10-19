@@ -8,7 +8,7 @@ const st = {
   sourceId: null, sourceName: '', crop: null, cropSource: null,
   camOn: false, camId: '', camName: '',
   micOn: true, micId: '', micName: '',
-  shape: 'circle', size: 200, filter: 'none', frame: 'ring',
+  shape: 'landscape', size: 200, filter: 'none', frame: 'ring',
   quality: C.DEFAULT_QUALITY, sysAudio: false, hideMenu: false, cursorFx: false, clickFx: true, pg: true, countdown: true,
   pub: true, defPub: true,     // the lock: this video is public (link) or private. Reset to the workspace default every time the bar opens
 };

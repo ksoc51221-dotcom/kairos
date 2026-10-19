@@ -84,10 +84,23 @@ test('bubble keyframes: moves become piecewise x/y, a style change starts a new 
   const runs = bubbleRuns(tl, size, 5);
   assert.deepEqual(runs.map((r) => [r.shape, r.start, r.end, r.positions.length]), [['circle', 0, 2, 2], ['squircle', 3, 5, 1]]);
   const g = graph(build(tl, [seg(0, 5)]));
-  assert.match(g, /if\(lt\(t,1\),96,960\)/, 'x jumps from 5% to 50% of 1920 at t=1');
+  assert.match(g, /if\(lt\(t,1\),96,\(96\+864\*min\(1,\(t-1\)\/0\.2\)/, 'x glides from 5% to 50% of 1920 over 0.2 s from t=1');
   assert.match(g, /enable='between\(t,3,5\)'/);
   assert.equal((g.match(/overlay=/g) || []).length, 2);
-  assert.equal(piecewise([[0, 5], [1, 7], [2, 9]], (p) => p[1]), 'if(lt(t,1),5,if(lt(t,2),7,9))');
+  // a move glides over 0.2 s, or until the next keyframe if that comes sooner; a tiny gap is a plain step
+  const eased = piecewise([[0, 5], [1, 7], [2, 9]], (p) => p[1]);
+  assert.match(eased, /^if\(lt\(t,1\),5,if\(lt\(t,2\),\(5\+2\*min\(1,\(t-1\)\/0\.2\)/);
+  assert.match(piecewise([[0, 5], [1, 7], [1.01, 9]], (p) => p[1]), /^if\(lt\(t,1\),5,if\(lt\(t,1\.01\),7,\(7\+2\*min/);
+});
+
+test('a size or shape change that follows straight on cross-fades over 0.2 s; one after a hidden gap does not', () => {
+  const row = (t, shape, w, vis = 1) => [t, 0.1, 0.1, w, 0.17, shape, 'none', 'ring', vis];
+  const tl = base({ bubble: [row(0, 'circle', 0.1), row(2, 'landscape', 0.18), row(3, 'landscape', 0.18, 0), row(4, 'circle', 0.1)] });
+  const runs = bubbleRuns(tl, { w: 1920, h: 1080 }, 6);
+  assert.deepEqual(runs.map((r) => [r.start, r.end, r.fadeIn || 0]), [[0, 2.2, 0], [2, 3, 0.2], [4, 6, 0]]);
+  const g = graph(build(tl, [seg(0, 6)]));
+  assert.equal((g.match(/fade=t=in/g) || []).length, 1);
+  assert.match(g, /fade=t=in:st=2:d=0\.2:alpha=1\[caf1\]/);
 });
 
 test('bubble keyframes: tiny moves merge, very long drags are thinned, positions stay inside the frame', () => {

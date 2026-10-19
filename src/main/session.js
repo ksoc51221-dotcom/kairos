@@ -59,7 +59,7 @@ const closeNotes = () => { if (alive(W.notes)) W.notes.close(); };
 // (previewSet), showing the camera at its saved position; start() then reuses this same window (no close and recreate, which also removes a
 // window creation from the start path). It closes when the launcher closes without recording, when the mode drops the camera, or when the camera is off.
 // PB is the bubble's style while no session exists; a session copies it into S.bubble.
-const PB = { on: false, size: 200, shape: 'circle', filter: 'none', frame: 'ring', camOn: true, camId: '' };
+const PB = { on: false, size: 200, shape: 'landscape', filter: 'none', frame: 'ring', camOn: true, camId: '' };
 const bs = () => (S ? S.bubble : PB);
 const bubbleDisplay = () => (S ? S.display : alive(W.bubble) ? screen.getDisplayMatching(W.bubble.getBounds()) : screen.getPrimaryDisplay());
 function bubbleRect() {
@@ -88,11 +88,11 @@ function snapBubble() { // edge snapping
   if (Math.abs(y - wa.y) < t) y = wa.y + m; else if (Math.abs(y + r.h + BOT - (wa.y + wa.height)) < t) y = wa.y + wa.height - r.h - BOT - m; // the hover panel under the camera stays on screen
   if (x !== r.x || y !== r.y) { const b = W.bubble.getBounds(); win.easeBounds(W.bubble, { ...b, x: x - PAD, y: y - TOP }, 120); }
 }
-// Default and remembered position: the saved spot when it is still on a screen, otherwise the bottom-left corner of the work area.
+// Default and remembered position: the saved spot when it is still on a screen, otherwise the top-left corner of the work area (where Loom puts it).
 const bubbleHome = (display, w, h) => {
   const saved = store.getSettings().bubblePos, wa = display.workArea;
   if (saved && saved.x >= wa.x - 40 && saved.x <= wa.x + wa.width - 60 && saved.y >= wa.y - 8 && saved.y <= wa.y + wa.height - 60) return saved;
-  return { x: wa.x + 20, y: wa.y + wa.height - (h + TOP + BOT) - 8 };
+  return { x: wa.x + 10, y: wa.y + 4 };
 };
 let bubbleSaveTimer;
 function createBubble(display, fake) {
@@ -303,7 +303,7 @@ async function start(opts) {
   if (!ok) return false;
   const display = opts.mode === 'cam' ? screen.getPrimaryDisplay() : win.displayFor(opts.sourceId);
   S = {
-    opts, display, bubble: { size: 200, shape: 'circle', filter: 'none', frame: 'ring', camOn: true, ...(opts.bubble || {}) }, pen: false, cursorOn: false,
+    opts, display, bubble: { size: 200, shape: 'landscape', filter: 'none', frame: 'ring', camOn: true, ...(opts.bubble || {}) }, pen: false, cursorOn: false,
     events: [], flushTimer: null, writers: new Map(), id: null, dir: null, ext: null, info: null, cursor: null,
     trackCursor: opts.mode !== 'cam' && !opts.windowSource, // a window recording has no screen position to follow
     t0, metrics: { ensureMs }, cancelled: false,

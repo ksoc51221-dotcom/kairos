@@ -18,6 +18,7 @@ const num = (n) => +(+n).toFixed(3);
 const FULL = { x: 0, y: 0, w: 1, h: 1 };
 const MAX_POSITIONS = 60;     // overlay positions per bubble run, thinned beyond this
 const MIN_MOVE_PX = 2;        // smaller moves are merged
+const EASE_S = 0.2;           // a move, resize or shape change eases in over this long instead of cutting
 const SCAN_FPS = 2, SCAN_WIDTH = 2048, HASH_W = 9, HASH_H = 8; // Privacy Guard frames: dHash is 9x8 gray, 64 bits
 
 // Pixel size of the finished video.
@@ -57,6 +58,10 @@ function bubbleRuns(tl, size, total) {
       if (Math.abs(last[1] - px.x) >= MIN_MOVE_PX || Math.abs(last[2] - px.y) >= MIN_MOVE_PX) cur.positions.push([start, px.x, px.y]);
     } else { cur = { start, end, w: px.w, h: px.h, shape: row[5], filter, frame, positions: [[start, px.x, px.y]] }; runs.push(cur); }
   });
+  runs.forEach((r, k) => { // a style or size change that follows straight on from the last run cross-fades: the old one lingers while the new one fades in
+    const prev = runs[k - 1];
+    if (prev && Math.abs(prev.end - r.start) < 1e-6) { r.fadeIn = Math.min(EASE_S, r.end - r.start); prev.end = Math.min(total, prev.end + r.fadeIn); }
+  });
   for (const r of runs) if (r.positions.length > MAX_POSITIONS) { // thin evenly, keeping the first and last
     const keep = Array.from({ length: MAX_POSITIONS }, (_, k) => r.positions[Math.round((k * (r.positions.length - 1)) / (MAX_POSITIONS - 1))]);
     r.positions = keep;
@@ -64,10 +69,20 @@ function bubbleRuns(tl, size, total) {
   return runs;
 }
 
-// Piecewise-constant value over time as an ffmpeg expression: positions [[t, v]...] → if(lt(t,t1),v0,if(lt(t,t2),v1,v2))
+// Value over time as an ffmpeg expression: positions [[t, v]...] → if(lt(t,t1),v0,if(lt(t,t2),v1,v2)).
+// Each move to a new value glides there with a smoothstep over EASE_S (or until the next keyframe, if that comes sooner), so a snap or a
+// drop onto a new spot is not a cut. Dense keyframes from a drag are short glides back to back, which looks the same as following the mouse.
 function piecewise(positions, pick) {
-  let acc = String(pick(positions[positions.length - 1]));
-  for (let k = positions.length - 2; k >= 0; k--) acc = `if(lt(t,${num(positions[k + 1][0])}),${pick(positions[k])},${acc})`;
+  const seg = (k) => {
+    const v = pick(positions[k]);
+    if (k === 0) return String(v);
+    const p = pick(positions[k - 1]), t0 = positions[k][0], next = k + 1 < positions.length ? positions[k + 1][0] : Infinity, d = Math.min(EASE_S, next - t0);
+    if (p === v || !(d > 0.016)) return String(v);
+    const u = `min(1,(t-${num(t0)})/${num(d)})`;
+    return `(${p}+${v - p}*${u}*${u}*(3-2*${u}))`;
+  };
+  let acc = seg(positions.length - 1);
+  for (let k = positions.length - 2; k >= 0; k--) acc = `if(lt(t,${num(positions[k + 1][0])}),${seg(k)},${acc})`;
   return acc;
 }
 
@@ -129,7 +144,8 @@ function buildComposite(tl, inputs, { out, quality, hw, maskPath, framePath, sca
       const framed = idx.frame[k] !== null;
       g.push(`[cf${k}][mk${k}]alphamerge[${framed ? 'cm' : 'ca'}${k}]`);
       if (framed) g.push(`[cm${k}][${idx.frame[k]}:v]overlay=0:0:format=auto,format=yuva420p[ca${k}]`);
-      g.push(`[${cur}][ca${k}]overlay=x='${piecewise(r.positions, (p) => p[1])}':y='${piecewise(r.positions, (p) => p[2])}':enable='between(t,${num(r.start)},${num(r.end)})':eof_action=pass[ov${k}]`);
+      if (r.fadeIn) g.push(`[ca${k}]fade=t=in:st=${num(r.start)}:d=${num(r.fadeIn)}:alpha=1[caf${k}]`);
+      g.push(`[${cur}][${r.fadeIn ? 'caf' : 'ca'}${k}]overlay=x='${piecewise(r.positions, (p) => p[1])}':y='${piecewise(r.positions, (p) => p[2])}':enable='between(t,${num(r.start)},${num(r.end)})':eof_action=pass[ov${k}]`);
       cur = `ov${k}`;
     });
   }
