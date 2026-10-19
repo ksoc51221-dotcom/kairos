@@ -1,7 +1,7 @@
 const C = window.SPOOL, I = window.HermesIcons, $ = (id) => document.getElementById(id);
-const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), SIZES = Object.values(C.BUBBLE_SIZES); // 140 / 200 / 300
+const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), SIZES = Object.values(C.BUBBLE_SIZES); // 180 / 260 / 380
 I.fill(document);
-let st = { w: 200, h: 200, size: 200, shape: 'circle', filter: 'none', frame: 'ring' };
+let st = { w: 260, h: 260, size: 260, shape: 'circle', filter: 'none', frame: 'ring' };
 function apply(s) {
   st = { ...st, ...s };
   const r = Math.round(C.cornerRadius(st.shape) * Math.min(st.w, st.h)) + 'px';

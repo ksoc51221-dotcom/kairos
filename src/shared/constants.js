@@ -10,7 +10,7 @@
   const SHAPES = ['circle', 'squircle', 'portrait', 'landscape'];
   const FILTER_KEYS = ['none', 'warm', 'cool', 'bw', 'vivid', 'soft', 'film'];
   const FRAME_KEYS = ['ring', 'none', 'purple', 'mint', 'gradient', 'glow'];
-  const BUBBLE_SIZES = { S: 140, M: 200, L: 300 };
+  const BUBBLE_SIZES = { S: 180, M: 260, L: 380 };
   // CSS versions (live preview in the bubble window). The ffmpeg equivalents arrive with the Phase 2 composite.
   const FILTER_CSS = {
     none: 'none', warm: 'sepia(.25) saturate(1.25) hue-rotate(-8deg)', cool: 'saturate(1.1) hue-rotate(12deg) brightness(1.02)',

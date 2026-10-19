@@ -59,7 +59,7 @@ const closeNotes = () => { if (alive(W.notes)) W.notes.close(); };
 // (previewSet), showing the camera at its saved position; start() then reuses this same window (no close and recreate, which also removes a
 // window creation from the start path). It closes when the launcher closes without recording, when the mode drops the camera, or when the camera is off.
 // PB is the bubble's style while no session exists; a session copies it into S.bubble.
-const PB = { on: false, size: 200, shape: 'landscape', filter: 'none', frame: 'ring', camOn: true, camId: '' };
+const PB = { on: false, size: 260, shape: 'landscape', filter: 'none', frame: 'ring', camOn: true, camId: '' };
 const bs = () => (S ? S.bubble : PB);
 const bubbleDisplay = () => (S ? S.display : alive(W.bubble) ? screen.getDisplayMatching(W.bubble.getBounds()) : screen.getPrimaryDisplay());
 function bubbleRect() {
@@ -314,7 +314,7 @@ async function start(opts) {
   if (!ok) return false;
   const display = opts.mode === 'cam' ? screen.getPrimaryDisplay() : win.displayFor(opts.sourceId);
   S = {
-    opts, display, bubble: { size: 200, shape: 'landscape', filter: 'none', frame: 'ring', camOn: true, ...(opts.bubble || {}) }, pen: false, cursorOn: false,
+    opts, display, bubble: { size: 260, shape: 'landscape', filter: 'none', frame: 'ring', camOn: true, ...(opts.bubble || {}) }, pen: false, cursorOn: false,
     events: [], flushTimer: null, writers: new Map(), id: null, dir: null, ext: null, info: null, cursor: null,
     trackCursor: opts.mode !== 'cam' && !opts.windowSource, // a window recording has no screen position to follow
     t0, metrics: { ensureMs }, cancelled: false,

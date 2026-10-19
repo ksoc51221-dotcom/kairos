@@ -1,5 +1,5 @@
 // Turns assets/hermes-source.png (the logo on a dark tile) into: assets/icon.png (white tile + the mark, 1024 px) and assets/icon.icns.
-// Run: swift scripts/make-logo.swift   (macOS only: CoreGraphics + iconutil)
+// Run: swift scripts/make-logo.swift . [markScale=1.0] [outPath=assets/icon.png]   (macOS only: CoreGraphics)
 // How: the source has two flat greens on one flat near-black. Every pixel is sorted into background, light green, dark green or an edge.
 // Edge pixels next to the background take the green they touch and get an alpha from how far they are from the background, so the mark keeps
 // smooth edges when it is laid on white. Pixels between the two greens are left as they are.
@@ -9,6 +9,8 @@ import ImageIO
 import UniformTypeIdentifiers
 
 let root = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : ".")
+let markScale = CommandLine.arguments.count > 2 ? Double(CommandLine.arguments[2]) ?? 1.0 : 1.0
+let outPath = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : root.appendingPathComponent("assets/icon.png").path
 let src = root.appendingPathComponent("assets/hermes-source.png")
 guard let isrc = CGImageSourceCreateWithURL(src as CFURL, nil), let img = CGImageSourceCreateImageAtIndex(isrc, 0, nil) else { fatalError("cannot read \(src.path)") }
 let W = img.width, H = img.height
@@ -53,8 +55,10 @@ octx.saveGState(); octx.setShadow(offset: CGSize(width: 0, height: -10), blur: 2
 octx.addPath(CGPath(roundedRect: rect, cornerWidth: 185, cornerHeight: 185, transform: nil)); octx.setFillColor(CGColor(gray: 1, alpha: 1)); octx.fillPath(); octx.restoreGState()
 mark.withUnsafeMutableBytes { raw in
   let mctx = CGContext(data: raw.baseAddress, width: W, height: H, bitsPerComponent: 8, bytesPerRow: W * 4, space: cs, bitmapInfo: info)!
-  octx.draw(mctx.makeImage()!, in: rect)
+  let grow = Double(tile) * (markScale - 1) / 2
+  octx.saveGState(); octx.addPath(CGPath(roundedRect: rect, cornerWidth: 185, cornerHeight: 185, transform: nil)); octx.clip()
+  octx.draw(mctx.makeImage()!, in: rect.insetBy(dx: -grow, dy: -grow)); octx.restoreGState()
 }
 func save(_ im: CGImage, _ path: String) { let d = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, UTType.png.identifier as CFString, 1, nil)!; CGImageDestinationAddImage(d, im, nil); CGImageDestinationFinalize(d) }
-save(octx.makeImage()!, root.appendingPathComponent("assets/icon.png").path)
-print("icon.png written")
+save(octx.makeImage()!, outPath)
+print("wrote \(outPath)")

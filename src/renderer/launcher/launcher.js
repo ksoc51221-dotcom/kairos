@@ -8,7 +8,7 @@ const st = {
   sourceId: null, sourceName: '', crop: null, cropSource: null,
   camOn: false, camId: '', camName: '',
   micOn: true, micId: '', micName: '',
-  shape: 'landscape', size: 200, filter: 'none', frame: 'ring',
+  shape: 'landscape', size: 260, filter: 'none', frame: 'ring',
   quality: C.DEFAULT_QUALITY, sysAudio: false, hideMenu: false, cursorFx: false, clickFx: true, pg: true, countdown: true,
   pub: true, defPub: true,     // the lock: this video is public (link) or private. Reset to the workspace default every time the bar opens
 };
@@ -25,6 +25,7 @@ function load(c) {
   st.camOn = p.camOn !== undefined ? p.camOn : mode === 'screen-cam';
   st.micOn = p.micOn !== undefined ? p.micOn : true;
   for (const k of ['camId', 'camName', 'micId', 'micName', 'shape', 'size', 'filter', 'frame', 'sysAudio', 'hideMenu', 'clickFx', 'countdown']) if (p[k] !== undefined) st[k] = p[k];
+  st.size = ({ 140: 180, 200: 260, 300: 380 })[st.size] ?? st.size; // the S / M / L stops grew: a size saved at the old stops keeps its place
   if (p.v === 2) { st.quality = p.quality; st.cursorFx = !!p.cursorFx; }
   st.pg = c.privacyGuard !== false;
   st.defPub = st.pub = (c.defaultPrivacy || 'link') !== 'private';
