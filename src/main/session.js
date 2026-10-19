@@ -103,6 +103,17 @@ function createBubble(display, fake) {
     send('bubble', 'bubble:style', bubbleStyle());
     pushBubble();
   });
+  // The camera is a drag region, and macOS delivers no mouse events (so no :hover) inside one. Main watches the cursor instead and tells the page
+  // when it is over the camera or the panel under it. The panel stays up 250 ms after the cursor leaves, long enough to cross the gap to it.
+  let over = false, leaveT = null, panelUp = false;
+  const hoverT = setInterval(() => {
+    if (!alive(win_)) return clearInterval(hoverT);
+    const p = screen.getCursorScreenPoint(), b = win_.getBounds(), r = bubbleRect(), pw = 232;
+    const onCam = p.x >= r.x - 4 && p.x <= r.x + r.w + 4 && p.y >= r.y - 4 && p.y <= r.y + r.h + 4;
+    const onPanel = panelUp && p.x >= b.x + PAD && p.x <= b.x + PAD + pw && p.y >= r.y + r.h && p.y <= b.y + b.height;
+    if (onCam || onPanel) { clearTimeout(leaveT); leaveT = null; if (!panelUp) { panelUp = true; send('bubble', 'bubble:hover', true); } }
+    else if (panelUp && !leaveT) leaveT = setTimeout(() => { leaveT = null; panelUp = false; if (alive(win_)) send('bubble', 'bubble:hover', false); }, 250);
+  }, 100);
   let snapT;
   win_.on('move', () => {
     pushBubble(); clearTimeout(snapT); snapT = setTimeout(snapBubble, 220);

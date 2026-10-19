@@ -32,3 +32,4 @@ $('power').onclick = () => spool.send('bubble:action', 'power');
 $('styl').onclick = () => { $('main').hidden = true; $('style').hidden = false; };
 $('back').onclick = () => { $('style').hidden = true; $('main').hidden = false; };
 document.querySelectorAll('#style [data-a]').forEach((b) => (b.onclick = () => spool.send('bubble:action', b.dataset.a, b.dataset.v)));
+spool.on('bubble:hover', (on) => document.body.classList.toggle('hover', !!on)); // main watches the cursor: the camera is a drag region, which gets no :hover

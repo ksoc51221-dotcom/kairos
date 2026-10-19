@@ -10,7 +10,7 @@ html, body { height: 100%; overflow: hidden; }
 #panel { position: absolute; left: 10px; width: 232px; padding: 12px 14px 10px; border-radius: 22px; background: var(--glass); box-shadow: var(--shadow-bar), inset 0 0 0 1px var(--glass-line);
   opacity: 0; pointer-events: none; transform: translateY(-4px); transition: opacity var(--t-pop) var(--ease), transform var(--t-pop) var(--ease); }
 /* appears on hover after 80 ms, so it does not flash while the bubble is being dragged past */
-body:hover #panel { opacity: 1; pointer-events: auto; transform: none; transition-delay: 80ms; }
+body:hover #panel, body.hover #panel { opacity: 1; pointer-events: auto; transform: none; transition-delay: 80ms; }
 
 .ib { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-pill); color: var(--ink-2); transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease); }
 .ib:hover { background: var(--hover-disc); color: var(--ink); }

@@ -32,7 +32,7 @@
   function bubbleDims(shape, size) {
     switch (shape) {
       case 'portrait': return [Math.round(size * 0.78), Math.round(size * 1.2)];
-      case 'landscape': return [Math.round(size * 1.3), Math.round(size * 0.9)];
+      case 'landscape': return [Math.round(size * 1.8), Math.round(size * 1.1)]; // 360 x 220 at M: a wide window onto the face, like Loom's
       default: return [size, size]; // circle, squircle
     }
   }
