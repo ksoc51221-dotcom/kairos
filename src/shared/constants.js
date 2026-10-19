@@ -32,7 +32,7 @@
   function bubbleDims(shape, size) {
     switch (shape) {
       case 'portrait': return [Math.round(size * 0.78), Math.round(size * 1.2)];
-      case 'landscape': return [Math.round(size * 1.8), Math.round(size * 1.1)]; // 360 x 220 at M: a wide window onto the face, like Loom's
+      case 'landscape': return [Math.round(size * 2), Math.round(size * 1.125)]; // exactly 16:9, the camera's own shape: 520 x 293 at M, nothing cropped, the widest view of the room
       default: return [size, size]; // circle, squircle
     }
   }

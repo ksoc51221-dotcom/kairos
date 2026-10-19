@@ -23,7 +23,7 @@ spool.on('bubble:init', async ({ camId, fake }) => {
   if (key === camKey) return; camKey = key;
   v.srcObject?.getTracks().forEach((t) => t.stop()); v.srcObject = null;
   if (fake) { cam.style.background = 'linear-gradient(135deg, var(--key), var(--raised))'; return; } // self-test: no real camera, so no permission prompt
-  try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: 640, height: 640 }, audio: false }); } catch (e) { console.error(e); camKey = null; }
+  try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); } catch (e) { console.error(e); camKey = null; }
 });
 // the slider has 3 stops (S / M / L); the size only changes when it lands on another stop
 $('size').oninput = (e) => { e.target.style.setProperty('--p', +e.target.value * 50 + '%'); const s = SIZES[+e.target.value]; if (s !== st.size) { st.size = s; spool.send('bubble:action', 'size', s); } };
