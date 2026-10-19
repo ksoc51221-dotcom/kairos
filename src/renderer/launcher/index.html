@@ -2,45 +2,27 @@
 <html data-skin="loom"><head><meta charset="utf-8"><title>Iris</title>
 <link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="launcher.css"></head>
 <body>
-<main id="card" class="card">
-  <header id="head">
-    <button id="home" class="icon-btn" title="Open library" data-icon="home"></button>
-    <div id="kind" class="seg">
-      <button class="on" data-k="video" title="Video" data-icon="video"></button>
-      <button data-k="shot" title="Screenshot  ⌥⇧A" data-icon="camera"></button>
+<main id="wrap">
+  <div id="notice" hidden>
+    <div id="perm" class="warn" hidden><b>Iris can't see your screen yet</b><p id="permtxt"></p><div class="pr"><button id="permopen" class="chip">Open Settings</button><button id="permre" class="chip">Restart Iris</button></div></div>
+    <div id="ready" class="warnbox" hidden><span id="readyText"></span> <button id="readyBtn" class="link" hidden></button></div>
+  </div>
+  <div id="pop" hidden><div id="popBody"></div><i id="arrow"></i></div>
+  <nav id="bar">
+    <button id="x" class="ib" data-tip="Close  Esc" data-icon="x"></button>
+    <div id="src">
+      <button data-s="screen" data-tip="Full screen" data-icon="laptop"></button>
+      <button data-s="window" data-tip="Window" data-icon="window-bar"></button>
+      <button data-s="custom" data-tip="Custom area" data-icon="dashed"></button>
+      <button data-s="camera" data-tip="Camera only" data-icon="portrait-cam"></button>
     </div>
-    <button id="x" class="icon-btn" title="Close  Esc" data-icon="x"></button>
-  </header>
-
-  <div id="perm" class="warn" hidden><b>Iris can't see your screen yet</b><p id="permtxt"></p><div class="pr"><button id="permopen" class="chip">Open Settings</button><button id="permre" class="chip">Restart Iris</button></div></div>
-
-  <section class="field" id="srcField">
-    <button id="srcRow" class="row" aria-expanded="false"><span id="srcIcon" class="ic"></span><span class="label" id="srcLabel">Full screen</span></button>
-    <div class="collapse" id="srcMenu"><div><div class="menu" id="srcItems"></div><div id="winGrid" hidden></div></div></div>
-  </section>
-
-  <section class="field">
-    <button id="camRow" class="row" aria-expanded="false"><span id="camIcon" class="ic"></span><span class="label" id="camLabel">No Camera</span><span class="badge off" id="camBadge">Off</span></button>
-    <div class="collapse" id="camMenu"><div><div class="menu" id="camItems"></div></div></div>
-  </section>
-
-  <section class="field">
-    <button id="micRow" class="row" aria-expanded="false"><span id="micIcon" class="ic"></span><span class="label" id="micLabel">Microphone</span><span class="badge on" id="micBadge">On</span></button>
-    <div class="collapse" id="micMenu"><div><div class="menu" id="micItems"></div></div></div>
-  </section>
-
-  <div id="ready" class="warnbox" hidden><span id="readyText"></span> <button id="readyBtn" class="link" hidden></button></div>
-
-  <button id="start" class="cta"><span id="startSpin" class="spinner" hidden></span><span id="startLabel">Start Recording</span></button>
-
-  <nav id="tools">
-    <button data-p="effects"><span data-icon="palette"></span>Effects</button>
-    <button data-p="quality"><span data-icon="sliders"></span>Quality</button>
-    <button data-p="notes"><span data-icon="notes"></span>Notes</button>
-    <button data-p="more"><span data-icon="more"></span>More</button>
+    <div class="grp" id="camG"><button id="camBtn" class="ib" data-tip="Camera"></button><button id="camCaret" class="caret" data-tip="Choose camera" data-icon="chevron-up"></button></div>
+    <div class="grp" id="micG"><button id="micBtn" class="ib" data-tip="Microphone"><i id="lvl"></i><span id="micIcon"></span></button><button id="micCaret" class="caret" data-tip="Choose microphone" data-icon="chevron-up"></button></div>
+    <button id="lock" class="ib" data-tip="This video is Public"></button>
+    <button id="more" class="ib" data-tip="More" data-icon="more"></button>
+    <button id="agent" class="ib" data-tip="Record for agent" data-icon="agent"></button>
+    <button id="start" data-tip="Start recording"><span id="startSpin" class="spinner" hidden></span><span id="startIcon" data-icon="iris"></span><span id="startLabel">Record</span></button>
   </nav>
-  <div class="collapse" id="panel"><div><div id="panelBody"></div></div></div>
-  <p id="summary" class="note"></p>
 </main>
 <script src="../../shared/constants.js"></script>
 <script src="../../shared/icons.js"></script>

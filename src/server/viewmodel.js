@@ -15,7 +15,7 @@ function viewModel(v, owner) {
   if (owner) Object.assign(m, {
     crew: v.crew, plan: v.plan, redactions: v.redactions, privacy: { mode: p.mode, expiresAt: p.expiresAt, allowDownload: v.privacy?.allowDownload !== false, hasPassword: !!v.privacy?.passwordHash },
     folder: v.folder, spaces: v.spaces, watchLater: v.watchLater, progress: v.progress, viewers: v.viewers, heat: v.heat, activity: (v.activity || []).slice(0, 60), words: v.words ? true : false,
-    track: !!v.hasTrack, edits: v.edits, canUndo: !!v.editPrev, editError: v.editError, wordsError: v.wordsError, variables: v.variables, shareable: v.shareable === true, guard: v.guard, speechRedactions: (v.speechRedactions || []).length, timings: v.timings, pipe: v.pipe,
+    track: !!v.hasTrack, forAgent: !!v.forAgent, edits: v.edits, canUndo: !!v.editPrev, editError: v.editError, wordsError: v.wordsError, variables: v.variables, shareable: v.shareable === true, guard: v.guard, speechRedactions: (v.speechRedactions || []).length, timings: v.timings, pipe: v.pipe,
   });
   return m;
 }

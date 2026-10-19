@@ -17,6 +17,7 @@ function register() {
 
   // launcher
   on('launcher:close', win.hideLauncher);
+  on('launcher:open', win.showLauncher); // the area picker hid the bar: bring it back
   on('launcher:size', win.sizeLauncher);
   handle('app:relaunch', permissions.relaunch);
   handle('ready:get', () => require('./readiness').get());

@@ -1,15 +1,17 @@
-const C = window.SPOOL, I = window.IrisIcons;
-const cam = document.getElementById('cam'), ring = document.getElementById('ring'), v = document.getElementById('v');
-let st = { w: 200, h: 200, shape: 'circle', filter: 'none', frame: 'ring' };
+const C = window.SPOOL, I = window.IrisIcons, $ = (id) => document.getElementById(id);
+const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), SIZES = Object.values(C.BUBBLE_SIZES); // 140 / 200 / 300
+I.fill(document);
+let st = { w: 200, h: 200, size: 200, shape: 'circle', filter: 'none', frame: 'ring' };
 function apply(s) {
   st = { ...st, ...s };
   const r = Math.round(C.cornerRadius(st.shape) * Math.min(st.w, st.h)) + 'px';
   for (const el of [cam, ring]) Object.assign(el.style, { width: st.w + 'px', height: st.h + 'px', borderRadius: r });
   v.style.filter = C.FILTER_CSS[st.filter] || 'none';
   ring.style.cssText += ';border:' + (C.FRAME_CSS[st.frame] || 'none');
-  document.getElementById('bShape').innerHTML = I.svg(st.shape);
-  document.getElementById('bFilter').textContent = C.FILTER_LABELS[st.filter];
-  document.getElementById('bFrame').textContent = C.FRAME_LABELS[st.frame];
+  panel.style.top = (10 + st.h + 10) + 'px'; // under the camera
+  $('bFilter').textContent = C.FILTER_LABELS[st.filter]; $('bFrame').textContent = C.FRAME_LABELS[st.frame];
+  const idx = Math.max(0, SIZES.indexOf(st.size)); $('size').value = idx; $('size').style.setProperty('--p', idx * 50 + '%');
+  document.querySelectorAll('#shapes button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.shape));
 }
 apply({});
 spool.on('bubble:style', apply);
@@ -23,4 +25,10 @@ spool.on('bubble:init', async ({ camId, fake }) => {
   if (fake) { cam.style.background = 'linear-gradient(135deg, var(--key), var(--raised))'; return; } // self-test: no real camera, so no permission prompt
   try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: 640, height: 640 }, audio: false }); } catch (e) { console.error(e); camKey = null; }
 });
-document.querySelectorAll('#tools button').forEach((b) => (b.onclick = () => spool.send('bubble:action', b.dataset.a, b.dataset.v)));
+// the slider has 3 stops (S / M / L); the size only changes when it lands on another stop
+$('size').oninput = (e) => { e.target.style.setProperty('--p', +e.target.value * 50 + '%'); const s = SIZES[+e.target.value]; if (s !== st.size) { st.size = s; spool.send('bubble:action', 'size', s); } };
+document.querySelectorAll('#shapes button').forEach((b) => (b.onclick = () => spool.send('bubble:action', 'shape', b.dataset.v)));
+$('power').onclick = () => spool.send('bubble:action', 'power');
+$('styl').onclick = () => { $('main').hidden = true; $('style').hidden = false; };
+$('back').onclick = () => { $('style').hidden = true; $('main').hidden = false; };
+document.querySelectorAll('#style [data-a]').forEach((b) => (b.onclick = () => spool.send('bubble:action', b.dataset.a, b.dataset.v)));

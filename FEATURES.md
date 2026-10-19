@@ -35,6 +35,16 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Live updates without polling | ✅ | Server-Sent Events on the watch page and library |
 | Rate limit on viewer writes | ✅ | 20 writes burst, 2/s |
 
+## Recorder UI (Phase 7)
+| Feature | Status | Notes |
+|---|---|---|
+| One dark-glass pill bar at the bottom centre: ✕, source (Full screen, Window, Custom area, Camera only), camera, mic with live level arc, privacy lock, More, Record for agent, blue Record | ✅ | Icons plus tooltips (300 ms), no summary lines. Every old option is ≤ 2 clicks away (`launcher-ui` unit test). Bar is ~548 px wide, wider than Loom's |
+| More menu: Speaker notes, Backgrounds (filters, frames), Recording settings (countdown, quality, system audio, hide menu bar, cursor effects, shortcuts, screenshot, library) | ✅ | Exactly three rows |
+| Camera bubble hover panel: size slider (S/M/L snap), style (filter, frame), shape (rounded square, circle, landscape, portrait), power (camera off); before and during recording | 🟡 | Layout checked against the reference in a stub page; real-window hover and slider drag are covered by the preview e2e only as far as noted in PLAN.md |
+| Privacy lock on the bar (Public / Private), default from workspace default | ✅ | Sent as a per-video override only when it differs from the default |
+| Record for agent: writes the Action Plan automatically and opens the AI Actions tab | 🟡 | Plan is written after processing, only once the Privacy Guard cleared the video |
+| Hide the dock while recording | ❌ | Only "hide the menu bar" exists; the dock is a system setting |
+
 ## Library, sharing, privacy
 | Feature | Status |
 |---|---|

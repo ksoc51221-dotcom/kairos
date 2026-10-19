@@ -39,7 +39,17 @@ function init(dir, { log, isBusy } = {}) {
 // `edit` and `words` are the editor's jobs (Phase 3): apply an edit list, and time every word of a video that has none.
 async function processJobs(job) {
   const run = { ai: rerunJob, process: processJob, still: stillJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }) }[job.kind] || processJob;
-  try { return await run(job); } finally { if (!['edit', 'words', 'still'].includes(job.kind)) cleanLeftovers(job.videoId); warmWhenIdle(2000); }
+  try { return await run(job); } finally { if (!['edit', 'words', 'still'].includes(job.kind)) { cleanLeftovers(job.videoId); writeAgentPlan(job.videoId); } warmWhenIdle(2000); }
+}
+// "Record for agent": once the guard has cleared the video, the Action Plan brief is written next to it as action-plan.md (the same text the MCP server
+// and the watch page's "Copy action plan" hand out), so a coding agent can be pointed at one file.
+function writeAgentPlan(id) {
+  const v = store.get(id); if (!v || !v.forAgent || v.shareable !== true) return;
+  try {
+    const dir = store.videoDir(id); let timeline = null;
+    try { timeline = JSON.parse(fs.readFileSync(path.join(dir, 'timeline.json'), 'utf8')); } catch {}
+    fs.writeFileSync(path.join(dir, 'action-plan.md'), require('./action-plan').buildActionPlan(v, { dir, timeline }));
+  } catch (e) { console.error('action plan', e); }
 }
 // R11: sample frames (the user's screen), half-written blur and bleep files must not outlive the job, whether it finished or threw.
 function cleanLeftovers(id) {

@@ -2,11 +2,24 @@
 <html data-skin="loom"><head><meta charset="utf-8"><title>Iris camera</title>
 <link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="bubble.css"></head>
 <body>
-<div id="tools">
-  <button data-a="size" data-v="140" title="Small">S</button><button data-a="size" data-v="200" title="Medium">M</button><button data-a="size" data-v="300" title="Large">L</button><i></i>
-  <button data-a="shape" title="Next shape" id="bShape"></button><button data-a="filter" title="Next filter" id="bFilter">Filter</button><button data-a="frame" title="Next frame" id="bFrame">Frame</button>
-</div>
 <div id="cam"><video id="v" autoplay muted playsinline></video></div><div id="ring"></div>
+<div id="panel">
+  <div id="main">
+    <div id="sizeRow"><input id="size" type="range" min="0" max="2" step="1" value="1" aria-label="Size"><i></i><i></i><i></i></div>
+    <div id="row2">
+      <button id="styl" class="ib" title="Filters and frames" data-icon="sliders"></button>
+      <div id="shapes">
+        <button data-v="squircle" title="Rounded square" data-icon="squircle"></button><button data-v="circle" title="Circle" data-icon="circle"></button><button data-v="landscape" title="Landscape" data-icon="landscape"></button><button data-v="portrait" title="Portrait" data-icon="portrait"></button>
+      </div>
+      <button id="power" class="ib" title="Turn camera off" data-icon="power"></button>
+    </div>
+  </div>
+  <div id="style" hidden>
+    <div class="ph"><button id="back" class="ib" data-icon="chevron-left" title="Back"></button><b>Filters and frames</b></div>
+    <div class="pick"><span>Filter</span><button data-a="filter" data-v="prev" class="ib" data-icon="chevron-left"></button><em id="bFilter"></em><button data-a="filter" data-v="next" class="ib" data-icon="chevron-right"></button></div>
+    <div class="pick"><span>Frame</span><button data-a="frame" data-v="prev" class="ib" data-icon="chevron-left"></button><em id="bFrame"></em><button data-a="frame" data-v="next" class="ib" data-icon="chevron-right"></button></div>
+  </div>
+</div>
 <script src="../../shared/constants.js"></script>
 <script src="../../shared/icons.js"></script>
 <script src="bubble.js"></script>

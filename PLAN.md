@@ -552,3 +552,62 @@ Keep the name **Spool** and its own logo. For icons, use inline SVGs drawn in th
 1. Signing certificate (Phase 5.2): yes/no.
 2. Whether "Source" quality (large files, about 150 MB/min) or 1440p should be the default.
 3. Cut-list order if time runs short.
+
+---
+
+## Phase 7: Loom-clean recorder UI · from 2026-10-19
+The user tested Iris against Loom's recorder and found Iris cluttered. Goal: **the recorder looks and feels like Loom's: one clean bar plus the camera bubble.** References: `design/loom-ref/launcher-bar-bubble-preview.webp`, `launcher-record-for-agent.png`, `launcher-privacy-toggle.png`, `launcher-more-menu.png`, plus `countdown-and-control-bar.webp`. Name stays **Iris**. No Loom logo: the Record button carries Iris's own mark.
+
+**1. The launcher becomes one horizontal pill bar** at the bottom centre of the screen: dark glass, rounded ends, about 64 px tall. Remove the old panel. Left to right:
+- ✕ close
+- Source segmented control: **Full screen** (laptop icon), **Window**, **Custom area** (dashed square), **Camera only** (portrait icon). Picking Window or Area opens the existing picker.
+- Camera toggle (video icon). A small menu chooses the device.
+- Mic toggle with a live level arc under the icon, as in the reference. A small menu chooses the device.
+- **Privacy lock toggle**: closed or open lock, with the tooltip "This video is Public" or "This video is Private". It sets the new video's privacy (link vs private) and defaults to the workspace default.
+- **"…" More menu** with exactly three rows, each with an icon, title, subtitle and chevron:
+  - **Speaker notes** (keep notes nearby while you record)
+  - **Backgrounds** (camera filters and frames; real virtual backgrounds only if they already exist)
+  - **Recording settings** (countdown on/off, hide dock and menu bar, quality, system audio, cursor effects, shortcuts)
+- **Record for agent** (cursor-with-sparkle icon, tooltip "Record for agent"). Starts a recording that produces the Phase 4 **Action Plan** automatically when it finishes.
+- **Record**: a blue pill button.
+Tooltips are small and dark, and appear after 300 ms. Every option the old launcher had must still be reachable in at most 2 clicks.
+
+**2. Camera bubble before and during recording** (builds on B27):
+- A live preview at the saved position whenever the camera is on and the bar is open.
+- On hover, a control panel appears under it:
+  - a size slider with 3 snap stops (S/M/L)
+  - a settings icon that opens filters and frames
+  - a shape segmented control: rounded square, circle, landscape rectangle, portrait rectangle
+  - a power icon that turns the camera off
+- Shapes and size animate (U10). Choices persist.
+
+**3. Clean-up rules:**
+- No summary lines, no labels where an icon plus tooltip suffices.
+- One accent: Loom blue, as already sampled.
+- 120 ms hover transitions.
+- Keep B28: the bar takes focus only because the user opened it, and it hands focus back when it closes.
+
+**Acceptance:**
+- A side-by-side screenshot of the bar, the More menu and the bubble panel against each reference at the same scale, with the differences listed and fixed.
+- `npm test` passes.
+- ONE batched e2e run at the end, after warning the user, with `caffeinate`.
+- Rebuild once, then install: `ditto dist/Iris-darwin-arm64/Iris.app /Applications/Iris.app`, after quitting Iris. The user runs the installed copy.
+- Commit, and update FEATURES.md.
+
+**4. During recording (from the user's Loom recording, 2026-10-19; frames sampled at 2, 8, 15, 25, 45, 75 and 105 s):**
+- **The bubble stays usable mid-recording.** The user dragged it between corners, made it smaller, and switched it from a landscape rounded rectangle to a circle. Every change shows in the published video **at the moment it happened, with a smooth transition**, not a jump. Iris already records bubble keyframes. Make sure the hover panel (size, shape, camera off) also works **while recording**, and that the composite eases between keyframes (about 200 ms) instead of cutting.
+- **The bubble floats over every app and browser tab** as the user switches between them (Teams, PowerPoint, Desmos), including full-screen ones (B25).
+- **Loom's control bar never appears in the video.** Only the bubble and the real cursor do. Iris already passes this check; keep it passing.
+- The default bubble in that recording is a **landscape rounded rectangle**, about 18% of the screen width, in the top-left corner. Use the same default for a new install.
+
+### Phase 7 results · 2026-10-19
+**Built:** one 60 px dark-glass pill bar (✕, source ×4, camera + device menu, mic + level arc + device menu, privacy lock, More, Record for agent, blue Record with the Iris mark); More menu with exactly three rows; bubble hover panel (size slider with S/M/L snap, style, four shapes, power); Record for agent writes the Action Plan after processing and opens the AI Actions tab; B28 untouched. Side-by-side comparison with differences listed: `design/phase7-compare/compare.html`.
+
+**Verified:** `npm test` 170/170 (5 new in `tests/unit/launcher-ui.test.js`). One batched e2e under `caffeinate`: `test:e2e` 83/83 (Stop to owner 6.9 s, guard cleared 18.1 s, AI 28.1 s, 57 fps raw, 60 fps published), preview scenario 15/15 (shape change keeps the camera on, power icon closes the preview, same bubble window reused for the recording), cancel scenario 8/8 (countdown painted 132.7 ms after the click, under the 150 ms limit). Rebuilt once, installed to /Applications/Iris.app.
+
+**Not verified / known gaps:**
+- Hover on the non-focusable bubble and dragging the size slider in the real window were not driven by a human or by synthetic input; only the structure and the programmatic `bubbleAction` paths are tested.
+- Custom area (`area:pick` then `launcher:open`) ran in no e2e scenario.
+- The bar is about 548 px wide, wider than Loom's.
+- Shape and size now live only in the bubble panel; Library and Screenshot shortcuts moved into Recording settings.
+- "Hide the dock" is not implemented (only the menu bar can be hidden).

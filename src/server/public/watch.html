@@ -129,7 +129,7 @@ async function boot() {
   $('title').readOnly = !me.owner;
   try { vm = await api(`/api/v/${id}`); }
   catch (e) { if (e.data?.gate || e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
-  tab = me.owner ? 'edit' : 'activity';
+  tab = me.owner ? (vm.forAgent && vm.type !== 'image' ? 'actions' : 'edit') : 'activity'; // "Record for agent" opens on the Action Plan
   if (vm.type === 'image') { $('stage').className = 'stage imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('cc').hidden = $('speed').hidden = true; }
   else { ctl = attach({ stage: $('stage'), video: $('v'), vm }); }
   setupCC(); render(); listen();

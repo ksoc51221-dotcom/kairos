@@ -60,24 +60,26 @@ const displayFor = (sourceId) => {
 };
 
 // ---- launcher ----
-// A 280 px card (see launcher.css) plus a 6 px transparent margin each side for its shadow. Its height follows the card (launcher:size),
-// its position is remembered between runs (U4), and it fades in and slides up 8 px every time it is shown.
-const LAUNCHER_W = 292;
+// The recorder bar (see launcher.css): one pill at the bottom centre of the screen, 640 px wide with room for its shadow and tooltips. Popovers open
+// upward, so the window grows and shrinks with its content (launcher:size) and keeps its BOTTOM edge still. The position is remembered between runs
+// (U4) as the left edge and the bottom edge; the bar fades in and slides up 8 px every time it is shown.
+const LAUNCHER_W = 640, LAUNCHER_MIN_H = 122, BAR_GAP = 28;
 function placeLauncher() {
-  const saved = store.getSettings().launcherPos, b = W.launcher.getBounds();
-  const onScreen = saved && screen.getAllDisplays().some((d) => saved.x >= d.workArea.x - 40 && saved.x <= d.workArea.x + d.workArea.width - 80 && saved.y >= d.workArea.y - 8 && saved.y <= d.workArea.y + d.workArea.height - 80);
-  if (onScreen) { W.launcher.setBounds({ x: saved.x, y: saved.y, width: LAUNCHER_W, height: b.height }); return; }
+  const saved = store.getSettings().barPos, b = W.launcher.getBounds();
+  const onScreen = saved && screen.getAllDisplays().some((d) => saved.x >= d.workArea.x - 40 && saved.x <= d.workArea.x + d.workArea.width - 120 && saved.bottom >= d.workArea.y + 80 && saved.bottom <= d.workArea.y + d.workArea.height + 40);
+  if (onScreen) { W.launcher.setBounds({ x: saved.x, y: saved.bottom - b.height, width: LAUNCHER_W, height: b.height }); return; }
   const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  W.launcher.setBounds({ x: wa.x + wa.width - LAUNCHER_W - 14, y: wa.y + 12, width: LAUNCHER_W, height: b.height });
+  W.launcher.setBounds({ x: Math.round(wa.x + (wa.width - LAUNCHER_W) / 2), y: wa.y + wa.height - BAR_GAP - b.height, width: LAUNCHER_W, height: b.height });
 }
 let rememberTimer;
-const rememberLauncher = () => { clearTimeout(rememberTimer); rememberTimer = setTimeout(() => { if (alive(W.launcher)) { const { x, y } = W.launcher.getBounds(); store.setSettings({ launcherPos: { x, y } }); } }, 400); };
+const rememberLauncher = () => { clearTimeout(rememberTimer); rememberTimer = setTimeout(() => { if (alive(W.launcher)) { const { x, y, height } = W.launcher.getBounds(); store.setSettings({ barPos: { x, bottom: y + height } }); } }, 400); };
 function showLauncher() {
   if (require('./session').isActive()) return;
   if (!alive(W.launcher)) {
-    const w = load('launcher', 'launcher/index.html', { width: LAUNCHER_W, height: 470, alwaysOnTop: true });
+    const w = load('launcher', 'launcher/index.html', { width: LAUNCHER_W, height: LAUNCHER_MIN_H, alwaysOnTop: true });
     w.on('close', (e) => { if (!quitting) { e.preventDefault(); w.hide(); } }); // closing only hides; the Dock icon brings it back
-    w.on('show', () => { holdOverlay('launcher'); w.webContents.send('launcher:shown'); prepareCountdown(); }); w.on('hide', () => { releaseOverlay('launcher'); require('./session').launcherHidden(); });
+    w.on('show', () => { holdOverlay('launcher'); w.webContents.send('launcher:shown'); prepareCountdown(); });
+    w.on('hide', () => { releaseOverlay('launcher'); w.webContents.send('launcher:hidden'); require('./session').launcherHidden(); });
     w.on('moved', rememberLauncher);
   }
   placeLauncher();
@@ -87,8 +89,8 @@ const hideLauncher = () => { if (alive(W.launcher)) W.launcher.hide(); };
 const toggleLauncher = () => { if (alive(W.launcher) && W.launcher.isVisible() && W.launcher.isFocused()) hideLauncher(); else showLauncher(); }; // ⌥⇧R
 function sizeLauncher(h) {
   if (!alive(W.launcher)) return;
-  const b = W.launcher.getBounds(), wa = screen.getDisplayMatching(b).workArea, nh = Math.max(160, Math.min(Math.round(h), wa.height - 8));
-  if (nh !== b.height) W.launcher.setBounds({ ...b, height: nh });
+  const b = W.launcher.getBounds(), wa = screen.getDisplayMatching(b).workArea, nh = Math.max(LAUNCHER_MIN_H, Math.min(Math.round(h), wa.height - 8));
+  if (nh !== b.height) W.launcher.setBounds({ x: b.x, y: b.y + b.height - nh, width: b.width, height: nh }); // bottom edge stays put
 }
 
 // ---- recorder: hidden renderer that owns every stream ----

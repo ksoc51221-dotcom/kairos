@@ -1,15 +1,36 @@
-/* Camera bubble: the live preview you see while recording. (It is never part of the recording: the camera is its own file.) */
+/* Camera bubble: the live preview before and during recording. (It is never part of the recording: the camera is its own file.)
+   On hover a panel appears under it: size (3 stops), filters and frames, shape, camera off. The window leaves room for it (session.js: BOT). */
 html, body { height: 100%; overflow: hidden; }
-/* the toolbar appears on hover after an 80 ms delay, so it does not flash while the bubble is being dragged past */
-#tools { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; padding: 4px; white-space: nowrap;
-  background: var(--bar); border-radius: var(--r-pill); box-shadow: var(--shadow-pop); opacity: 0; pointer-events: none; transition: opacity var(--t-pop) var(--ease); }
-body:hover #tools { opacity: 1; pointer-events: auto; transition-delay: 80ms; }
-#tools button { min-width: 26px; height: 26px; padding: 0 8px; border-radius: var(--r-pill); color: var(--ink); font: 600 11px/1 var(--font); transition: background var(--t-hover) var(--ease); }
-#tools button:hover { background: var(--raised); }
-#tools button .i { width: 14px; height: 14px; }
-#tools i { width: 1px; height: 14px; margin: 0 2px; background: var(--line); }
+#cam, #ring { position: absolute; left: 10px; top: 10px; transition: border-radius var(--t-pop) var(--ease); }
 /* the window eases its own size (windows.easeBounds); inside the page only the corner radius transitions */
-#cam, #ring { position: absolute; left: 10px; top: 38px; transition: border-radius var(--t-pop) var(--ease); }
 #cam { overflow: hidden; background: var(--surface); -webkit-app-region: drag; box-shadow: var(--shadow-pop); }
 #cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; transition: filter var(--t-pop) var(--ease); } /* mirrored preview only: the file is not mirrored */
 #ring { pointer-events: none; }
+
+#panel { position: absolute; left: 10px; width: 232px; padding: 12px 14px 10px; border-radius: 22px; background: var(--glass); box-shadow: var(--shadow-bar), inset 0 0 0 1px var(--glass-line);
+  opacity: 0; pointer-events: none; transform: translateY(-4px); transition: opacity var(--t-pop) var(--ease), transform var(--t-pop) var(--ease); }
+/* appears on hover after 80 ms, so it does not flash while the bubble is being dragged past */
+body:hover #panel { opacity: 1; pointer-events: auto; transform: none; transition-delay: 80ms; }
+
+.ib { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-pill); color: var(--ink-2); transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease); }
+.ib:hover { background: var(--hover-disc); color: var(--ink); }
+.ib svg.i, #shapes svg.i { width: 18px; height: 18px; stroke-width: 1.6; }
+
+#sizeRow { position: relative; height: 24px; margin: 0 4px 6px; display: flex; justify-content: space-between; align-items: center; }
+#sizeRow i { position: absolute; top: 50%; width: 3px; height: 3px; margin-top: -1.5px; border-radius: 50%; background: var(--ink-2); opacity: .6; pointer-events: none; }
+#sizeRow i:nth-of-type(1) { left: 6px; } #sizeRow i:nth-of-type(2) { left: 50%; } #sizeRow i:nth-of-type(3) { right: 6px; }
+#size { appearance: none; position: relative; z-index: 1; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+#size::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--pill-on) var(--p, 50%), var(--surface-inset) var(--p, 50%)); }
+#size::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--pill-on); box-shadow: var(--shadow-pop); transition: transform var(--t-hover) var(--ease); }
+#size:active::-webkit-slider-thumb { transform: scale(1.12); }
+
+#row2 { display: flex; align-items: center; justify-content: space-between; }
+#shapes { display: flex; gap: 2px; padding: 3px; border-radius: var(--r-pill); background: var(--bar); box-shadow: inset 0 0 0 1px var(--glass-line); }
+#shapes button { display: grid; place-items: center; width: 32px; height: 30px; border-radius: var(--r-pill); color: var(--ink-2); transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease); }
+#shapes button:hover { color: var(--ink); background: var(--hover-disc); }
+#shapes button.on { background: var(--pill-on); color: var(--pill-on-ink); }
+
+.ph { display: flex; align-items: center; gap: 4px; margin: -4px 0 6px -6px; }
+.ph b { font: 600 13px/1 var(--font); color: var(--ink-strong); }
+.pick { display: flex; align-items: center; gap: 2px; height: 34px; font: 500 12.5px/1 var(--font); color: var(--ink-2); }
+.pick span { width: 44px; } .pick em { flex: 1; text-align: center; font-style: normal; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

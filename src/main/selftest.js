@@ -23,11 +23,12 @@ async function runSnapshots(outDir, t) {
   const save = async (name, w, settle = 700) => { await wait(settle); const img = await w.webContents.capturePage(); fs.writeFileSync(path.join(outDir, `${name}.png`), img.toPNG()); };
   const click = (w, sel) => w.webContents.executeJavaScript(`document.querySelector(${JSON.stringify(sel)}).click()`);
   win.showLauncher(); await wait(1500); await save('launcher', W.launcher);
-  await click(W.launcher, '[data-p="effects"]'); await save('launcher-effects', W.launcher, 600);
-  await click(W.launcher, '[data-p="more"]'); await save('launcher-more', W.launcher, 600);
-  await click(W.launcher, '[data-p="more"]'); await click(W.launcher, '#camRow'); await save('launcher-camera-menu', W.launcher, 600);
+  await click(W.launcher, '#more'); await save('launcher-more', W.launcher, 600);
+  await click(W.launcher, '.mrow:nth-child(2)'); await save('launcher-effects', W.launcher, 600);
+  await click(W.launcher, '.ph button'); await click(W.launcher, '.mrow:nth-child(3)'); await save('launcher-settings', W.launcher, 600);
+  await click(W.launcher, '#camCaret'); await save('launcher-camera-menu', W.launcher, 600);
   W.launcher.close();
-  let w = win.load('bubble', 'bubble/index.html', { width: 240, height: 290, show: true, x: 40, y: 60 });
+  let w = win.load('bubble', 'bubble/index.html', { width: 246, height: 390, show: true, x: 40, y: 60 });
   await wait(600); w.webContents.send('bubble:init', { fake: true }); w.webContents.send('bubble:style', { w: 200, h: 240, shape: 'portrait', filter: 'warm', frame: 'gradient' }); await save('bubble', w); w.close();
   w = win.load('controls', 'controls/index.html', { width: 324, height: 470, show: true, x: 40, y: 40 });
   await wait(500); w.webContents.send('rec:tick', 83.4); w.webContents.send('tool:state', { pen: true, cursor: true, notes: false, cam: true, hasCam: true }); await save('controls-pen', w, 800);
@@ -69,12 +70,9 @@ function helperWindow(rect, { html, color, normal }) {
 
 // Starts a recording the way a user does: through the launcher window, with the given preferences.
 async function startViaLauncher(t) {
-  store.setSettings({ prefs: { v: 2, source: 'screen', camOn: false, micOn: false, cursorFx: false, ...(t.ui.prefs || {}) } });
+  store.setSettings({ prefs: { v: 2, source: 'screen', camOn: false, micOn: false, cursorFx: false, ...(t.ui.quality ? { quality: t.ui.quality } : {}), ...(t.ui.prefs || {}) } }); // the quality is chosen in the bar's Recording settings; seeding it is the same preference
   win.showLauncher(); await wait(1800);
-  const quality = t.ui.quality ? `[...document.querySelectorAll('#panelBody .menu-item')].find((b) => b.textContent.includes(${JSON.stringify(t.ui.quality)})).click(); await sleep(150);` : '';
-  await W.launcher.webContents.executeJavaScript(`(async () => { const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-    ${t.ui.quality ? `document.querySelector('[data-p="quality"]').click(); await sleep(500); ${quality}` : ''}
-    document.getElementById('start').click(); })()`);
+  await W.launcher.webContents.executeJavaScript(`document.getElementById('start').click()`);
   for (let i = 0; i < 300 && !session.getS()?.live; i++) await wait(100);
   return !!session.getS()?.live;
 }
@@ -170,14 +168,21 @@ async function runPreview(t) {
   const b1 = W.bubble?.getBounds();
   ok('preview is at its default or saved position, on a display', !!b1 && screen.getAllDisplays().some((d) => b1.x >= d.bounds.x - 5 && b1.x < d.bounds.x + d.bounds.width), JSON.stringify(b1));
 
-  await inLauncher('document.getElementById("camRow").click()'); await wait(300);
-  await inLauncher('document.querySelector("#camItems .menu-item").click()'); // "No Camera"
+  await inLauncher('document.getElementById("camBtn").click()'); // the camera button on the bar
   const goneOff = await until(() => named(BUBBLE).length === 0, 3000);
-  ok('camera turned off in the launcher: preview closes', goneOff != null, `${goneOff} ms`);
-  await inLauncher('document.getElementById("camRow").click()'); await wait(300);
-  await inLauncher('document.querySelectorAll("#camItems .menu-item")[1].click()'); // first camera
+  ok('camera turned off on the bar: preview closes', goneOff != null, `${goneOff} ms`);
+  await inLauncher('document.getElementById("camBtn").click()');
   const backOn = await until(() => named(BUBBLE).length === 1, 3000);
   ok('camera turned on again: preview returns', backOn != null, `${backOn} ms`);
+  const bw = W.bubble.getBounds(); await wait(400);
+  session.bubbleAction('shape', 'portrait'); await wait(500);
+  ok('bubble panel: picking a shape resizes the window and keeps the camera on', named(BUBBLE).length === 1 && W.bubble.getBounds().height >= bw.height, `${bw.height} -> ${W.bubble.getBounds().height} px high`);
+  session.bubbleAction('power'); // the power icon in the bubble's hover panel
+  const goneByPanel = await until(() => named(BUBBLE).length === 0, 3000);
+  ok('bubble panel: the power icon turns the camera off (preview closes, bar follows)', goneByPanel != null, `${goneByPanel} ms`);
+  await inLauncher('document.getElementById("camBtn").click()');
+  const backOn2 = await until(() => named(BUBBLE).length === 1, 3000);
+  ok('camera turned on again after the power icon', backOn2 != null, `${backOn2} ms`);
 
   win.hideLauncher();
   const goneHide = await until(() => named(BUBBLE).length === 0, 3000);
