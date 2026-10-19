@@ -10,7 +10,7 @@
   const SHAPES = ['circle', 'squircle', 'portrait', 'landscape'];
   const FILTER_KEYS = ['none', 'warm', 'cool', 'bw', 'vivid', 'soft', 'film'];
   const FRAME_KEYS = ['ring', 'none', 'purple', 'mint', 'gradient', 'glow'];
-  const BUBBLE_SIZES = { S: 180, M: 260, L: 380 };
+  const BUBBLE_SIZES = { S: 180, M: 260, L: 380 }, BUBBLE_MIN = 120, BUBBLE_MAX = 420; // presets, and the range the size slider moves through
   // CSS versions (live preview in the bubble window). The ffmpeg equivalents arrive with the Phase 2 composite.
   const FILTER_CSS = {
     none: 'none', warm: 'sepia(.25) saturate(1.25) hue-rotate(-8deg)', cool: 'saturate(1.1) hue-rotate(12deg) brightness(1.02)',
@@ -78,7 +78,7 @@
   const LIBRARY_STATUS = { RECORDING: 'recording', PROCESSING: 'processing', READY: 'ready', FAILED: 'failed' };
 
   return {
-    PORT, SHAPES, FILTER_KEYS, FRAME_KEYS, BUBBLE_SIZES, FILTER_CSS, FRAME_CSS, FILTER_LABELS, SHAPE_LABELS, FRAME_LABELS, PEN_COLORS, ANNOTATE_COLORS, bubbleDims, cornerRadius,
+    PORT, SHAPES, FILTER_KEYS, FRAME_KEYS, BUBBLE_SIZES, BUBBLE_MIN, BUBBLE_MAX, FILTER_CSS, FRAME_CSS, FILTER_LABELS, SHAPE_LABELS, FRAME_LABELS, PEN_COLORS, ANNOTATE_COLORS, bubbleDims, cornerRadius,
     QUALITIES, DEFAULT_QUALITY, qualityHeight, screenBitrate, camSize, CAM_BITRATE, AUDIO_BITRATE, SCREEN_FPS, CURSOR_HZ, MIME_PREFERENCE, FILES, LIBRARY_STATUS,
   };
 });

@@ -1,5 +1,5 @@
 const C = window.SPOOL, I = window.HermesIcons, $ = (id) => document.getElementById(id);
-const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), SIZES = Object.values(C.BUBBLE_SIZES); // 180 / 260 / 380
+const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), MIN = C.BUBBLE_MIN, MAX = C.BUBBLE_MAX;
 I.fill(document);
 let st = { w: 260, h: 260, size: 260, shape: 'circle', filter: 'none', frame: 'ring' };
 function apply(s) {
@@ -10,7 +10,7 @@ function apply(s) {
   ring.style.cssText += ';border:' + (C.FRAME_CSS[st.frame] || 'none');
   panel.style.top = (10 + st.h + 10) + 'px'; // under the camera
   $('bFilter').textContent = C.FILTER_LABELS[st.filter]; $('bFrame').textContent = C.FRAME_LABELS[st.frame];
-  const idx = Math.max(0, SIZES.indexOf(st.size)); $('size').value = idx; $('size').style.setProperty('--p', idx * 50 + '%');
+  if (!sizing) { $('size').value = st.size; fill(st.size); } // while the slider is being dragged it is the source of truth, not the echo from main
   document.querySelectorAll('#shapes button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.shape));
 }
 apply({});
@@ -25,8 +25,12 @@ spool.on('bubble:init', async ({ camId, fake }) => {
   if (fake) { cam.style.background = 'linear-gradient(135deg, var(--key), var(--raised))'; return; } // self-test: no real camera, so no permission prompt
   try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); } catch (e) { console.error(e); camKey = null; }
 });
-// the slider has 3 stops (S / M / L); the size only changes when it lands on another stop
-$('size').oninput = (e) => { e.target.style.setProperty('--p', +e.target.value * 50 + '%'); const s = SIZES[+e.target.value]; if (s !== st.size) { st.size = s; spool.send('bubble:action', 'size', s); } };
+// the size slider is continuous (MIN..MAX); each move is sent as it happens, so the bubble follows the thumb
+const fill = (n) => $('size').style.setProperty('--p', ((n - MIN) / (MAX - MIN)) * 100 + '%');
+let sizing = false;
+$('size').onpointerdown = () => { sizing = true; };
+addEventListener('pointerup', () => { sizing = false; });
+$('size').oninput = (e) => { const n = +e.target.value; fill(n); if (n !== st.size) { st.size = n; spool.send('bubble:action', 'size', n); } };
 document.querySelectorAll('#shapes button').forEach((b) => (b.onclick = () => spool.send('bubble:action', 'shape', b.dataset.v)));
 $('power').onclick = () => spool.send('bubble:action', 'power');
 $('styl').onclick = () => { $('main').hidden = true; $('style').hidden = false; };

@@ -75,9 +75,9 @@ function pushBubble() {
   S.bubbleTimer = setTimeout(() => { if (!S) return; S.bubbleTimer = null; if (S.bubbleDirty) { S.bubbleDirty = false; pushBubble(); } }, BUBBLE_THROTTLE_MS);
 }
 const bubbleStyle = () => { const b = bs(), [w, h] = C.bubbleDims(b.shape, b.size); return { w, h, size: b.size, shape: b.shape, filter: b.filter, frame: b.frame }; };
-function resizeBubble() {
+function resizeBubble(ms = 140) {
   const st = bubbleStyle(), b = W.bubble.getBounds(), [nw, nh] = bubbleWin(st);
-  win.easeBounds(W.bubble, { x: b.x, y: b.y, width: nw, height: nh }, 140); // eased (U10), but never with the blocking animated setBounds
+  win.easeBounds(W.bubble, { x: b.x, y: b.y, width: nw, height: nh }, ms); // eased (U10), but never with the blocking animated setBounds
   send('bubble', 'bubble:style', st);
   pushBubble();
 }
@@ -142,9 +142,9 @@ function bubbleAction(a, v) {
   // the hover panel sends a value; a missing or unknown one steps to the next (the "‹ ›" pickers)
   const pick = (list, cur) => (list.includes(v) ? v : cycle(list, cur, v === 'prev' ? -1 : 1));
   if (a === 'power') { if (S) return toggleTool('cam'); send('launcher', 'preview:style', { camOn: false }); return; } // before recording the launcher owns the camera switch
-  if (a === 'size') b.size = +v; else if (a === 'shape') b.shape = pick(C.SHAPES, b.shape);
+  if (a === 'size') b.size = Math.round(Math.min(C.BUBBLE_MAX, Math.max(C.BUBBLE_MIN, +v || b.size))); else if (a === 'shape') b.shape = pick(C.SHAPES, b.shape);
   else if (a === 'filter') b.filter = pick(C.FILTER_KEYS, b.filter); else if (a === 'frame') b.frame = pick(C.FRAME_KEYS, b.frame);
-  resizeBubble();
+  resizeBubble(a === 'size' ? 30 : 140); // dragging the slider: follow it closely
   if (!S) send('launcher', 'preview:style', { size: b.size, shape: b.shape, filter: b.filter, frame: b.frame }); // keep the launcher's choices in step with the panel
 }
 

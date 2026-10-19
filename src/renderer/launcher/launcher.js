@@ -196,7 +196,8 @@ async function startMeter() {
 }
 
 // the bubble's own panel (size, shape, filter, frame, power) changed the style: follow it
-spool.on('preview:style', (p) => { if (p.camOn === false && st.source === 'camera') delete p.camOn; Object.assign(st, p); save(); paintBar(); if (pop?.kind === 'effects') openPop('effects'); });
+let styleSave; // the size slider reports every step: write the choice once it settles
+spool.on('preview:style', (p) => { if (p.camOn === false && st.source === 'camera') delete p.camOn; Object.assign(st, p); clearTimeout(styleSave); styleSave = setTimeout(save, 200); paintBar(); if (pop?.kind === 'effects') openPop('effects'); });
 
 // ---------- permission and model notices ----------
 async function checkPerm() {

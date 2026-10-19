@@ -33,9 +33,9 @@ test('every old launcher option is still inside two clicks (bar, or More -> a pa
   assert.ok(fx.includes('C.FILTER_KEYS') && fx.includes('C.FRAME_KEYS'));
 });
 
-test('the bubble panel: a 3-stop size slider, four shapes, filters and frames, power', () => {
+test('the bubble panel: a continuous size slider, four shapes, filters and frames, power', () => {
   const html = read('bubble/index.html');
-  assert.match(html, /id="size"[^>]*max="2"[^>]*step="1"/);
+  assert.match(html, /id="size"[^>]*min="120"[^>]*max="420"/);
   assert.deepEqual([...html.matchAll(/data-v="(squircle|circle|landscape|portrait)"/g)].map((m) => m[1]), ['squircle', 'circle', 'landscape', 'portrait']);
   assert.match(html, /id="power"/); assert.match(html, /id="styl"/);
 });
