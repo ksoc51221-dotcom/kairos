@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const TIPS = ['Take a breath. You have got this.', 'Talk to one person, not a crowd.', 'Close the tabs you do not need.', 'Say what you will show before you show it.', 'Mistakes are fine: Live Rewind can fix them.'];
-IrisIcons.fill(document);
+HermesIcons.fill(document);
 // This window is created hidden while the launcher is open (B26). It starts counting only when main sends countdown:begin.
 let left = 3, over = false, timer = null;
 function restartRing() { const a = $('arc'); a.style.animation = 'none'; void a.getBoundingClientRect(); a.style.animation = ''; }

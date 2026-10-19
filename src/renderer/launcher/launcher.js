@@ -1,5 +1,5 @@
 // Recorder bar: ✕ · source · camera · mic · privacy lock · … · Record for agent · Record. Everything else opens as a popover above the button that asked for it.
-const C = window.SPOOL, I = window.IrisIcons, $ = (id) => document.getElementById(id);
+const C = window.SPOOL, I = window.HermesIcons, $ = (id) => document.getElementById(id);
 const WIN_W = 640, WRAP_PAD = 16; // keep in step with windows.js (LAUNCHER_W) and launcher.css (#wrap)
 
 // What the user has chosen. `source` is what is recorded; the camera button decides between Screen and Screen + Cam.
@@ -201,7 +201,7 @@ spool.on('preview:style', (p) => { if (p.camOn === false && st.source === 'camer
 async function checkPerm() {
   const p = await spool.invoke('perm:status'), bad = p.screen !== 'granted' && mode() !== 'cam';
   $('perm').hidden = !bad; $('start').disabled = bad; $('agent').disabled = bad; notice();
-  if (bad) $('permtxt').innerHTML = `macOS needs your OK first. Click <b>Open Settings</b>, switch on <b>${esc(p.host || 'Iris')}</b> under Screen &amp; System Audio Recording, then click <b>Restart Iris</b>.`;
+  if (bad) $('permtxt').innerHTML = `macOS needs your OK first. Click <b>Open Settings</b>, switch on <b>${esc(p.host || 'Hermes')}</b> under Screen &amp; System Audio Recording, then click <b>Restart Hermes</b>.`;
 }
 const notice = () => { $('notice').hidden = $('perm').hidden && $('ready').hidden; };
 let readyTimer = null;

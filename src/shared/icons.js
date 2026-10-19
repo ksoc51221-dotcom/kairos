@@ -1,6 +1,6 @@
-// Inline SVG icons in one stroke style (24x24 grid, 2px round strokes), drawn for Iris. Loaded by renderer windows as window.IrisIcons.
-//   IrisIcons.svg('home')        -> '<svg class="i" ...>...</svg>'
-//   IrisIcons.fill(rootElement)  -> replaces every [data-icon="name"] with its svg
+// Inline SVG icons in one stroke style (24x24 grid, 2px round strokes), drawn for Hermes. Loaded by renderer windows as window.HermesIcons.
+//   HermesIcons.svg('home')        -> '<svg class="i" ...>...</svg>'
+//   HermesIcons.fill(rootElement)  -> replaces every [data-icon="name"] with its svg
 (function (root) {
   const P = {
     home: '<path d="M3.5 11 12 3.5 20.5 11"/><path d="M5.5 9.5V20h5v-6h3v6h5V9.5"/>',
@@ -42,10 +42,10 @@
     'chevron-right': '<path d="m9.5 6.5 5.5 5.5-5.5 5.5"/>',
     'chevron-left': '<path d="m14.5 6.5-5.5 5.5 5.5 5.5"/>',
     'chevron-up': '<path d="m6.5 14.5 5.5-5.5 5.5 5.5"/>',
-    iris: '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.4" class="f"/>',
+    hermes: '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.4" class="f"/>',
     landscape: '<rect x="3" y="6" width="18" height="12" rx="2.5"/>',
   };
   const svg = (name, extra = '') => `<svg class="i ${extra}" viewBox="0 0 24 24" aria-hidden="true">${P[name] || ''}</svg>`;
   const fill = (el = document) => el.querySelectorAll('[data-icon]').forEach((n) => { n.innerHTML = svg(n.dataset.icon); n.removeAttribute('data-icon'); });
-  root.IrisIcons = { svg, fill, names: Object.keys(P) };
+  root.HermesIcons = { svg, fill, names: Object.keys(P) };
 })(typeof self !== 'undefined' ? self : this);

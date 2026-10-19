@@ -1,11 +1,12 @@
 {
   "name": "spool",
   "version": "0.1.0",
-  "description": "Iris - local-first screen recorder with an AI agent crew (Loom-style clone)",
+  "description": "Hermes - local-first screen recorder with an AI agent crew (Loom-style clone)",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "app": "npm run build:mac && open dist/Iris-darwin-arm64/Iris.app",
+    "doctor": "node scripts/doctor.js",
+    "app": "npm run build:mac && open dist/Hermes-darwin-arm64/Hermes.app",
     "build:mac": "node scripts/build-mac.js",
     "test": "node --test tests/unit/*.test.js",
     "test:e2e": "bash tests/e2e/selftest.sh",

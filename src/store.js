@@ -67,7 +67,7 @@ function loadFromDisk() {
     }
     say(`store: db.json.bak is unreadable too (${r.error})`);
   }
-  throw new StoreCorruptError(`Iris cannot read its library file${mainError ? ` (${mainError})` : ''}. Nothing was changed. Copy db.json and db.json.bak out of ${root} before doing anything else.`, [main, bak].filter(fs.existsSync));
+  throw new StoreCorruptError(`Hermes cannot read its library file${mainError ? ` (${mainError})` : ''}. Nothing was changed. Copy db.json and db.json.bak out of ${root} before doing anything else.`, [main, bak].filter(fs.existsSync));
 }
 
 function init(dir, opts = {}) {
@@ -132,7 +132,7 @@ function remove(id) { mutate((d) => { delete d.videos[id]; }); fs.rmSync(videoDi
 
 const DEFAULT_SETTINGS = {
   privacyGuard: true, ownerName: 'You', defaultPrivacy: 'link', linkExpiryDays: 0, lan: false, disableDownloads: false, retentionDays: 0,
-  brand: { name: 'Iris', accent: '#3267d4', logo: false, hideBranding: false }, follows: [], integrations: {}, model: 'qwen3:8b', keepOriginal: false,
+  brand: { name: 'Hermes', accent: '#3267d4', logo: false, hideBranding: false }, follows: [], integrations: {}, model: 'qwen3:8b', keepOriginal: false,
 };
 const getSettings = () => { const s = load().settings || {}; return { ...DEFAULT_SETTINGS, ...s, brand: { ...DEFAULT_SETTINGS.brand, ...(s.brand || {}) } }; };
 const setSettings = (patch) => { const s = mutate((d) => { d.settings = { ...d.settings, ...patch }; return d.settings; }); events.emit('settings'); return s; };

@@ -1,26 +1,41 @@
-# Iris
+# Hermes
 
-**A screen recorder that keeps your secrets off the internet, and turns every recording into something an agent can use.**
+**Record your screen once. Hand the recording to an AI agent. Keep your secrets off the internet.**
 
-Iris records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it: they write the title, summary and chapters, draft a step-by-step guide with screenshots, and turn the recording into a pull-request description, a bug report or an SOP. Everything runs on your Mac. There is no account and no cloud; the speech model, the screen reader and the language model are all local.
+![The Hermes recorder bar](design/phase7-compare/hermes-bar.jpg)
 
-Two things set it apart from a cloud recorder:
+## The problem
+
+You explain a bug, a process or a design to a teammate by recording your screen. Two things go wrong:
+
+1. **The recording leaks.** Your screen has API keys, e-mail addresses, tokens and customer data on it, and you say passwords out loud. Cloud recorders upload all of it, and the "blur" is something you have to remember to apply.
+2. **The recording is a dead end for an AI agent.** Claude Code or Cursor cannot watch a video. You retype what you showed. The steps, the clicks and the exact words are lost.
+
+Who feels it: developers filing bug reports, support and QA people, anyone who writes SOPs or onboarding videos from screen recordings, and anyone whose employer does not allow customer data to leave the machine.
+
+## What Hermes does about it
+
+Hermes records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it. Everything runs on your Mac. There is no account and no cloud.
 
 1. **The Privacy Guard reads the screen and listens to you.** Before anyone but you can open a recording, it OCRs the picture and covers e-mail addresses, API keys, tokens, card numbers and passwords with a solid black box. It also checks what you *said*: a password or PIN spoken with a phrase like "the password is…" is bleeped in the audio and removed from the transcript and captions. If any check fails, the recording stays "only you can watch". A failure never means "everyone can".
-2. **It has an MCP server.** Claude Code, Cursor or any MCP client can list your recordings, read a transcript and fetch an "Action Plan": a markdown brief with what you said, the steps you showed, where you clicked and the screenshots.
+2. **It is built for agents.** Press **Record for agent** and Hermes writes an *Action Plan*: a markdown brief with what you said, the steps you showed, where you clicked and the screenshots. An MCP server hands it to Claude Code, Cursor or any MCP client: *"List my Hermes videos and turn the latest one into a fix."*
+3. **A crew of local agents** (Planner, Insights, Guide Writer, Guide Critic, AI Actions) writes the title, summary, chapters and a fact-checked step-by-step guide, then turns the recording into a PR description, bug report or SOP.
 
-## Install
+The full checklist, with what is tested and what is not, is in [FEATURES.md](FEATURES.md).
 
-**From a release** (Apple silicon Mac): download `Iris-mac-arm64.zip` from the Releases page, unzip, move `Iris.app` to Applications. The app is signed but not notarised, so open it the first time with **right-click → Open**.
+## Run it (about 5 minutes)
 
-**From source** (Node 20 or newer; tested on Node 24):
+Apple silicon Mac, Node 20 or newer (tested on Node 24). There is no packaged release yet, so you build from source:
 
 ```bash
+git clone <this repo> && cd spool
 npm install
-npm start
+npm run doctor     # checks Node, ffmpeg, Ollama and the models, and prints the fix for anything missing
+npm start          # launch Hermes in development mode
+# or: npm run build:mac   -> dist/Hermes-darwin-arm64/Hermes.app (signed with a local certificate, not notarised)
 ```
 
-**Optional, for the AI notes:** install [Ollama](https://ollama.com) and run `ollama pull qwen3:8b`. Without it you still get the recording, the transcript and the Privacy Guard; titles, summaries, guides and AI Actions are skipped, and the launcher tells you so.
+**Optional, for the AI notes:** install [Ollama](https://ollama.com) and run `ollama pull qwen3:8b`. Any model you have pulled works: pick it in Settings > AI. Without Ollama you still get the recording, the transcript and the Privacy Guard; titles, summaries, guides and AI Actions are skipped, and the launcher tells you so.
 
 ### First run
 
@@ -30,13 +45,11 @@ npm start
 | Camera, Microphone | your face and voice | Screen + Cam, Cam only, voice |
 | Input Monitoring | click positions for ripples and auto-zoom | optional |
 
-macOS asks the first time you press Start. After you grant Screen Recording, macOS makes you relaunch the app.
-
-The first recording needs the **speech model** (about 150 MB, downloaded once). The launcher shows a warning with a download button if it is missing. Until it is there, the Privacy Guard cannot listen, so a new recording stays "only you can watch". That is deliberate.
+macOS asks the first time you press Record. After you grant Screen Recording, macOS makes you relaunch the app. The first recording also needs the **speech model** (about 150 MB, downloaded once). The launcher shows a warning with a download button if it is missing. Until it is there, the Privacy Guard cannot listen, so a new recording stays "only you can watch". That is deliberate.
 
 ## How it works
 
-Recording and publishing are separate. Iris records the screen and camera as two full-quality tracks, then composites once, on the hardware encoder.
+Recording and publishing are separate. Hermes records the screen and camera as two full-quality tracks, then composites once, on the hardware encoder.
 
 ```mermaid
 flowchart LR
@@ -113,10 +126,21 @@ The full checklist, with what is tested and what is not, is in [FEATURES.md](FEA
 ### Use it from Claude Code
 
 ```bash
-claude mcp add iris -- node /absolute/path/to/spool/mcp/server.js
+claude mcp add hermes -- node /absolute/path/to/spool/mcp/server.js
 ```
 
-Then: *"List my Iris videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
+Then: *"List my Hermes videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
+
+## Models and safety
+
+| Question | Answer |
+|---|---|
+| Which models run? | Speech: Whisper base, in-process. Screen reading: Apple Vision (Tesseract elsewhere). Notes and agents: any Ollama model, `qwen3:8b` by default. |
+| Can I swap the model? | Yes. Settings > AI lists the models you have installed and warns if the chosen one is not pulled. The code path is the same for all of them. |
+| What does the language model see? | Only the transcript and screen text *after* the Privacy Guard redacted them. It never sees the video, and it cannot publish anything. |
+| What if the model returns junk or hangs? | Every call has a timeout and one retry, and the answer must pass a JSON schema check. A failed step is skipped and reported; it never blocks the recording or opens the link. |
+| What can the agents do to my machine? | Nothing. They read text and write text into the library. The MCP server is read-only and only serves videos the Privacy Guard cleared. |
+| What if the Privacy Guard itself fails? | The video stays "only you can watch". It fails closed. |
 
 ## Privacy model
 
@@ -141,9 +165,10 @@ These are real. Plan around them.
 ## Development
 
 ```bash
+npm run doctor      # check prerequisites, models and Ollama before the first run
 npm test            # unit tests: no windows, no network, about 20 s
-npm run test:e2e    # records your real screen: windows appear and Iris takes over the display for a while
-npm run build:mac   # package, trim and sign dist/Iris-darwin-arm64/Iris.app
+npm run test:e2e    # records your real screen: windows appear and Hermes takes over the display for a while
+npm run build:mac   # package, trim and sign dist/Hermes-darwin-arm64/Hermes.app
 npm run build:mac:dry   # list what would ship and its size, without building
 ```
 

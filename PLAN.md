@@ -556,7 +556,7 @@ Keep the name **Spool** and its own logo. For icons, use inline SVGs drawn in th
 ---
 
 ## Phase 7: Loom-clean recorder UI · from 2026-10-19
-The user tested Iris against Loom's recorder and found Iris cluttered. Goal: **the recorder looks and feels like Loom's: one clean bar plus the camera bubble.** References: `design/loom-ref/launcher-bar-bubble-preview.webp`, `launcher-record-for-agent.png`, `launcher-privacy-toggle.png`, `launcher-more-menu.png`, plus `countdown-and-control-bar.webp`. Name stays **Iris**. No Loom logo: the Record button carries Iris's own mark.
+The user tested Hermes against Loom's recorder and found Hermes cluttered. Goal: **the recorder looks and feels like Loom's: one clean bar plus the camera bubble.** References: `design/loom-ref/launcher-bar-bubble-preview.webp`, `launcher-record-for-agent.png`, `launcher-privacy-toggle.png`, `launcher-more-menu.png`, plus `countdown-and-control-bar.webp`. Name stays **Hermes**. No Loom logo: the Record button carries Hermes's own mark.
 
 **1. The launcher becomes one horizontal pill bar** at the bottom centre of the screen: dark glass, rounded ends, about 64 px tall. Remove the old panel. Left to right:
 - ✕ close
@@ -591,19 +591,19 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 - A side-by-side screenshot of the bar, the More menu and the bubble panel against each reference at the same scale, with the differences listed and fixed.
 - `npm test` passes.
 - ONE batched e2e run at the end, after warning the user, with `caffeinate`.
-- Rebuild once, then install: `ditto dist/Iris-darwin-arm64/Iris.app /Applications/Iris.app`, after quitting Iris. The user runs the installed copy.
+- Rebuild once, then install: `ditto dist/Hermes-darwin-arm64/Hermes.app /Applications/Hermes.app`, after quitting Hermes. The user runs the installed copy.
 - Commit, and update FEATURES.md.
 
 **4. During recording (from the user's Loom recording, 2026-10-19; frames sampled at 2, 8, 15, 25, 45, 75 and 105 s):**
-- **The bubble stays usable mid-recording.** The user dragged it between corners, made it smaller, and switched it from a landscape rounded rectangle to a circle. Every change shows in the published video **at the moment it happened, with a smooth transition**, not a jump. Iris already records bubble keyframes. Make sure the hover panel (size, shape, camera off) also works **while recording**, and that the composite eases between keyframes (about 200 ms) instead of cutting.
+- **The bubble stays usable mid-recording.** The user dragged it between corners, made it smaller, and switched it from a landscape rounded rectangle to a circle. Every change shows in the published video **at the moment it happened, with a smooth transition**, not a jump. Hermes already records bubble keyframes. Make sure the hover panel (size, shape, camera off) also works **while recording**, and that the composite eases between keyframes (about 200 ms) instead of cutting.
 - **The bubble floats over every app and browser tab** as the user switches between them (Teams, PowerPoint, Desmos), including full-screen ones (B25).
-- **Loom's control bar never appears in the video.** Only the bubble and the real cursor do. Iris already passes this check; keep it passing.
+- **Loom's control bar never appears in the video.** Only the bubble and the real cursor do. Hermes already passes this check; keep it passing.
 - The default bubble in that recording is a **landscape rounded rectangle**, about 18% of the screen width, in the top-left corner. Use the same default for a new install.
 
 ### Phase 7 results · 2026-10-19
-**Built:** one 60 px dark-glass pill bar (✕, source ×4, camera + device menu, mic + level arc + device menu, privacy lock, More, Record for agent, blue Record with the Iris mark); More menu with exactly three rows; bubble hover panel (size slider with S/M/L snap, style, four shapes, power); Record for agent writes the Action Plan after processing and opens the AI Actions tab; B28 untouched. Side-by-side comparison with differences listed: `design/phase7-compare/compare.html`.
+**Built:** one 60 px dark-glass pill bar (✕, source ×4, camera + device menu, mic + level arc + device menu, privacy lock, More, Record for agent, blue Record with the Hermes mark); More menu with exactly three rows; bubble hover panel (size slider with S/M/L snap, style, four shapes, power); Record for agent writes the Action Plan after processing and opens the AI Actions tab; B28 untouched. Side-by-side comparison with differences listed: `design/phase7-compare/compare.html`.
 
-**Verified:** `npm test` 170/170 (5 new in `tests/unit/launcher-ui.test.js`). One batched e2e under `caffeinate`: `test:e2e` 83/83 (Stop to owner 6.9 s, guard cleared 18.1 s, AI 28.1 s, 57 fps raw, 60 fps published), preview scenario 15/15 (shape change keeps the camera on, power icon closes the preview, same bubble window reused for the recording), cancel scenario 8/8 (countdown painted 132.7 ms after the click, under the 150 ms limit). Rebuilt once, installed to /Applications/Iris.app.
+**Verified:** `npm test` 170/170 (5 new in `tests/unit/launcher-ui.test.js`). One batched e2e under `caffeinate`: `test:e2e` 83/83 (Stop to owner 6.9 s, guard cleared 18.1 s, AI 28.1 s, 57 fps raw, 60 fps published), preview scenario 15/15 (shape change keeps the camera on, power icon closes the preview, same bubble window reused for the recording), cancel scenario 8/8 (countdown painted 132.7 ms after the click, under the 150 ms limit). Rebuilt once, installed to /Applications/Hermes.app.
 
 **Not verified / known gaps:**
 - Hover on the non-focusable bubble and dragging the size slider in the real window were not driven by a human or by synthetic input; only the structure and the programmatic `bubbleAction` paths are tested.
@@ -619,3 +619,8 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 - Unchanged and still passing in e2e: the control bar and countdown are content-protected, so they never appear in the video. The bubble floats on every app (B25) unchanged.
 - Tests: 171/171 unit (composite snapshot regenerated, 2 new tests, one real-ffmpeg run covers the fade graph). No second e2e was run; the rebuilt app is installed but its mid-recording bubble changes are unverified in the real app.
 
+
+### Rename and scorecard pass · 2026-10-20
+- The app is now **Hermes** everywhere user-facing and in code names (`HermesIcons`, bundle id `app.hermes.recorder`, `/Applications/Hermes.app`, MCP server name `hermes`). Unchanged on purpose: the library folder (`~/Library/Application Support/spool`), `SPOOL_*` variables and the repo folder name, so no recordings move. The new bundle id means macOS asks again for Screen Recording, Camera and Microphone.
+- From the Margin judge scorecard (62/100): README rewritten around the problem, users, screenshot, 5-minute setup, models-and-safety table; `npm run doctor`; Settings > AI model picker listing installed Ollama models with a missing-model warning; `PITCH.md` (90 s demo script with a 12 s hook, 3-minute pitch, Q&A defense). Tests 172/172. No e2e run.
+- Still open from the scorecard: a real screenshot or GIF from the running app (the README image is the stub render), a demo video, and the GitHub repo and release (waiting for the user's go-ahead).

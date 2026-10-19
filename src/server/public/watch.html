@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Iris</title><!--OG--><link rel="stylesheet" href="/static/app.css"><style>
+<title>Hermes</title><!--OG--><link rel="stylesheet" href="/static/app.css"><style>
 /* Watch page, in the layout of the Loom reference: header, title row, player, reaction bar on the left; a tabbed panel on the right. */
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 460px; min-height: calc(100vh - 68px); }
 @media (max-width: 1040px) { .layout { grid-template-columns: 1fr; } .side { position: static !important; height: 560px !important; border-left: 0 !important; border-top: 1px solid var(--line-soft); } }
@@ -172,7 +172,7 @@ function renderTabs() {
 function go(t) { scrollOf[tab] = $('panel').scrollTop; tab = t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; }
 
 function render() {
-  document.title = vm.title + ' · ' + (me.brand?.name || 'Iris');
+  document.title = vm.title + ' · ' + (me.brand?.name || 'Hermes');
   if (document.activeElement !== $('title')) $('title').value = vm.title;
   $('by').innerHTML = `<b>${esc(vm.by || me.brand.name)}</b> · ${UI.ago(vm.createdAt)}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
   $('views').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'}`;
@@ -340,7 +340,7 @@ async function renderSettings(p) {
   const { f: folders, s: spaces } = await orgLoaded; if (tab !== 'settings') return;
   const pr = vm.privacy || {}, exp = pr.expiresAt ? new Date(pr.expiresAt).toISOString().slice(0, 10) : '';
   const sw = (k, label, sub, on) => `<div class="set"><div class="lab">${label}${sub ? `<small>${sub}</small>` : ''}</div><input type="checkbox" class="sw" data-k="${k}" ${on ? 'checked' : ''} aria-label="${esc(label)}"></div>`;
-  p.innerHTML = `<div class="sub" style="margin-top:0">Playback</div>${vm.track ? sw('cursorFx', 'Cursor highlight and click ripples', 'Drawn by the player from the recorded cursor', vm.cursorFx !== false) + sw('autoZoom', 'Auto-zoom on clicks', 'Eases in on each click and back out', vm.autoZoom) : '<div class="set"><div class="lab"><small>Cursor effects are only available for recordings made with Iris.</small></div></div>'}
+  p.innerHTML = `<div class="sub" style="margin-top:0">Playback</div>${vm.track ? sw('cursorFx', 'Cursor highlight and click ripples', 'Drawn by the player from the recorded cursor', vm.cursorFx !== false) + sw('autoZoom', 'Auto-zoom on clicks', 'Eases in on each click and back out', vm.autoZoom) : '<div class="set"><div class="lab"><small>Cursor effects are only available for recordings made with Hermes.</small></div></div>'}
     <div class="sub">Organise</div>
     <div class="set"><div class="lab">Folder</div><select class="field" id="s-folder"><option value="">No folder</option>${folders.map((x) => `<option value="${x.id}" ${vm.folder === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
     <div class="set"><div class="lab">Tags<small>Comma separated</small></div><input class="field" id="s-tags" value="${esc((vm.tags || []).join(', '))}"></div>

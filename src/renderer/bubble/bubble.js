@@ -1,4 +1,4 @@
-const C = window.SPOOL, I = window.IrisIcons, $ = (id) => document.getElementById(id);
+const C = window.SPOOL, I = window.HermesIcons, $ = (id) => document.getElementById(id);
 const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), SIZES = Object.values(C.BUBBLE_SIZES); // 140 / 200 / 300
 I.fill(document);
 let st = { w: 200, h: 200, size: 200, shape: 'circle', filter: 'none', frame: 'ring' };

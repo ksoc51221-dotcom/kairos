@@ -1,4 +1,4 @@
-// Factory for every BrowserWindow Iris opens (one function each) and the registry that finds them by name.
+// Factory for every BrowserWindow Hermes opens (one function each) and the registry that finds them by name.
 // No recording logic lives here: session.js decides when a window is needed and what it shows.
 const { app, BrowserWindow, screen } = require('electron');
 const path = require('path');
@@ -27,13 +27,13 @@ function load(name, rel, opts) {
 // ---- B25: overlay windows must be able to float above full-screen apps ----
 // macOS only lets an "accessory" app (no Dock icon) put windows over a full-screen Space, and calling setVisibleOnAllWorkspaces()
 // with visibleInFullScreen on every window re-transforms the process type each time, which makes the earlier windows vanish.
-// So: the Dock icon is hidden while any Iris window that must float is on screen, and floatTop() skips the per-window transform.
+// So: the Dock icon is hidden while any Hermes window that must float is on screen, and floatTop() skips the per-window transform.
 const holders = new Set();
 let dockIcon = null;
 function holdOverlay(key) { if (holders.has(key)) return; holders.add(key); if (holders.size === 1) app.dock?.hide(); }
 // B28: the Dock icon is NOT shown again when the last overlay goes. app.dock.show() turns the process back into a foreground app, which activates
-// Iris and switches the user to its Space or pulls it in front of the app they were using, after every recording. Once a Iris window has been
-// up, Iris stays a menu-bar app (tray icon and ⌥⇧R open the launcher); the Dock icon is only there at launch, before the first overlay.
+// Hermes and switches the user to its Space or pulls it in front of the app they were using, after every recording. Once a Hermes window has been
+// up, Hermes stays a menu-bar app (tray icon and ⌥⇧R open the launcher); the Dock icon is only there at launch, before the first overlay.
 function releaseOverlay(key) { holders.delete(key); }
 const setDockIcon = (img) => { dockIcon = img; };
 const floatTop = (w) => { w.setAlwaysOnTop(true, 'screen-saver'); w.setVisibleOnAllWorkspaces(true, { visibleInFullScreen: true, skipTransformProcessType: true }); };

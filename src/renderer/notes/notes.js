@@ -1,6 +1,6 @@
 const $ = (i) => document.getElementById(i);
 let mode = 'edit', playing = false, speed = 2, y = 0, size = 30;
-window.IrisIcons.fill(document);
+window.HermesIcons.fill(document);
 
 spool.on('notes:mode', (o) => {
   mode = o.mode; $('ta').value = o.text || '';

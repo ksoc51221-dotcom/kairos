@@ -6,6 +6,10 @@ async function available() {
   try { const r = await fetch(`${URL}/api/tags`, { signal: AbortSignal.timeout(2000) }); return r.ok; } catch { return false; }
 }
 const setModel = (m) => { MODEL = m; };
+// The models Ollama has pulled, so Settings can offer a choice and warn when the chosen one is missing. [] when Ollama is not running.
+async function installed() {
+  try { const r = await fetch(`${URL}/api/tags`, { signal: AbortSignal.timeout(2000) }); if (!r.ok) return []; const j = await r.json(); return (j.models || []).map((m) => m.name || m.model).filter(Boolean).sort(); } catch { return []; }
+}
 
 // Is the model already in memory? A cold qwen3:8b takes 5-20 s to load, which would eat the Privacy Guard's whole time budget for nothing.
 async function loaded() {
@@ -39,4 +43,4 @@ async function json({ system, user, schema, temperature = 0.2, timeoutMs = TIMEO
   }
   throw lastErr || new Error('model did not return valid JSON');
 }
-module.exports = { available, loaded, warm, json, setModel, get model() { return MODEL; } };
+module.exports = { available, installed, loaded, warm, json, setModel, get model() { return MODEL; } };

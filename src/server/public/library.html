@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Iris</title><link rel="stylesheet" href="/static/app.css"><style>
+<title>Hermes</title><link rel="stylesheet" href="/static/app.css"><style>
 /* Library and settings, in the layout of the Loom reference: sidebar (workspace card, navigation, admin tools), search bar, filters, video cards. */
 body { display: grid; grid-template-columns: 252px minmax(0, 1fr); grid-template-rows: 76px 1fr; height: 100vh; overflow: hidden; }
 @media (max-width: 860px) { body { grid-template-columns: 1fr; } nav { display: none; } .tophead .brand-s { display: none; } }
@@ -97,7 +97,7 @@ const F = { type: '', act: '', date: '', sort: 'new', tab: 'videos' }; // filter
 async function refresh() { [videos, folders, spaces, notifs] = await Promise.all([J('/api/videos'), J('/api/folders'), J('/api/spaces'), J('/api/notifications')]); renderNav(); }
 function renderNav() {
   const un = notifs.filter((n) => !n.read).length, ni = (r, ic, l, extra = '', cls = '') => `<a href="#/${r}" class="ni ${cls} ${route === r ? 'on' : ''}">${ic ? I(ic) : ''}<span>${l}</span>${extra}</a>`;
-  $('nav').innerHTML = `<div class="navtop"><a class="brand" href="#/home">${UI.logo(me.brand)}<span>${esc(me.brand?.hideBranding ? '' : me.brand?.name || 'Iris')}</span></a><button class="iconbtn" id="collapse" title="Hide the sidebar">${I('sidebar')}</button></div>
+  $('nav').innerHTML = `<div class="navtop"><a class="brand" href="#/home">${UI.logo(me.brand)}<span>${esc(me.brand?.hideBranding ? '' : me.brand?.name || 'Hermes')}</span></a><button class="iconbtn" id="collapse" title="Hide the sidebar">${I('sidebar')}</button></div>
     <div class="ws"><div class="a"><b>${esc(settings.ownerName || 'You')}</b><div class="m"><span class="tag">Local</span><span>${settings.lan ? 'Shared on your network' : 'This computer only'}</span></div></div><button class="inv" id="invite">${I('user-plus')}Share on my network</button></div>
     <div class="grp">${ni('home', 'foryou', 'For you')}${ni('library', 'library', 'Library')}${ni('watchlater', 'bookmark', 'Watch later')}${ni('recent', 'clock', 'Recent')}${ni('notifications', 'bell', 'Notifications', un ? `<span class="bdg">${un}</span>` : '')}${ni('settings', 'gear', 'Personal settings')}</div>
     <hr><h6>Folders <button id="addf" title="New folder">${I('plus')}</button></h6><div class="grp">${folders.map((f) => ni('folder/' + f.id, 'folder', esc(f.name))).join('') || '<div style="padding:4px 12px 8px;color:var(--mute);font-size:14px">No folders yet</div>'}</div>
@@ -215,7 +215,7 @@ async function renderSettings(m) {
   const s = (settings = await J('/api/settings'));
   m.innerHTML = head('Settings', 'Personal settings') + `<div class="sp-wrap">
     <div class="sec"><h3>Name and photo</h3><p class="d">This is the name on your videos, comments and share pages.</p><div class="ident"><span class="avatar lg">${esc(UI.initials(s.ownerName))}</span><div class="nm"><small>Full name</small><input class="field" id="s-name" value="${esc(s.ownerName)}" style="max-width:340px"></div></div></div>
-    <div class="sec"><h3>Sharing</h3><p class="d">Iris runs on your computer. Links only work for people who can reach it.</p>
+    <div class="sec"><h3>Sharing</h3><p class="d">Hermes runs on your computer. Links only work for people who can reach it.</p>
       ${frow('People on my network', `<input type="checkbox" class="sw" id="s-lan" ${s.lan ? 'checked' : ''}>`, s.lan ? `Anyone on your Wi-Fi can open links at <b>http://${esc(s.lanIp || '?')}:${s.port}</b>. Only videos you shared are visible to them; the library and settings stay owner-only.` : 'Off: only this computer can open links. Turn on to share with colleagues on the same Wi-Fi.')}
       ${frow('Default who can watch', `<select id="s-dp">${[['link', 'Anyone with the link'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<option value="${k}" ${s.defaultPrivacy === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
       ${frow('Links expire after', `<input id="s-exp" type="number" min="0" value="${s.linkExpiryDays}">`, 'Days. 0 means never.')}</div>
@@ -237,7 +237,7 @@ async function renderWorkspace(m) {
       ${frow('Keep the unblurred original', `<input type="checkbox" class="sw" id="s-ko" ${s.keepOriginal ? 'checked' : ''}>`, 'Off: when something is blurred, the unblurred file is deleted. On: it is kept on this computer (owner only, never served to viewers).')}
       ${frow('Disable downloads', `<input type="checkbox" class="sw" id="s-dd" ${s.disableDownloads ? 'checked' : ''}>`, 'Viewers cannot download any video. You still can.')}
       ${frow('Delete videos after', `<input id="s-ret" type="number" min="0" value="${s.retentionDays}">`, 'Days. 0 keeps everything. Applies automatically, hourly.')}</div>
-    <div class="sec"><h3>AI</h3><p class="d">Everything runs on this computer.</p>${frow('Model', `<input id="s-model" value="${esc(s.model)}">`, 'Any model you have pulled in Ollama, for example qwen3:8b.')}<div id="models" class="fr" style="display:block"><span class="chip">Checking models…</span></div></div>
+    <div class="sec"><h3>AI</h3><p class="d">Everything runs on this computer.</p>${frow('Model', `<select id="s-model"><option value="${esc(s.model)}">${esc(s.model)}</option></select>`, 'Any model you have pulled in Ollama. It only ever sees text the Privacy Guard has already covered.')}<div id="models" class="fr" style="display:block"><span class="chip">Checking models…</span></div></div>
     <div class="sec"><h3>Integrations</h3><p class="d">Tokens stay on this computer and are only sent to the service you configure.</p>
       ${frow('Slack incoming webhook', `<input id="i-slack" type="password" placeholder="https://hooks.slack.com/services/…" value="${esc(I_.slack?.hook || '')}">`)}
       ${frow('GitHub repo (owner/name)', `<input id="i-ghr" value="${esc(I_.github?.repo || '')}">`)}${frow('GitHub token', `<input id="i-ght" type="password" placeholder="ghp_…" value="${esc(I_.github?.token || '')}">`)}
@@ -263,7 +263,10 @@ async function loadModels() {
   try {
     const m = await J('/api/models'), sp = m.speech, d = sp.download || {}, mb = (b) => (b / 1048576).toFixed(0) + ' MB';
     const speech = sp.cached ? `<b>Speech (Whisper)</b> ready · ${mb(sp.bytes)}` : d.state === 'running' ? `<b>Speech (Whisper)</b> downloading… ${d.percent}%` : `<b>Speech (Whisper)</b> not downloaded yet (about 290 MB). Transcripts wait until it is.${d.state === 'error' ? ` <span style="color:var(--danger)">${esc(d.error)}</span>` : ''} <button class="btn sm" id="dlm">Download models</button>`;
-    el.innerHTML = `<div style="font-size:14.5px;line-height:1.9">${speech}<br><b>Screen reading (OCR)</b> ${esc(m.ocr.engine)}<br><b>Notes model</b> ${m.ollama.available ? `Ollama is running (${esc(m.ollama.model)})` : 'Ollama is not running: titles, summaries and guides are skipped'}</div>`;
+    const sel = $('s-model');
+    if (sel && m.ollama.installed?.length) { const cur = sel.value; sel.innerHTML = [...new Set([cur, ...m.ollama.installed])].map((n) => `<option value="${esc(n)}"${n === cur ? ' selected' : ''}>${esc(n)}${m.ollama.installed.includes(n) ? '' : ' (not installed)'}</option>`).join(''); }
+    const miss = m.ollama.missing ? `<br><span style="color:var(--bad,#c0392b)">${esc(m.ollama.model)} is not installed. Run <code>ollama pull ${esc(m.ollama.model)}</code> or pick another model.</span>` : '';
+    el.innerHTML = `<div style="font-size:14.5px;line-height:1.9">${speech}<br><b>Screen reading (OCR)</b> ${esc(m.ocr.engine)}<br><b>Notes model</b> ${m.ollama.available ? `Ollama is running (${esc(m.ollama.model)})` : 'Ollama is not running: titles, summaries and guides are skipped'}${miss}</div>`;
     if ($('dlm')) $('dlm').onclick = async () => { await J('/api/models/download', 'POST', {}); loadModels(); };
     if (d.state === 'running') setTimeout(() => { if (route === 'workspace') loadModels(); }, 1500);
   } catch (e) { el.innerHTML = `<span class="chip">${esc(e.message)}</span>`; }

@@ -18,7 +18,7 @@ function mount(app, ctx) {
   const withMeta = (file) => (req, res) => {
     const v = store.get(req.params.id); const html = fs.readFileSync(path.join(pub, file), 'utf8');
     const ok = v && access(req, v) === 'ok';
-    const o = origin(req), title = ok ? v.title : 'Iris video', desc = ok ? (v.summary || 'Watch this recording') : 'Protected video';
+    const o = origin(req), title = ok ? v.title : 'Hermes video', desc = ok ? (v.summary || 'Watch this recording') : 'Protected video';
     const meta = `<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="video.other">` +
       (ok ? `<meta property="og:image" content="${o}/media/${v.id}/thumb.jpg"><meta name="twitter:card" content="player"><meta property="og:video" content="${o}/media/${v.id}/video.mp4">` +
         `<link rel="alternate" type="application/json+oembed" href="${o}/oembed?url=${encodeURIComponent(`${o}/v/${v.id}`)}">` : '');
@@ -31,7 +31,7 @@ function mount(app, ctx) {
     const id = /\/v\/(\w+)/.exec(req.query.url || '')?.[1]; const v = id && store.get(id);
     if (!v || access(req, v) !== 'ok') return res.sendStatus(404);
     const o = origin(req);
-    res.json({ version: '1.0', type: 'video', provider_name: 'Iris', title: v.title, width: 640, height: 360, thumbnail_url: `${o}/media/${v.id}/thumb.jpg`,
+    res.json({ version: '1.0', type: 'video', provider_name: 'Hermes', title: v.title, width: 640, height: 360, thumbnail_url: `${o}/media/${v.id}/thumb.jpg`,
       html: `<iframe src="${o}/embed/${v.id}" width="640" height="360" frameborder="0" allowfullscreen></iframe>` });
   });
 
@@ -42,7 +42,7 @@ function mount(app, ctx) {
   // R1: the app opens this link for the owner (a one-time code, valid for 2 minutes). It sets the owner cookie; without it a loopback request is just a viewer.
   app.get('/owner-login', security.guardSameOrigin, (q, res) => {
     if (!fromOwnerMachine(q)) return res.sendStatus(403);
-    if (!security.redeemLoginCode(q.query.code)) return res.status(403).type('html').send('<!doctype html><meta charset="utf-8"><title>Iris</title><body style="font:16px system-ui;padding:3rem"><h2>This sign-in link has expired</h2><p>Open Iris from the menu bar (Open library) to get a new one.</p>');
+    if (!security.redeemLoginCode(q.query.code)) return res.status(403).type('html').send('<!doctype html><meta charset="utf-8"><title>Hermes</title><body style="font:16px system-ui;padding:3rem"><h2>This sign-in link has expired</h2><p>Open Hermes from the menu bar (Open library) to get a new one.</p>');
     res.setHeader('Set-Cookie', [security.ownerCookie(q.headers.host), 'sp_asviewer=0; Path=/; Max-Age=0']);
     res.redirect(security.safeNext(q.query.to));
   });

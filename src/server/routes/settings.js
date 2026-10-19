@@ -30,7 +30,7 @@ function mount(app, ctx) {
     res.json({
       speech: { ...(dir ? tr.modelStatus(dir) : { model: tr.MODEL, cached: false, bytes: 0 }), download: dl },
       ocr: { engine: process.platform === 'darwin' ? 'Apple Vision (compiled on first use, falls back to Tesseract)' : 'Tesseract' },
-      ollama: { available: await llm.available(), model: llm.model },
+      ollama: await (async () => { const list = await llm.installed(); return { available: list.length > 0 || await llm.available(), model: llm.model, installed: list, missing: list.length > 0 && !list.includes(llm.model) }; })(),
     });
   });
   app.post('/api/models/download', own, (_q, res) => {

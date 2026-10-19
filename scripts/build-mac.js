@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds dist/Iris-darwin-arm64/Iris.app: package, leave out what must not ship, sign.
+// Builds dist/Hermes-darwin-arm64/Hermes.app: package, leave out what must not ship, sign.
 //   node scripts/build-mac.js            build and sign
 //   node scripts/build-mac.js --dry      list what would ship and how big it is, without building (touches no permission, opens nothing)
 // Signing: the identity named in $SPOOL_SIGN (default "Spool Dev") when it exists in the keychain, otherwise ad hoc. An ad-hoc signature changes on
@@ -67,10 +67,10 @@ function dry() {
 async function build() {
   const { packager } = require('@electron/packager');
   const [dir] = await packager({
-    dir: root, name: 'Iris', platform: 'darwin', arch: 'arm64', out: path.join(root, 'dist'), overwrite: true, asar: false,
-    appBundleId: 'app.iris.recorder', icon: path.join(root, 'assets', 'icon'), extendInfo: path.join(__dirname, 'Info.extend.plist'), ignore: IGNORE,
+    dir: root, name: 'Hermes', platform: 'darwin', arch: 'arm64', out: path.join(root, 'dist'), overwrite: true, asar: false,
+    appBundleId: 'app.hermes.recorder', icon: path.join(root, 'assets', 'icon'), extendInfo: path.join(__dirname, 'Info.extend.plist'), ignore: IGNORE,
   });
-  const app = path.join(dir, 'Iris.app');
+  const app = path.join(dir, 'Hermes.app');
   const want = process.env.SPOOL_SIGN || 'Spool Dev';
   const have = spawnSync('security', ['find-identity', '-v', '-p', 'codesigning'], { encoding: 'utf8' }).stdout.includes(`"${want}"`);
   const r = spawnSync('codesign', ['--force', '--deep', '--sign', have ? want : '-', app], { stdio: 'inherit' });
