@@ -1,8 +1,8 @@
 // Pure helpers for the 60 Hz cursor feed: no Electron, no clock of their own, so they are unit-tested.
-// Loaded with require() in the main process (as window.HermesCursor it would work in a renderer too).
+// Loaded with require() in the main process (as window.KairosCursor it would work in a renderer too).
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.HermesCursor = factory();
+  else root.KairosCursor = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   // Decides which samples reach timeline.json.
   //   moving   every tick is kept (that is the 60 Hz feed)

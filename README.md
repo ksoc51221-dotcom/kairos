@@ -1,10 +1,10 @@
-<p align="center"><img src="assets/icon.png" width="140" alt="Hermes logo"></p>
+<p align="center"><img src="assets/icon.png" width="140" alt="Kairos logo"></p>
 
-# Hermes
+# Kairos
 
 **Record your screen once. Hand the recording to an AI agent. Keep your secrets off the internet.**
 
-![The Hermes recorder bar](design/phase7-compare/hermes-bar.jpg)
+![The Kairos recorder bar](design/phase7-compare/kairos-bar.jpg)
 
 ## The problem
 
@@ -15,12 +15,12 @@ You explain a bug, a process or a design to a teammate by recording your screen.
 
 Who feels it: developers filing bug reports, support and QA people, anyone who writes SOPs or onboarding videos from screen recordings, and anyone whose employer does not allow customer data to leave the machine.
 
-## What Hermes does about it
+## What Kairos does about it
 
-Hermes records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it. Everything runs on your Mac. There is no account and no cloud.
+Kairos records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it. Everything runs on your Mac. There is no account and no cloud.
 
 1. **The Privacy Guard reads the screen and listens to you.** Before anyone but you can open a recording, it OCRs the picture and covers e-mail addresses, API keys, tokens, card numbers and passwords with a solid black box. It also checks what you *said*: a password or PIN spoken with a phrase like "the password is…" is bleeped in the audio and removed from the transcript and captions. If any check fails, the recording stays "only you can watch". A failure never means "everyone can".
-2. **It is built for agents.** Press **Record for agent** and Hermes writes an *Action Plan*: a markdown brief with what you said, the steps you showed, where you clicked and the screenshots. An MCP server hands it to Claude Code, Cursor or any MCP client: *"List my Hermes videos and turn the latest one into a fix."*
+2. **It is built for agents.** Press **Record for agent** and Kairos writes an *Action Plan*: a markdown brief with what you said, the steps you showed, where you clicked and the screenshots. An MCP server hands it to Claude Code, Cursor or any MCP client: *"List my Kairos videos and turn the latest one into a fix."*
 3. **A crew of local agents** (Planner, Insights, Guide Writer, Guide Critic, AI Actions) writes the title, summary, chapters and a fact-checked step-by-step guide, then turns the recording into a PR description, bug report or SOP.
 
 The full checklist, with what is tested and what is not, is in [FEATURES.md](FEATURES.md).
@@ -33,8 +33,8 @@ Apple silicon Mac, Node 20 or newer (tested on Node 24). There is no packaged re
 git clone <this repo> && cd spool
 npm install
 npm run doctor     # checks Node, ffmpeg, Ollama and the models, and prints the fix for anything missing
-npm start          # launch Hermes in development mode
-# or: npm run build:mac   -> dist/Hermes-darwin-arm64/Hermes.app (signed with a local certificate, not notarised)
+npm start          # launch Kairos in development mode
+# or: npm run build:mac   -> dist/Kairos-darwin-arm64/Kairos.app (signed with a local certificate, not notarised)
 ```
 
 **Optional, for the AI notes:** install [Ollama](https://ollama.com) and run `ollama pull qwen3:8b`. Any model you have pulled works: pick it in Settings > AI. Without Ollama you still get the recording, the transcript and the Privacy Guard; titles, summaries, guides and AI Actions are skipped, and the launcher tells you so.
@@ -51,7 +51,7 @@ macOS asks the first time you press Record. After you grant Screen Recording, ma
 
 ## How it works
 
-Recording and publishing are separate. Hermes records the screen and camera as two full-quality tracks, then composites once, on the hardware encoder.
+Recording and publishing are separate. Kairos records the screen and camera as two full-quality tracks, then composites once, on the hardware encoder.
 
 ```mermaid
 flowchart LR
@@ -128,10 +128,10 @@ The full checklist, with what is tested and what is not, is in [FEATURES.md](FEA
 ### Use it from Claude Code
 
 ```bash
-claude mcp add hermes -- node /absolute/path/to/spool/mcp/server.js
+claude mcp add kairos -- node /absolute/path/to/spool/mcp/server.js
 ```
 
-Then: *"List my Hermes videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
+Then: *"List my Kairos videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
 
 ## Models and safety
 
@@ -169,8 +169,8 @@ These are real. Plan around them.
 ```bash
 npm run doctor      # check prerequisites, models and Ollama before the first run
 npm test            # unit tests: no windows, no network, about 20 s
-npm run test:e2e    # records your real screen: windows appear and Hermes takes over the display for a while
-npm run build:mac   # package, trim and sign dist/Hermes-darwin-arm64/Hermes.app
+npm run test:e2e    # records your real screen: windows appear and Kairos takes over the display for a while
+npm run build:mac   # package, trim and sign dist/Kairos-darwin-arm64/Kairos.app
 npm run build:mac:dry   # list what would ship and its size, without building
 ```
 

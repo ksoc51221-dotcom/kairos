@@ -18,7 +18,7 @@ const adf = (text) => ({ type: 'doc', version: 1, content: String(text).split(/\
 function buildRequest(target, cfg = {}, doc) {
   if (!TARGETS[target]) throw new Error('unknown target');
   const m = missing(target, cfg); if (m.length) throw Object.assign(new Error(`${TARGETS[target].label} needs ${TARGETS[target].doc}. Add ${m.join(', ')} in Settings → Workspace → Integrations.`), { status: 400 });
-  const title = String(doc.title || 'Hermes recording').slice(0, 250), text = String(doc.markdown || '');
+  const title = String(doc.title || 'Kairos recording').slice(0, 250), text = String(doc.markdown || '');
   const json = { 'content-type': 'application/json' };
   if (target === 'slack') {
     const url = String(cfg.hook).trim(); if (!/^https?:\/\//.test(url)) throw Object.assign(new Error('The Slack webhook must be a URL'), { status: 400 });

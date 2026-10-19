@@ -17,8 +17,13 @@ const win = require('./windows');
 const ipc = require('./ipc');
 const { log } = logger;
 
+// The library lives in .../Application Support/spool (the app's first name). Pin that folder before the name changes, so the visible name
+// (tray "Quit Kairos", menus) is Kairos and no recording or model moves.
+app.setPath('userData', path.join(app.getPath('appData'), 'spool'));
+app.setName('Kairos');
+
 app.commandLine.appendSwitch('enable-features', 'MacLoopbackAudioForScreenShare,MacSckSystemAudioLoopbackOverride');
-if (!config.SELFTEST && !app.requestSingleInstanceLock()) app.exit(0); // one Hermes at a time (they would fight over the port)
+if (!config.SELFTEST && !app.requestSingleInstanceLock()) app.exit(0); // one Kairos at a time (they would fight over the port)
 app.on('second-instance', () => { win.showSplash(); win.showLauncher(); }); // opening the app again from Finder or Spotlight
 app.on('before-quit', () => { win.setQuitting(); store.flush(); });
 process.on('uncaughtException', (e) => log('uncaughtException', e));
@@ -32,7 +37,7 @@ app.whenReady().then(async () => {
   catch (e) { // B1: never start on top of a library file we cannot read
     if (!(e instanceof store.StoreCorruptError)) throw e;
     log('library unreadable', e.message, e.files);
-    dialog.showErrorBox('Hermes cannot open your library', `${e.message}\n\nFiles: ${e.files.join(', ')}`);
+    dialog.showErrorBox('Kairos cannot open your library', `${e.message}\n\nFiles: ${e.files.join(', ')}`);
     app.exit(1); return;
   }
   // A recording that was still being written when the app stopped keeps its files but is marked, instead of showing "Recording…" forever.
@@ -48,23 +53,23 @@ app.whenReady().then(async () => {
   win.createRecorder();
   log('start', { packaged: app.isPackaged, version: app.getVersion(), perms: permissions.report() });
 
-  const tray = new Tray(nativeImage.createEmpty()); tray.setTitle('● Hermes');
+  const tray = new Tray(nativeImage.createEmpty()); tray.setTitle('● Kairos');
   const trayMenu = () => Menu.buildFromTemplate([
     ...(readiness.get().speechMissing ? [{ label: readiness.get().download.state === 'running' ? `Downloading speech model… ${readiness.get().download.percent}%` : `⚠ Download the speech model (${readiness.MODEL_MB} MB)`, enabled: readiness.get().download.state !== 'running', click: () => readiness.startDownload() }, { type: 'separator' }] : []),
     { label: 'New recording…  (⌥⇧R)', click: win.showLauncher }, { label: 'Screenshot  (⌥⇧A)', click: screenshot.start },
     { label: 'Open library', click: () => shell.openExternal(config.ownerOrigin('/')) }, { type: 'separator' },
-    { label: 'Copy diagnostics', click: () => clipboard.writeText(`Hermes diagnostics\nperms: ${JSON.stringify(permissions.report())}\n${logger.tail(60)}`) },
+    { label: 'Copy diagnostics', click: () => clipboard.writeText(`Kairos diagnostics\nperms: ${JSON.stringify(permissions.report())}\n${logger.tail(60)}`) },
     { label: 'Show log file', click: () => shell.showItemInFolder(logger.file) }, { type: 'separator' }, { role: 'quit' },
   ]);
   tray.setContextMenu(trayMenu());
-  readiness.onChange(() => { tray.setContextMenu(trayMenu()); tray.setTitle(readiness.get().speechMissing ? '⚠ Hermes' : '● Hermes'); });
+  readiness.onChange(() => { tray.setContextMenu(trayMenu()); tray.setTitle(readiness.get().speechMissing ? '⚠ Kairos' : '● Kairos'); });
   readiness.refresh().then((r) => log('readiness', { speechModel: !r.speechMissing, ollama: !r.ollamaMissing }));
   tray.on('click', win.showLauncher);
   shortcuts.registerApp({ onScreenshot: screenshot.start, onLauncher: win.toggleLauncher });
   const ico = path.join(__dirname, '..', '..', 'assets', 'icon.png');
   if (app.dock && fs.existsSync(ico)) { const img = nativeImage.createFromPath(ico); app.dock.setIcon(img); win.setDockIcon(img); }
   if (config.SELFTEST) { setTimeout(() => require('./selftest').run(config.SELFTEST), 1500); return; }
-  // B28: started by the system at login, Hermes stays quiet in the menu bar; opened by the user, it shows the launcher
+  // B28: started by the system at login, Kairos stays quiet in the menu bar; opened by the user, it shows the launcher
   if (!app.getLoginItemSettings().wasOpenedAtLogin) { win.showSplash(); win.showLauncher(); }
 });
 app.on('window-all-closed', (e) => e.preventDefault());

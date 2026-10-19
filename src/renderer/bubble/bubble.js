@@ -1,6 +1,9 @@
-const C = window.SPOOL, I = window.HermesIcons, $ = (id) => document.getElementById(id);
+const C = window.SPOOL, I = window.KairosIcons, $ = (id) => document.getElementById(id);
 const cam = $('cam'), ring = $('ring'), v = $('v'), panel = $('panel'), MIN = C.BUBBLE_MIN, MAX = C.BUBBLE_MAX;
 I.fill(document);
+// declared before apply() runs: a `let`/`const` used earlier throws and takes the whole script (and the camera) down with it
+const fill = (n) => $('size').style.setProperty('--p', ((n - MIN) / (MAX - MIN)) * 100 + '%');
+let sizing = false;
 let st = { w: 260, h: 260, size: 260, shape: 'circle', filter: 'none', frame: 'ring' };
 function apply(s) {
   st = { ...st, ...s };
@@ -26,8 +29,6 @@ spool.on('bubble:init', async ({ camId, fake }) => {
   try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); } catch (e) { console.error(e); camKey = null; }
 });
 // the size slider is continuous (MIN..MAX); each move is sent as it happens, so the bubble follows the thumb
-const fill = (n) => $('size').style.setProperty('--p', ((n - MIN) / (MAX - MIN)) * 100 + '%');
-let sizing = false;
 $('size').onpointerdown = () => { sizing = true; };
 addEventListener('pointerup', () => { sizing = false; });
 $('size').oninput = (e) => { const n = +e.target.value; fill(n); if (n !== st.size) { st.size = n; spool.send('bubble:action', 'size', n); } };

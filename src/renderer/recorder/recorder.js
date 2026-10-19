@@ -6,7 +6,7 @@
 //   chunks    every dataavailable chunk goes to the main process as it arrives (B3), so memory stays flat however long the recording is.
 //   audio     mic and system audio are mixed into the screen recorder's stream (the camera recorder in camera-only mode).
 const C = window.SPOOL;
-const { Timeline } = window.HermesTimeline;
+const { Timeline } = window.KairosTimeline;
 const epochNow = () => performance.timeOrigin + performance.now();
 const TIMESLICE_MS = 1000;
 const WARMUP_MS = 400;

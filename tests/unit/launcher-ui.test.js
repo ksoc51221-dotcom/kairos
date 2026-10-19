@@ -8,7 +8,7 @@ const R = path.join(__dirname, '..', '..', 'src', 'renderer');
 const read = (f) => fs.readFileSync(path.join(R, f), 'utf8');
 
 test('every icon the bar and the bubble panel ask for exists', () => {
-  const names = new Set(global.HermesIcons.names);
+  const names = new Set(global.KairosIcons.names);
   for (const f of ['launcher/index.html', 'bubble/index.html']) for (const m of read(f).matchAll(/data-icon="([^"]+)"/g)) assert.ok(names.has(m[1]), `${f}: no icon "${m[1]}"`);
   for (const f of ['launcher/launcher.js', 'bubble/bubble.js']) for (const m of read(f).matchAll(/I\.svg\('([^']+)'/g)) assert.ok(names.has(m[1]), `${f}: no icon "${m[1]}"`);
 });

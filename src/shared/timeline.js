@@ -1,6 +1,6 @@
 // The recording timeline: what the composite step and the player need to rebuild the video from separate tracks.
 // Pure data logic with no clocks of its own (callers pass timestamps in ms), so it is unit-tested without Electron.
-// Loaded two ways: require() in Node tests/pipeline, <script src> in the recorder window (as window.HermesTimeline).
+// Loaded two ways: require() in Node tests/pipeline, <script src> in the recorder window (as window.KairosTimeline).
 //
 // "t" everywhere is seconds on the *recorded* timeline: pauses do not count, and a Live Rewind removes what came after.
 // timeline.json shape (version 2):
@@ -11,7 +11,7 @@
 //   drawing  [[t, on]]    pen overlay switched on (1) or off (0)
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.HermesTimeline = factory();
+  else root.KairosTimeline = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   const r3 = (n) => Math.round(n * 1000) / 1000;
   const r4 = (n) => Math.round(n * 10000) / 10000;

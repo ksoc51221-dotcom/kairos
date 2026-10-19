@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>NSCameraUsageDescription</key><string>Hermes puts your face in the recording when you choose Screen + Cam or Cam only.</string>
-  <key>NSMicrophoneUsageDescription</key><string>Hermes records your voice for your videos and for speaker-note dictation.</string>
-  <key>NSAudioCaptureUsageDescription</key><string>Hermes can record your computer's audio when you turn on system audio.</string>
-  <key>NSScreenCaptureUsageDescription</key><string>Hermes records your screen.</string>
+  <key>NSCameraUsageDescription</key><string>Kairos puts your face in the recording when you choose Screen + Cam or Cam only.</string>
+  <key>NSMicrophoneUsageDescription</key><string>Kairos records your voice for your videos and for speaker-note dictation.</string>
+  <key>NSAudioCaptureUsageDescription</key><string>Kairos can record your computer's audio when you turn on system audio.</string>
+  <key>NSScreenCaptureUsageDescription</key><string>Kairos records your screen.</string>
 </dict></plist>

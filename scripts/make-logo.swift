@@ -1,4 +1,4 @@
-// Turns assets/hermes-source.png (the logo on a dark tile) into: assets/icon.png (white tile + the mark, 1024 px) and assets/icon.icns.
+// Turns assets/kairos-source.png (the logo on a dark tile) into: assets/icon.png (white tile + the mark, 1024 px) and assets/icon.icns.
 // Run: swift scripts/make-logo.swift . [markScale=1.0] [outPath=assets/icon.png]   (macOS only: CoreGraphics)
 // How: the source has two flat greens on one flat near-black. Every pixel is sorted into background, light green, dark green or an edge.
 // Edge pixels next to the background take the green they touch and get an alpha from how far they are from the background, so the mark keeps
@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 let root = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : ".")
 let markScale = CommandLine.arguments.count > 2 ? Double(CommandLine.arguments[2]) ?? 1.0 : 1.0
 let outPath = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : root.appendingPathComponent("assets/icon.png").path
-let src = root.appendingPathComponent("assets/hermes-source.png")
+let src = root.appendingPathComponent("assets/kairos-source.png")
 guard let isrc = CGImageSourceCreateWithURL(src as CFURL, nil), let img = CGImageSourceCreateImageAtIndex(isrc, 0, nil) else { fatalError("cannot read \(src.path)") }
 let W = img.width, H = img.height
 var px = [UInt8](repeating: 0, count: W * H * 4)

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `npm run doctor`: checks everything Hermes needs before the first run and prints the exact command for anything missing.
+// `npm run doctor`: checks everything Kairos needs before the first run and prints the exact command for anything missing.
 // Read-only: it installs nothing and records nothing. Exit code 1 only when something required is missing.
 const fs = require('fs'), os = require('os'), path = require('path');
 const URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434', MODEL = process.env.SPOOL_MODEL || 'qwen3:8b';
@@ -12,7 +12,7 @@ async function main() {
   row(!!ff && fs.existsSync(ff), 'ffmpeg (bundled with npm install)', 'Run: npm install');
   let el = ''; try { el = require('electron'); } catch { /* not installed */ }
   row(typeof el === 'string' && fs.existsSync(el), 'Electron', 'Run: npm install');
-  row(process.platform === 'darwin' && process.arch === 'arm64', `${process.platform} ${process.arch}`, 'Hermes is built and tested on Apple silicon Macs only');
+  row(process.platform === 'darwin' && process.arch === 'arm64', `${process.platform} ${process.arch}`, 'Kairos is built and tested on Apple silicon Macs only');
 
   const dataDir = process.env.SPOOL_DATA || path.join(os.homedir(), 'Library', 'Application Support', 'spool');
   const speech = path.join(dataDir, 'models');

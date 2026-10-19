@@ -1,4 +1,4 @@
-// Icons and small helpers shared by the web pages. Inline SVGs drawn for Hermes in one stroke style (24x24 grid, 1.9 px round strokes),
+// Icons and small helpers shared by the web pages. Inline SVGs drawn for Kairos in one stroke style (24x24 grid, 1.9 px round strokes),
 // in the spirit of the MIT-licensed Lucide set; no icon library is a dependency. Use: UI.i('share') -> '<svg class="i">…</svg>'.
 (() => {
   const P = {

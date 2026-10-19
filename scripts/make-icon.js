@@ -1,5 +1,5 @@
 // Builds assets/icon.icns from assets/icon.png (1024 px) with sips + iconutil.
-// The whole logo pipeline: `swift scripts/make-logo.swift .` (hermes-source.png -> icon.png), then `node scripts/make-icon.js`.
+// The whole logo pipeline: `swift scripts/make-logo.swift .` (kairos-source.png -> icon.png), then `node scripts/make-icon.js`.
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const out = path.join(__dirname, '..', 'assets'), set = path.join(out, 'icon.iconset');
 fs.rmSync(set, { recursive: true, force: true }); fs.mkdirSync(set);

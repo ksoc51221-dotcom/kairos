@@ -1,6 +1,6 @@
 // Reads text from images with the macOS Vision framework (accurate mode). One JSON line per input file:
 // {"file":path,"lines":[{"text":"...","words":[{"text":"...","x0":0..1,"y0":0..1,"x1":..,"y1":..}]}]}
-// Boxes are normalised with the origin at the top left, like the rest of Hermes. Compiled on first use by agents/ocr.js.
+// Boxes are normalised with the origin at the top left, like the rest of Kairos. Compiled on first use by agents/ocr.js.
 import Foundation
 import Vision
 import ImageIO

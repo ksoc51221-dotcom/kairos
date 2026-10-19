@@ -45,7 +45,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Record for agent: writes the Action Plan automatically and opens the AI Actions tab | 🟡 | Plan is written after processing, only once the Privacy Guard cleared the video |
 | Bubble moves, resizes and shape changes ease in the published video (0.2 s glide; style/size changes cross-fade) | 🟡 | Unit-tested incl. a real ffmpeg run; cross-fade, not a true size morph; not watched in a real recording |
 | Default bubble: landscape rounded rectangle, top-left, ~18% of a 1440 pt screen | ✅ | New installs only |
-| Hermes logo (pinwheel on a white tile) as app and Dock icon; fades in and out for 2.2 s each time the app is opened | 🟡 | Splash never takes focus or clicks and is excluded from recordings; shown on a user launch and when the app is opened again, not at login. Not yet seen in the running app |
+| Kairos logo (pinwheel on a white tile) as app and Dock icon; fades in and out for 2.2 s each time the app is opened | 🟡 | Splash never takes focus or clicks and is excluded from recordings; shown on a user launch and when the app is opened again, not at login. Not yet seen in the running app |
 | Hide the dock while recording | ❌ | Only "hide the menu bar" exists; the dock is a system setting |
 
 ## Library, sharing, privacy
@@ -93,13 +93,13 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 |---|---|---|
 | AI Actions: SOP, PR description, bug report, issue, follow-up message, meeting recap | ✅ | Local model, validated JSON, cached per video, 18/18 valid on 3 videos |
 | Send to Slack, GitHub, Linear, Jira with a preview first | 🟡 | Request building, preview and sending tested against local endpoints and canned responses; not sent to the real services |
-| Hermes MCP server (list, search, transcript, guide, action plan) | ✅ | Tested over stdio with the SDK client; read-only; cleared videos only |
+| Kairos MCP server (list, search, transcript, guide, action plan) | ✅ | Tested over stdio with the SDK client; read-only; cleared videos only |
 | Record for agents: Action Plan brief (voice, steps, clicks, screenshots) | 🟡 | No window titles (not recorded) |
 
 ## Packaging (Phase 5)
 | Feature | Status | Notes |
 |---|---|---|
-| Signed Hermes.app without design/, tests, notes or other platforms' binaries | ✅ | 537 MB (was 947 MB); target 400 MB not reachable (Electron is 290 MB). Signed with a local 'Spool Dev' certificate |
+| Signed Kairos.app without design/, tests, notes or other platforms' binaries | ✅ | 537 MB (was 947 MB); target 400 MB not reachable (Electron is 290 MB). Signed with a local 'Spool Dev' certificate |
 | README with Mermaid diagrams | ✅ | No GIF yet |
 | GitHub repo and Release | ⏳ | Waiting for your go-ahead |
 

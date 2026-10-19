@@ -1,6 +1,6 @@
-// Inline SVG icons in one stroke style (24x24 grid, 2px round strokes), drawn for Hermes. Loaded by renderer windows as window.HermesIcons.
-//   HermesIcons.svg('home')        -> '<svg class="i" ...>...</svg>'
-//   HermesIcons.fill(rootElement)  -> replaces every [data-icon="name"] with its svg
+// Inline SVG icons in one stroke style (24x24 grid, 2px round strokes), drawn for Kairos. Loaded by renderer windows as window.KairosIcons.
+//   KairosIcons.svg('home')        -> '<svg class="i" ...>...</svg>'
+//   KairosIcons.fill(rootElement)  -> replaces every [data-icon="name"] with its svg
 (function (root) {
   const P = {
     home: '<path d="M3.5 11 12 3.5 20.5 11"/><path d="M5.5 9.5V20h5v-6h3v6h5V9.5"/>',
@@ -42,10 +42,10 @@
     'chevron-right': '<path d="m9.5 6.5 5.5 5.5-5.5 5.5"/>',
     'chevron-left': '<path d="m14.5 6.5-5.5 5.5 5.5 5.5"/>',
     'chevron-up': '<path d="m6.5 14.5 5.5-5.5 5.5 5.5"/>',
-    hermes: '<polygon points="12.00,3.20 16.90,3.20 14.90,8.40 10.30,8.40" class="f" stroke="none"/><polygon points="19.62,7.60 22.07,11.84 16.57,12.71 14.27,8.73" class="f" opacity=".62" stroke="none"/><polygon points="19.62,16.40 17.17,20.64 13.67,16.31 15.97,12.33" class="f" stroke="none"/><polygon points="12.00,20.80 7.10,20.80 9.10,15.60 13.70,15.60" class="f" opacity=".62" stroke="none"/><polygon points="4.38,16.40 1.93,12.16 7.43,11.29 9.73,15.27" class="f" stroke="none"/><polygon points="4.38,7.60 6.83,3.36 10.33,7.69 8.03,11.67" class="f" opacity=".62" stroke="none"/>', // the logo's pinwheel: six blades, alternate ones lighter
+    kairos: '<polygon points="12.00,3.20 16.90,3.20 14.90,8.40 10.30,8.40" class="f" stroke="none"/><polygon points="19.62,7.60 22.07,11.84 16.57,12.71 14.27,8.73" class="f" opacity=".62" stroke="none"/><polygon points="19.62,16.40 17.17,20.64 13.67,16.31 15.97,12.33" class="f" stroke="none"/><polygon points="12.00,20.80 7.10,20.80 9.10,15.60 13.70,15.60" class="f" opacity=".62" stroke="none"/><polygon points="4.38,16.40 1.93,12.16 7.43,11.29 9.73,15.27" class="f" stroke="none"/><polygon points="4.38,7.60 6.83,3.36 10.33,7.69 8.03,11.67" class="f" opacity=".62" stroke="none"/>', // the logo's pinwheel: six blades, alternate ones lighter
     landscape: '<rect x="3" y="6" width="18" height="12" rx="2.5"/>',
   };
   const svg = (name, extra = '') => `<svg class="i ${extra}" viewBox="0 0 24 24" aria-hidden="true">${P[name] || ''}</svg>`;
   const fill = (el = document) => el.querySelectorAll('[data-icon]').forEach((n) => { n.innerHTML = svg(n.dataset.icon); n.removeAttribute('data-icon'); });
-  root.HermesIcons = { svg, fill, names: Object.keys(P) };
+  root.KairosIcons = { svg, fill, names: Object.keys(P) };
 })(typeof self !== 'undefined' ? self : this);

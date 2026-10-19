@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds dist/Hermes-darwin-arm64/Hermes.app: package, leave out what must not ship, sign.
+// Builds dist/Kairos-darwin-arm64/Kairos.app: package, leave out what must not ship, sign.
 //   node scripts/build-mac.js            build and sign
 //   node scripts/build-mac.js --dry      list what would ship and how big it is, without building (touches no permission, opens nothing)
 // Signing: the identity named in $SPOOL_SIGN (default "Spool Dev") when it exists in the keychain, otherwise ad hoc. An ad-hoc signature changes on
@@ -12,7 +12,7 @@ const root = path.join(__dirname, '..');
 // Regular expressions on the path inside the app folder (starts with /). Anything that matches is left out of the package.
 const IGNORE = [
   /^\/(dist|design|tests|scripts|\.git|\.claude|library)(\/|$)/,                 // build output, the Loom reference screenshots, tests, build scripts
-  /^\/(FEATURES|PLAN|REVIEW|PHASE4-CHECK|README)\.md$/, /^\/package-lock\.json$/, /^\/assets\/hermes-source\.png$/, /^\/PITCH\.md$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
+  /^\/(FEATURES|PLAN|REVIEW|PHASE4-CHECK|README)\.md$/, /^\/package-lock\.json$/, /^\/assets\/kairos-source\.png$/, /^\/PITCH\.md$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
   /^\/node_modules\/onnxruntime-node\/bin\/napi-v\d+\/(linux|win32|darwin\/x64)(\/|$)/, // speech engine: darwin/arm64 only (linux and win32 are ~200 MB)
   /^\/node_modules\/onnxruntime-web(\/|$)/,                                      // browser build of the same engine; the Node build above is what runs
   /^\/node_modules\/uiohook-napi\/prebuilds\/(linux|win32|darwin-x64)[^/]*(\/|$)/,        // mouse hook: this Mac only
@@ -67,10 +67,10 @@ function dry() {
 async function build() {
   const { packager } = require('@electron/packager');
   const [dir] = await packager({
-    dir: root, name: 'Hermes', platform: 'darwin', arch: 'arm64', out: path.join(root, 'dist'), overwrite: true, asar: false,
+    dir: root, name: 'Kairos', platform: 'darwin', arch: 'arm64', out: path.join(root, 'dist'), overwrite: true, asar: false,
     appBundleId: 'app.hermes.recorder', icon: path.join(root, 'assets', 'icon'), extendInfo: path.join(__dirname, 'Info.extend.plist'), ignore: IGNORE,
   });
-  const app = path.join(dir, 'Hermes.app');
+  const app = path.join(dir, 'Kairos.app');
   const want = process.env.SPOOL_SIGN || 'Spool Dev';
   const have = spawnSync('security', ['find-identity', '-v', '-p', 'codesigning'], { encoding: 'utf8' }).stdout.includes(`"${want}"`);
   const r = spawnSync('codesign', ['--force', '--deep', '--sign', have ? want : '-', app], { stdio: 'inherit' });

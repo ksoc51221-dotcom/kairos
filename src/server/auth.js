@@ -25,7 +25,7 @@ const previewingAsViewer = (req) => ownerMachine(req) && cookies(req).sp_asviewe
 const isOwner = (req) => ownerMachine(req) && cookies(req).sp_asviewer !== '1';
 
 // Owner-only route. Writes also need the per-launch token (B5), which only our own pages can read.
-const SIGNIN_PAGE = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hermes</title><body style="font:16px/1.5 system-ui;max-width:34rem;margin:12vh auto;padding:0 1.2rem"><h2>Open Hermes to sign in</h2><p>This page is for the owner. Choose <b>Open library</b> from the Hermes icon in the menu bar: it signs this browser in for as long as Hermes keeps running.</p><p style="color:#666">Why: so that nothing else that can reach this port, such as a tunnel or another program, can pass for you.</p>';
+const SIGNIN_PAGE = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kairos</title><body style="font:16px/1.5 system-ui;max-width:34rem;margin:12vh auto;padding:0 1.2rem"><h2>Open Kairos to sign in</h2><p>This page is for the owner. Choose <b>Open library</b> from the Kairos icon in the menu bar: it signs this browser in for as long as Kairos keeps running.</p><p style="color:#666">Why: so that nothing else that can reach this port, such as a tunnel or another program, can pass for you.</p>';
 const requireOwner = (req, res, next) => {
   if (!isOwner(req)) {
     // a bookmark or an old tab (the sign-in is per launch): explain, instead of showing JSON

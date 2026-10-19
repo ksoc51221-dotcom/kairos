@@ -31,7 +31,7 @@ const call = (method, url, { headers = {}, body } = {}) => new Promise((resolve,
 test('the editor page and its data are owner-only', async () => {
   const viewer = { 'x-forwarded-for': '203.0.113.9' };
   for (const u of [`/edit/${v.id}`, `/api/videos/${v.id}/editor`, `/api/videos/${v.id}/peaks`]) assert.equal((await call('GET', u, { headers: viewer })).status, 403, u);
-  const page = await call('GET', `/edit/${v.id}`); assert.equal(page.status, 200); assert.match(page.text, /Edit · Hermes/);
+  const page = await call('GET', `/edit/${v.id}`); assert.equal(page.status, 200); assert.match(page.text, /Edit · Kairos/);
   assert.equal((await call('PUT', `/api/videos/${v.id}/edits`, { headers: viewer, body: { cuts: [] } })).status, 403);
 });
 test('the editor payload lists the other videos but not itself', async () => {

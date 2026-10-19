@@ -41,7 +41,7 @@ const SCENARIOS = {
   pipeline: { config: { mode: 'screen-cam', seconds: 24, quality: '1080p', patch: true, secrets: true }, expected: 24.0, screen: true, pipeline: true, informational: true },
 };
 
-// B28: the frontmost app must be the same before and after a run (Hermes never takes focus unless the user opens one of its windows).
+// B28: the frontmost app must be the same before and after a run (Kairos never takes focus unless the user opens one of its windows).
 // `lsappinfo` needs no Automation permission, unlike System Events.
 const { execFileSync } = require('child_process');
 const frontApp = () => { try { const asn = execFileSync('lsappinfo', ['front']).toString().trim(); return execFileSync('lsappinfo', ['info', '-only', 'name', asn]).toString().trim(); } catch { return null; } };
@@ -67,7 +67,7 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
 
 async function acceptance(name, scenario, dataDir) {
   console.log(`\n== ${name}: ${JSON.stringify(scenario.config)}`);
-  let held = 0; // polls (100 ms each) during which Hermes itself was the frontmost app
+  let held = 0; // polls (100 ms each) during which Kairos itself was the frontmost app
   const frontBefore = frontApp(), seen = new Set(), poll = setInterval(() => { const a = frontApp(); if (a) { seen.add(a); if (/spool|electron/i.test(a)) held++; } }, 100); // every app that was frontmost during the run
   if (scenario.pipeline) { // reuse the models the real app already downloaded and the compiled Vision tool, instead of fetching 150 MB into a throwaway folder
     const real = path.join(os.homedir(), 'Library', 'Application Support', 'spool', 'models');
@@ -75,10 +75,10 @@ async function acceptance(name, scenario, dataDir) {
   }
   const r = await runApp(scenario, dataDir);
   clearInterval(poll); const frontAfter = frontApp();
-  // The pass condition is that Hermes itself never became the frontmost app. (Comparing before/after alone also fails when the user, or another
-  // session, switches apps while the run is going: that is not Hermes taking focus.)
+  // The pass condition is that Kairos itself never became the frontmost app. (Comparing before/after alone also fails when the user, or another
+  // session, switches apps while the run is going: that is not Kairos taking focus.)
   const mine = [...seen].filter((n) => /spool|electron/i.test(n));
-  if (frontBefore && frontAfter) check(scenario.ui ? 'B28: Hermes held focus only for the launcher the test opens (at most 1 s)' : 'B28: Hermes never became the frontmost app during the run', scenario.ui ? held <= 10 : mine.length === 0, `spool frontmost ${held * 100} ms; frontmost during the run: ${[...seen].map((n) => n.replace(/^"LSDisplayName"=/, '')).join(', ') || 'n/a'}; before ${frontBefore}, after ${frontAfter}`);
+  if (frontBefore && frontAfter) check(scenario.ui ? 'B28: Kairos held focus only for the launcher the test opens (at most 1 s)' : 'B28: Kairos never became the frontmost app during the run', scenario.ui ? held <= 10 : mine.length === 0, `spool frontmost ${held * 100} ms; frontmost during the run: ${[...seen].map((n) => n.replace(/^"LSDisplayName"=/, '')).join(', ') || 'n/a'}; before ${frontBefore}, after ${frontAfter}`);
   const dir = r.dir, tl = r.timeline, scale = r.display.scaleFactor, expected = scenario.expected;
   console.log(`  display ${r.display.width}x${r.display.height} @${scale}x  mime ${tl.mime}  audio ${tl.audio}  segments ${tl.segments.map((s) => `#${s.n}:${f(s.dur)}s`).join(' ')}`);
 

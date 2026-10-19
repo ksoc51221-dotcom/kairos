@@ -1,4 +1,4 @@
-// Factory for every BrowserWindow Hermes opens (one function each) and the registry that finds them by name.
+// Factory for every BrowserWindow Kairos opens (one function each) and the registry that finds them by name.
 // No recording logic lives here: session.js decides when a window is needed and what it shows.
 const { app, BrowserWindow, screen } = require('electron');
 const path = require('path');
@@ -20,6 +20,11 @@ const baseWin = (extra = {}) => ({
 function load(name, rel, opts) {
   const w = new BrowserWindow(baseWin(opts));
   w.loadFile(path.join(RENDERER, rel));
+  // errors from any window go to the log: a camera that fails to open used to leave no trace at all
+  w.webContents.on('console-message', (e, level, msg) => {
+    if (typeof level !== 'number') { msg = e.message; level = e.level === 'error' ? 3 : 0; } // newer Electron passes one event object
+    if (level >= 3) require('./log').log('renderer:' + name, String(msg).slice(0, 300));
+  });
   W[name] = w; w.on('closed', () => { if (W[name] === w) delete W[name]; });
   return w;
 }
@@ -27,13 +32,13 @@ function load(name, rel, opts) {
 // ---- B25: overlay windows must be able to float above full-screen apps ----
 // macOS only lets an "accessory" app (no Dock icon) put windows over a full-screen Space, and calling setVisibleOnAllWorkspaces()
 // with visibleInFullScreen on every window re-transforms the process type each time, which makes the earlier windows vanish.
-// So: the Dock icon is hidden while any Hermes window that must float is on screen, and floatTop() skips the per-window transform.
+// So: the Dock icon is hidden while any Kairos window that must float is on screen, and floatTop() skips the per-window transform.
 const holders = new Set();
 let dockIcon = null;
 function holdOverlay(key) { if (holders.has(key)) return; holders.add(key); if (holders.size === 1) app.dock?.hide(); }
 // B28: the Dock icon is NOT shown again when the last overlay goes. app.dock.show() turns the process back into a foreground app, which activates
-// Hermes and switches the user to its Space or pulls it in front of the app they were using, after every recording. Once a Hermes window has been
-// up, Hermes stays a menu-bar app (tray icon and ⌥⇧R open the launcher); the Dock icon is only there at launch, before the first overlay.
+// Kairos and switches the user to its Space or pulls it in front of the app they were using, after every recording. Once a Kairos window has been
+// up, Kairos stays a menu-bar app (tray icon and ⌥⇧R open the launcher); the Dock icon is only there at launch, before the first overlay.
 function releaseOverlay(key) { holders.delete(key); }
 const setDockIcon = (img) => { dockIcon = img; };
 const floatTop = (w) => { w.setAlwaysOnTop(true, 'screen-saver'); w.setVisibleOnAllWorkspaces(true, { visibleInFullScreen: true, skipTransformProcessType: true }); };
@@ -101,7 +106,7 @@ function createRecorder() {
 }
 
 // ---- splash ----
-// The logo fades in and out for about 2 s when the user opens Hermes. It never takes focus or clicks (B28), and it is content-protected so it can
+// The logo fades in and out for about 2 s when the user opens Kairos. It never takes focus or clicks (B28), and it is content-protected so it can
 // never end up in a recording. The page animates itself; this only places it, and closes it when the animation is over.
 const SPLASH = 380, SPLASH_MS = 2400;
 function showSplash() {

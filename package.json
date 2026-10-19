@@ -1,12 +1,12 @@
 {
   "name": "spool",
   "version": "0.1.0",
-  "description": "Hermes - local-first screen recorder with an AI agent crew (Loom-style clone)",
+  "description": "Kairos - local-first screen recorder with an AI agent crew (Loom-style clone)",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
     "doctor": "node scripts/doctor.js",
-    "app": "npm run build:mac && open dist/Hermes-darwin-arm64/Hermes.app",
+    "app": "npm run build:mac && open dist/Kairos-darwin-arm64/Kairos.app",
     "build:mac": "node scripts/build-mac.js",
     "test": "node --test tests/unit/*.test.js",
     "test:e2e": "bash tests/e2e/selftest.sh",

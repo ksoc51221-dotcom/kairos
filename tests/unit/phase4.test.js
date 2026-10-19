@@ -1,4 +1,4 @@
-// Phase 4: AI Actions (validated JSON, cached), Send to (preview first, once), the Action Plan brief, and the Hermes MCP server over real stdio.
+// Phase 4: AI Actions (validated JSON, cached), Send to (preview first, once), the Action Plan brief, and the Kairos MCP server over real stdio.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
