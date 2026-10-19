@@ -28,7 +28,20 @@ spool.on('bubble:init', async ({ camId, fake }) => {
   if (key === camKey) return; camKey = key;
   v.srcObject?.getTracks().forEach((t) => t.stop()); v.srcObject = null;
   if (fake) { cam.style.background = 'linear-gradient(135deg, var(--key), var(--raised))'; return; } // self-test: no real camera, so no permission prompt
-  try { v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); } catch (e) { console.error(e); camKey = null; }
+  // a camera that cannot be opened for a moment fails with NotReadable / Abort (busy: another app just let go of it) or Overconstrained / NotFound (the saved camera is not in
+  // the system's list right now; the log showed one while an iPhone was also offering itself as a camera): try again twice before giving up. The reason goes to the log by name
+  for (let attempt = 1; attempt <= 3 && camKey === key; attempt++) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: camId ? { exact: camId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      if (camKey !== key) { stream.getTracks().forEach((t) => t.stop()); return; } // another bubble:init replaced this one while the camera was opening
+      v.srcObject = stream; return;
+    } catch (e) {
+      console.error(`camera failed (try ${attempt}): ${e && e.name}: ${e && e.message}`);
+      if (!/NotReadable|Abort|Overconstrained|NotFound/.test(e && e.name)) break;
+      await new Promise((r) => setTimeout(r, 700));
+    }
+  }
+  if (camKey === key) camKey = null; // not open: the next bubble:init tries again
 });
 // the size slider is continuous (MIN..MAX); each move is sent as it happens, so the bubble follows the thumb
 $('size').onpointerdown = () => { sizing = true; };
@@ -45,7 +58,8 @@ spool.on('bubble:hover', (on) => document.body.classList.toggle('hover', !!on));
 // While a recording is live and the toggle is on, main tells this window to run (gesture:run). It looks at the camera preview it already has,
 // about 8 times a second on a frame at most 320 px wide, and gestures.js decides when a sign has been held long enough. A fired sign goes to main
 // (gesture:command), which sends the same pause / stop message the keyboard shortcuts send. Everything is bundled: no network at runtime.
-const gs = { rec: null, loading: null, running: false, timer: null, state: G.initial(), canvas: null, ctx: null, frames: 0, sumMs: 0, maxMs: 0, loadMs: 0, error: '', statsT: 0 };
+const gs = { rec: null, loading: null, running: false, timer: null, state: G.initial(), canvas: null, ctx: null, frames: 0, sumMs: 0, maxMs: 0, loadMs: 0, error: '', statsT: 0, seen: {} };
+const HINT = { Open_Palm: '✋ Hold to pause', Closed_Fist: '✊ Hold to stop' }; // what the pill says while a sign is being held
 const ROOT = new URL('../../../', location.href).href; // the app folder (src/renderer/bubble/ is three levels down)
 function gLoad() {
   if (gs.rec || gs.loading) return gs.loading;
@@ -58,9 +72,17 @@ function gLoad() {
     .catch((e) => { gs.error = String(e && e.message || e); console.error('gesture recognizer failed to load: ' + gs.error); gs.loading = null; });
   return gs.loading;
 }
-function holdRing(p) { hold.style.setProperty('--p', Math.round(p * 360) + 'deg'); hold.style.opacity = p > 0 ? '1' : '0'; }
-let toastT;
-function showToast(text) { toast.innerHTML = '<b></b>'; toast.firstChild.textContent = text; toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 1600); }
+function holdRing(p, stop) { hold.dataset.k = stop ? 'stop' : ''; hold.style.setProperty('--p', Math.round(p * 360) + 'deg'); hold.style.opacity = p > 0 ? '1' : '0'; }
+// The pill under the camera does two jobs: a result ("Paused ✋", "Gestures on…") that stays for a moment, and a live hint while a sign is being held.
+// A result on screen wins over the hint.
+let toastT, toastUntil = 0, hinting = false;
+function setToast(text) { toast.innerHTML = '<b></b>'; toast.firstChild.textContent = text; toast.classList.add('on'); }
+function showToast(text, ms = 1600) { setToast(text); hinting = false; toastUntil = performance.now() + ms; clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), ms); }
+function showHint(text) {
+  if (performance.now() < toastUntil) return;
+  if (text) { if (!hinting || toast.textContent !== text) setToast(text); hinting = true; }
+  else if (hinting) { toast.classList.remove('on'); hinting = false; }
+}
 function gTick() {
   if (!gs.running) return;
   const t0 = performance.now();
@@ -71,18 +93,26 @@ function gTick() {
     else { gs.ctx.fillStyle = '#556'; gs.ctx.fillRect(0, 0, w, h); } // self-test camera: no picture, the recognizer still does its full work
     const top = gs.rec.recognizeForVideo(gs.canvas, t0).gestures?.[0]?.[0];
     const out = G.step(gs.state, { t: t0, label: top?.categoryName, score: top?.score ?? 0 });
-    gs.state = out.state; holdRing(out.progress);
+    gs.state = out.state; holdRing(out.progress, out.seen && G.COMMANDS[out.seen].control === 'stop'); showHint(out.seen ? HINT[out.seen] : '');
+    const k = top ? top.categoryName : 'nohand'; gs.seen[k] = (gs.seen[k] || 0) + 1; // what the recognizer saw, for the log
     if (out.fire) spool.send('gesture:command', out.fire);
   } catch (e) { console.error('gesture tick failed: ' + (e && e.message || e)); gs.error = String(e && e.message || e); }
   const ms = performance.now() - t0; gs.frames++; gs.sumMs += ms; gs.maxMs = Math.max(gs.maxMs, ms);
-  if (t0 - gs.statsT > 1000) { gs.statsT = t0; spool.send('gesture:stats', { frames: gs.frames, avgMs: +(gs.sumMs / gs.frames).toFixed(1), maxMs: +gs.maxMs.toFixed(1), loadMs: gs.loadMs, error: gs.error }); }
+  if (t0 - gs.statsT > 1000) { gs.statsT = t0; spool.send('gesture:stats', { frames: gs.frames, avgMs: +(gs.sumMs / gs.frames).toFixed(1), maxMs: +gs.maxMs.toFixed(1), loadMs: gs.loadMs, error: gs.error, seen: gs.seen }); }
   gs.timer = setTimeout(gTick, Math.max(0, 1000 / G.CFG.hz - ms));
 }
 function gRun(on) {
-  if (!on) { gs.running = false; clearTimeout(gs.timer); gs.state = G.initial(); holdRing(0); return; }
+  if (!on) { gs.running = false; clearTimeout(gs.timer); gs.state = G.initial(); holdRing(0); showHint(''); return; }
   if (gs.running) return;
-  gs.running = true; gs.state = G.initial();
-  gLoad().then(() => { if (gs.running && gs.rec) { clearTimeout(gs.timer); gs.timer = setTimeout(gTick, 0); } }); // a load that failed leaves gs.rec empty: gestures stay off
+  gs.running = true; gs.state = G.initial(); gs.frames = gs.sumMs = gs.maxMs = 0; gs.seen = {}; // numbers are per recording
+  gLoad().then(() => {
+    if (!gs.running) return;
+    if (gs.rec) {
+      const seeing = camKey === 'fake' || (v.readyState >= 2 && v.videoWidth > 0); // is there a camera picture to look at?
+      showToast(seeing ? 'Gestures on · ✋ pause · ✊ stop' : 'No camera picture · signs can’t see you', 4000); // the pill tells the user the feature is live, or why it cannot be
+      clearTimeout(gs.timer); gs.timer = setTimeout(gTick, 0); // keep looking either way: a camera that is slow to open still works once it is up
+    } else showToast('Gestures unavailable', 4000); // the load failed: nothing will happen, and the pill says so instead of leaving a silent camera
+  });
 }
 spool.on('gesture:load', gLoad);  // the recording is starting: read the model now, during the countdown, so the first second of capture is not spent on it
 spool.on('gesture:run', gRun);

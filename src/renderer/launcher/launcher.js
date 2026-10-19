@@ -9,7 +9,7 @@ const st = {
   camOn: false, camId: '', camName: '',
   micOn: true, micId: '', micName: '',
   shape: 'landscape', size: 260, filter: 'none', frame: 'ring',
-  quality: C.DEFAULT_QUALITY, sysAudio: false, hideMenu: false, cursorFx: false, clickFx: true, pg: true, countdown: true, gestures: false,
+  quality: C.DEFAULT_QUALITY, sysAudio: false, hideMenu: false, cursorFx: false, clickFx: true, pg: true, countdown: true, gestures: true,
   pub: true, defPub: true,     // the lock: this video is public (link) or private. Reset to the workspace default every time the bar opens
 };
 const devices = { cams: [], mics: [] };
@@ -108,7 +108,7 @@ function paintSettings(body) {
   t.appendChild(toggle('Cursor ring while I present (only I see it)', 'cursorFx'));
   t.appendChild(toggle('Record clicks for effects in the player', 'clickFx'));
   t.appendChild(toggle('Privacy Guard: cover secrets automatically', 'pg'));
-  const gt = toggle('Hand gestures (beta)', 'gestures'); gt.title = 'While recording with the camera on: hold ✋ for 1 s to pause or resume, 👍 for 1 s to stop'; t.appendChild(gt);
+  const gt = toggle('Hand signs (beta): hold ✋ to pause, ✊ to stop', 'gestures'); gt.title = 'Camera on, while recording: hold an open palm ✋ for 1 s to pause or resume. Tuck your thumb in and close your hand ✊ for 1.5 s to stop. On by default.'; t.appendChild(gt);
   pad.appendChild(t);
   const k = document.createElement('div'); k.className = 'keys';
   k.innerHTML = [['⌥⇧R', 'bar'], ['⌥⇧P', 'pause'], ['⌥⇧S', 'stop'], ['⌥⇧D', 'pen'], ['⌥⇧A', 'screenshot']].map(([a, b]) => `<span><kbd>${a}</kbd> ${b}</span>`).join('');

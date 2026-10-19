@@ -310,7 +310,7 @@ async function start(opts) {
   if (S) return false;
   const t0 = performance.now();
   opts = { ...opts, quality: opts.quality || C.DEFAULT_QUALITY };
-  log('record:start', { mode: opts.mode, area: opts.crop ? 'custom' : opts.windowSource ? 'window' : 'screen', quality: opts.quality, perms: permissions.report() });
+  log('record:start', { mode: opts.mode, area: opts.crop ? 'custom' : opts.windowSource ? 'window' : 'screen', quality: opts.quality, gestures: !!opts.gestures, perms: permissions.report() });
   const ok = await permissions.ensure({ cam: opts.mode !== 'screen' && !opts.fakeCam, screen: opts.mode !== 'cam', quiet: !!config.SELFTEST }); // B7: cam-only needs no screen permission
   const ensureMs = +(performance.now() - t0).toFixed(1);
   if (!ok) return false;
@@ -387,6 +387,7 @@ function reuseBubble() {
 // `keepBubble`: the start was cancelled and the launcher is coming back, so its camera preview stays up (with the style this session had).
 function end({ keepBubble = false } = {}) {
   const cursor = stopCursor(); shortcuts.unregisterSession();
+  if (S?.opts.gestures && S.gesture) log('gestures', S.gesture); // what the recognizer saw during this recording: with the sign counts, "nothing happened" can be told from "no hand seen"
   if (keepBubble) send('bubble', 'gesture:run', false); // the preview bubble outlives the session: it must not keep watching for signs
   for (const n of ['bubble', 'controls', 'countdown', 'outline', 'draw', 'ring', 'notes']) if (alive(W[n]) && !(keepBubble && n === 'bubble')) W[n].close();
   if (S) { clearTimeout(S.flushTimer); clearTimeout(S.bubbleTimer); if (keepBubble) Object.assign(PB, { size: S.bubble.size, shape: S.bubble.shape, filter: S.bubble.filter, frame: S.bubble.frame }); }
@@ -434,7 +435,7 @@ function gesture(label) {
   const cmd = GESTURES.COMMANDS[label];
   if (!cmd || !gesturesWanted()) return; // a stray message, or one that arrived as the recording ended
   log('gesture', label, S.paused ? '(paused)' : '');
-  send('bubble', 'gesture:toast', label === 'Thumb_Up' ? 'Stopping 👍' : S.paused ? 'Resumed ✋' : 'Paused ✋');
+  send('bubble', 'gesture:toast', cmd.control === 'stop' ? 'Stopping ✊' : S.paused ? 'Resumed ✋' : 'Paused ✋');
   control(cmd.control);
 }
 function gestureStats(st) { if (S) S.gesture = st; } // the last numbers the bubble reported (frames, ms per recognition, model load); the self-test prints them

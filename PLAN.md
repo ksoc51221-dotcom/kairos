@@ -656,6 +656,8 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 
 ### Phase 8 results · 2026-10-20
 
+> Changed the same day after the owner tried the installed build: stop is now a **closed fist** (not a thumbs up), the toggle is **on by default**, and the thresholds moved. The text below is the record of the first build and its measured run; the current behaviour and the demo note are in "Phase 8 follow-up" at the end of this section.
+
 **What was built (nothing beyond the scope above):**
 - `src/shared/gestures.js`: the pure `step()` function (hold 1 s, score ≥ 0.6, a gap over 200 ms restarts, 2 s cooldown) and the label → control map. 11 unit tests in `tests/unit/gestures.test.js`: hold, break (forgiven and not), low score, cooldown, switching sign, purity.
 - The bubble window (`bubble.js`) loads MediaPipe's Gesture Recognizer from `assets/models/` (`gesture_recognizer.task` 8.4 MB, `wasm/vision_wasm_internal.{js,wasm}` 13.8 MB; `vision_bundle.mjs` from the one new dependency `@mediapipe/tasks-vision` 1.1.1). No network at runtime. It reads the model while the countdown runs, then recognizes 8 times a second on a frame ≤ 320 px, only after capture has begun, only with the toggle on and the camera not switched off.
@@ -680,11 +682,53 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 
 **Not verified by me:** recognition of a real hand. The e2e camera is fake, so the 2 signs were injected as the command the bubble sends after a confirmed hold (`session.gesture`); the model runs on every frame but never sees a hand. The hold logic is unit-tested and the model is MediaPipe's own canned `Open_Palm` / `Thumb_Up`, but the first real-hand check is yours: see the demo note.
 
+*(The first build's demo note is replaced by the one in the follow-up below: it described the thumbs-up stop and the off-by-default toggle.)*
+
+### Phase 8 follow-up · 2026-10-20 (the owner tried the installed build)
+
+**What the owner reported:** (1) the palm does not pause and the signs do not work, (2) it feels buggy, (3) stop should be "thumb inside the palm, then close it", which is a closed fist. Number 3 is an owner override of the original "two canned signs" scope: the thumbs up is no longer a command.
+
+**What was wrong** (from `spool.log`, the saved prefs, and a 51 s recording of the owner's own hand: 410 recognitions at 8 a second):
+- **The feature was off in that test.** No `gestures` line and no inference line in the log, and the saved prefs had no `gestures` key. It was off by default and the only hint was a tooltip, so nothing on screen told the owner it was off. This alone explains "nothing happens".
+- **The palm bar was too high for this hand.** An open palm scored 0.53–0.78 (mean 0.66) against a bar of 0.6, so about a third of the palm frames did not count. For comparison a thumb up averaged 0.75 and a closed fist 0.82 (lowest 0.71).
+- **Flicker restarted the hold.** The old rule forgave a gap of 200 ms, which is one missed frame at 8 a second; real hands drop more than that, so the ring kept filling and resetting. That is the "bugging".
+- **A palm held after it fired would flip pause and resume every ~3 s.**
+- **No feedback.** Nothing showed that the feature was armed, nor what the camera saw.
+- **The camera sometimes fails to open in the bubble.** The installed first build logged `[object DOMException]` at 19:41:46Z, `[object OverconstrainedError]` at 21:09:31Z and `[object DOMException]` at 21:10:37Z (the old code printed the error without its name or message). This Mac lists two cameras: the FaceTime HD Camera that is saved in the prefs, and an iPhone ("ksoc Camera", Continuity Camera). OverconstrainedError means the saved camera was not in the system's list at that moment. The cause is not confirmed. With no picture the signs have nothing to look at, and the old pill would not have said so. Now the bubble tries three times, 700 ms apart, on NotReadable, Abort, Overconstrained and NotFound, logs the name and message of each failure, and the start pill says "No camera picture · signs can’t see you" when the video is not live. It does not fall back to another camera on purpose: the recording uses the saved one, and a different picture in the preview would hide the problem.
+
+**What changed:**
+
+| | First build | Now |
+|---|---|---|
+| Toggle | off by default | **on by default**; More → Recording settings → "Hand signs (beta)" turns it off |
+| Pause / resume | ✋ 1 s, score ≥ 0.6 | ✋ 1 s, score ≥ 0.5 |
+| Stop | 👍 1 s | **✊ closed fist, thumb tucked in, 1.5 s, score ≥ 0.6** (thumbs up does nothing now) |
+| Gap forgiven | 200 ms | 450 ms (3 missed frames in a row) |
+| After a command | 2 s cooldown | 1.5 s cooldown, **and** the sign must be let go for 0.8 s before it can fire again |
+| On screen | white ring, result toast | blue ring for pause, red ring for stop; a live "✋ Hold to pause" / "✊ Hold to stop" pill; "Gestures on · ✋ pause · ✊ stop" for 4 s when capture starts, or "Gestures unavailable" if the model did not load |
+| Log | one inference line | + `gestures` flag in `record:start`, and a `gestures` line per recording with how often the recognizer saw each sign or no hand |
+
+`src/shared/gestures.js` stays one pure `step()` function; each command now carries its own hold time and score bar.
+
+**Verified without a camera or a screen run:**
+- 13 unit tests (hold, per-sign score bars, flicker, switching signs, cooldown, the release lock, purity), plus a replay of the owner's own recording as a fixture, `tests/unit/fixtures/gesture-recording.json` (labels and scores only, no images). Full suite 187/187.
+- A headless probe of the launcher: toggle → saved prefs → `record:start` carries `gestures`.
+- The real bubble page replayed in real time on the owner's recorded frames: the commands fired at the expected moments and the ring, the hint and the pill showed up as designed. Run again after the camera change, with and without a picture: with it the pill says "Gestures on · ✋ pause · ✊ stop" and the palm fires; without it the pill says "No camera picture · signs can’t see you" and the recognizer keeps running.
+- A unit test of the camera retry (`tests/unit/bubble-script.test.js`): three tries on a missing or busy camera, always the camera that was asked for, the error named in the log, no retry on a permission refusal.
+
+**Not verified:** the installed app with a live camera and a real hand (that is the owner's next try), and frame pacing for this build (the recognition loop is unchanged, 8 a second on a ≤ 320 px frame; a new screen run was not done). Whether the retry cures the camera errors above: it cannot be tested without causing one, so the next `camera failed` line in `spool.log` is the evidence.
+
+**Tradeoffs:**
+- **A closed fist is the most common resting hand shape.** Resting a fist in view for 1.5 s while recording ends the recording. Mitigations: 1.5 s hold, score ≥ 0.6, and the ring turns red with "Hold to stop" from the first frame, so opening the hand cancels it. If it still happens: require an open hand just before the fist (an open → close motion), or only count a hand that is large enough in the frame.
+- The owner's own fist in the test recording lasted about 1.25 s, which is just short of 1.5 s. Hold it for two seconds.
+- A hand left up after a command does nothing more until it has been down for 0.8 s. That is on purpose.
+- On by default means the model runs on every recording with the camera on: about 16–20% of one core in the bubble process (nothing in the recorder). The earlier gestures-on run held 57.7 fps and a pts std of about 1.5 ms.
+
 **How to demo it (rehearse this once before the video):**
-1. More → Recording settings → switch on **Hand gestures (beta)**. Camera on (Screen + Cam, or Camera only). Good light, hand about an arm's length from the camera, palm facing it with the fingers spread.
-2. Press Record. After the countdown, hold **✋ an open palm** for 1 second. A white ring fills around the bubble, then "Paused ✋" appears. The recording is paused.
-3. Hold the palm again for 1 second to resume ("Resumed ✋"). Wait 2 seconds between signs (the cooldown), or the second one is ignored on purpose.
-4. Hold **👍 a thumb up** for 1 second: "Stopping 👍", and the normal pipeline and agents run.
-5. If the ring never starts: the hand is too small or too dark in the frame, or the camera is off. If it fills and resets: keep the hand still, the hold restarts after a 0.2 s loss. Say it out loud on the video: "it runs on the camera preview only while I record, nothing leaves the Mac."
+1. Camera on (Screen + Cam, or Camera only). Hand signs are on by default. Good light, hand about an arm's length from the camera, facing it.
+2. Press Record. When capture starts, a pill under the camera says "Gestures on · ✋ pause · ✊ stop" for 4 s. If it says "Gestures unavailable", the model did not load; if it says "No camera picture", the camera did not open. Either way look in `spool.log` (`camera failed` or `gesture recognizer failed`), then turn the camera off and on in the launcher or pick it again in the camera list.
+3. Hold **✋ an open palm**, fingers spread, for 1 second. A blue ring fills around the bubble, the pill says "✋ Hold to pause", then "Paused ✋". Lower the hand for a second, then hold the palm again to resume ("Resumed ✋"). A hand that just stays up does not toggle again.
+4. To end it, tuck the thumb into the palm and close the hand, **✊ a closed fist**, and hold it for 1.5 seconds (two is safer). The ring is red and the pill says "✊ Hold to stop", then "Stopping ✊", and the normal pipeline and agents run. Opening the hand before the ring is full cancels it.
+5. If the ring never starts: the hand is too small or too dark in the frame, or the camera is off. After a recording, `spool.log` has a `gestures` line saying how often the recognizer saw a palm, a fist, another sign, or no hand. Say it out loud on the video: "it runs on the camera preview only while I record, nothing leaves the Mac."
 6. Features are frozen after this phase. Next is Phase 6 (demo, business plan, repo).
 
