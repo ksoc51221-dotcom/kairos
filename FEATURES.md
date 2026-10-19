@@ -45,6 +45,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Record for agent: writes the Action Plan automatically and opens the AI Actions tab | 🟡 | Plan is written after processing, only once the Privacy Guard cleared the video |
 | Bubble moves, resizes and shape changes ease in the published video (0.2 s glide; style/size changes cross-fade) | 🟡 | Unit-tested incl. a real ffmpeg run; cross-fade, not a true size morph; not watched in a real recording |
 | Default bubble: landscape rounded rectangle, top-left, ~18% of a 1440 pt screen | ✅ | New installs only |
+| Hermes logo (pinwheel on a white tile) as app and Dock icon; fades in and out for 2.2 s each time the app is opened | 🟡 | Splash never takes focus or clicks and is excluded from recordings; shown on a user launch and when the app is opened again, not at login. Not yet seen in the running app |
 | Hide the dock while recording | ❌ | Only "hide the menu bar" exists; the dock is a system setting |
 
 ## Library, sharing, privacy

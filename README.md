@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon.png" width="140" alt="Hermes logo"></p>
+
 # Hermes
 
 **Record your screen once. Hand the recording to an AI agent. Keep your secrets off the internet.**

@@ -12,7 +12,7 @@ const root = path.join(__dirname, '..');
 // Regular expressions on the path inside the app folder (starts with /). Anything that matches is left out of the package.
 const IGNORE = [
   /^\/(dist|design|tests|scripts|\.git|\.claude|library)(\/|$)/,                 // build output, the Loom reference screenshots, tests, build scripts
-  /^\/(FEATURES|PLAN|REVIEW|PHASE4-CHECK|README)\.md$/, /^\/package-lock\.json$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
+  /^\/(FEATURES|PLAN|REVIEW|PHASE4-CHECK|README)\.md$/, /^\/package-lock\.json$/, /^\/assets\/hermes-source\.png$/, /^\/PITCH\.md$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
   /^\/node_modules\/onnxruntime-node\/bin\/napi-v\d+\/(linux|win32|darwin\/x64)(\/|$)/, // speech engine: darwin/arm64 only (linux and win32 are ~200 MB)
   /^\/node_modules\/onnxruntime-web(\/|$)/,                                      // browser build of the same engine; the Node build above is what runs
   /^\/node_modules\/uiohook-napi\/prebuilds\/(linux|win32|darwin-x64)[^/]*(\/|$)/,        // mouse hook: this Mac only

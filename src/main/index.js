@@ -19,7 +19,7 @@ const { log } = logger;
 
 app.commandLine.appendSwitch('enable-features', 'MacLoopbackAudioForScreenShare,MacSckSystemAudioLoopbackOverride');
 if (!config.SELFTEST && !app.requestSingleInstanceLock()) app.exit(0); // one Hermes at a time (they would fight over the port)
-app.on('second-instance', () => win.showLauncher());
+app.on('second-instance', () => { win.showSplash(); win.showLauncher(); }); // opening the app again from Finder or Spotlight
 app.on('before-quit', () => { win.setQuitting(); store.flush(); });
 process.on('uncaughtException', (e) => log('uncaughtException', e));
 process.on('unhandledRejection', (e) => log('unhandledRejection', e));
@@ -65,7 +65,7 @@ app.whenReady().then(async () => {
   if (app.dock && fs.existsSync(ico)) { const img = nativeImage.createFromPath(ico); app.dock.setIcon(img); win.setDockIcon(img); }
   if (config.SELFTEST) { setTimeout(() => require('./selftest').run(config.SELFTEST), 1500); return; }
   // B28: started by the system at login, Hermes stays quiet in the menu bar; opened by the user, it shows the launcher
-  if (!app.getLoginItemSettings().wasOpenedAtLogin) win.showLauncher();
+  if (!app.getLoginItemSettings().wasOpenedAtLogin) { win.showSplash(); win.showLauncher(); }
 });
 app.on('window-all-closed', (e) => e.preventDefault());
 app.on('activate', () => win.showLauncher()); // clicking the Dock icon always brings the launcher back

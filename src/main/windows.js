@@ -100,6 +100,18 @@ function createRecorder() {
   return W.recorder;
 }
 
+// ---- splash ----
+// The logo fades in and out for about 2 s when the user opens Hermes. It never takes focus or clicks (B28), and it is content-protected so it can
+// never end up in a recording. The page animates itself; this only places it, and closes it when the animation is over.
+const SPLASH = 380, SPLASH_MS = 2400;
+function showSplash() {
+  if (alive(W.splash)) return;
+  const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const w = load('splash', 'splash/index.html', { width: SPLASH, height: SPLASH, x: Math.round(wa.x + (wa.width - SPLASH) / 2), y: Math.round(wa.y + (wa.height - SPLASH) / 2), hasShadow: false, focusable: false });
+  floatTop(w); w.setIgnoreMouseEvents(true); w.setContentProtection(true); showWhenReady(w);
+  setTimeout(() => { if (alive(w)) w.close(); }, SPLASH_MS);
+}
+
 // ---- overlays shown while recording ----
 function createBubble(bounds) {
   const w = load('bubble', 'bubble/index.html', { ...bounds, hasShadow: false, alwaysOnTop: true, focusable: false });
@@ -163,5 +175,5 @@ function createAnnotator(d) {
 
 module.exports = {
   W, alive, send, load, baseWin, floatTop, easeBounds, holdOverlay, releaseOverlay, setDockIcon, setQuitting, displayFor,
-  showLauncher, hideLauncher, toggleLauncher, sizeLauncher, createRecorder, createBubble, createControls, createCountdown, prepareCountdown, beginCountdown, createOutline, createDraw, createRing, createNotes, createArea, createAnnotator,
+  showLauncher, showSplash, hideLauncher, toggleLauncher, sizeLauncher, createRecorder, createBubble, createControls, createCountdown, prepareCountdown, beginCountdown, createOutline, createDraw, createRing, createNotes, createArea, createAnnotator,
 };
