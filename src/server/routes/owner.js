@@ -6,6 +6,7 @@ const store = require('../../store');
 const { requireOwner: own, hashPw } = require('../auth');
 const { rerunAI } = require('../../agents/orchestrator');
 const { viewModel } = require('../viewmodel');
+const publisher = require('../../publish/publisher');
 
 function mount(app) {
   app.put('/api/branding/logo', own, express.raw({ type: '*/*', limit: '4mb' }), (q, res) => {
@@ -32,7 +33,9 @@ function mount(app) {
       if (p.mode === 'password' && !p.passwordHash) return res.status(400).json({ error: 'Set a password first' });
       patch.privacy = p; store.log(v.id, `Privacy changed to ${p.mode}`, 'owner');
     }
-    res.json(viewModel(store.update(v.id, patch), true));
+    const out = store.update(v.id, patch);
+    if (b.privacy) publisher.enforce(v.id).catch(() => {}); // a public copy may never be looser than the local setting
+    res.json(viewModel(out, true));
   });
   app.delete('/api/videos/:id', own, (q, res) => { store.remove(q.params.id); res.sendStatus(204); });
   app.post('/api/videos/:id/rerun', own, (q, res) => {

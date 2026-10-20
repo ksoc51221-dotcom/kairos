@@ -1,0 +1,14 @@
+# Kairos public links: the Cloudflare Worker. Full guide: cloud/README.md
+name = "kairos-links"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+[vars]
+# The READ-ONLY Backblaze key's ID (not its secret) and the bucket name. Replace both before you deploy.
+B2_KEY_ID = "PASTE-THE-READ-ONLY-KEY-ID"
+B2_BUCKET = "PASTE-YOUR-BUCKET-NAME"
+
+# Secrets (never written in this file; set them with the commands in README.md):
+#   B2_APP_KEY  the read-only key's secret
+#   COOKIE_KEY  a long random string that signs the password cookies

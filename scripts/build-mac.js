@@ -11,7 +11,7 @@ const { spawnSync } = require('child_process');
 const root = path.join(__dirname, '..');
 // Regular expressions on the path inside the app folder (starts with /). Anything that matches is left out of the package.
 const IGNORE = [
-  /^\/(dist|design|tests|scripts|\.git|\.claude|library)(\/|$)/,                 // build output, the Loom reference screenshots, tests, build scripts
+  /^\/(dist|design|tests|scripts|cloud|\.git|\.claude|library)(\/|$)/,                 // build output, the Loom reference screenshots, tests, build scripts
   /^\/(FEATURES|PLAN|REVIEW|PHASE4-CHECK|README)\.md$/, /^\/package-lock\.json$/, /^\/assets\/kairos-source\.png$/, /^\/PITCH\.md$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
   /^\/node_modules\/onnxruntime-node\/bin\/napi-v\d+\/(linux|win32|darwin\/x64)(\/|$)/, // speech engine: darwin/arm64 only (linux and win32 are ~200 MB)
   /^\/node_modules\/onnxruntime-web(\/|$)/,                                      // browser build of the same engine; the Node build above is what runs

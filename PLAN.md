@@ -732,3 +732,23 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 5. If the ring never starts: the hand is too small or too dark in the frame, or the camera is off. After a recording, `spool.log` has a `gestures` line saying how often the recognizer saw a palm, a fist, another sign, or no hand. Say it out loud on the video: "it runs on the camera preview only while I record, nothing leaves the Mac."
 6. Features are frozen after this phase. Next is Phase 6 (demo, business plan, repo).
 
+---
+
+## Phase 8: Public links · 2026-10-20
+
+**Why.** `http://localhost:4747/v/<id>` only opens on the owner's Mac. Judges, businesses and friends need a link that works on another network, with the Mac asleep.
+
+**Decided with the owner (2026-10-20):** link works always; no fees and no card; some viewers need a password; only the video copy and its title leave the Mac, only on click; free `workers.dev` address; copies deleted after 30 days. GitHub (a friend's suggestion) was rejected: free Pages needs a public repo, has no passwords, cannot delete history, caps files at 100 MB.
+
+**Design.** Publish click → ffmpeg share copy from the **guarded** `video.mp4`, never `original.mp4` (≤1080p, 30 fps, ~5 Mbps, +faststart, ~37 MB/min) → upload to a **private** Backblaze B2 bucket under `p/<id>/` (`video.mp4`, `thumb.jpg`, then `meta.json` last = "go live") → a free Cloudflare Worker (`cloud/worker.js`) serves page, password gate, expiry and Range streaming with a read-only, bucket-limited key. `id` = 16 random bytes (22 chars), new on every publish. No new dependencies. Code: `src/publish/{b2,publisher}.js`, `src/pipeline/share-copy.js`, `src/server/routes/publish.js`, `cloud/`. The pipeline and the recorder never import the publisher (a unit test enforces it), so Stop makes no network call.
+
+**Privacy contract (all unit-tested).** Never published: Private, Ask-for-email, not Guard-cleared, no Guard record (older recordings, or Guard off), failed, not a video, expired local link. A video that needs a password here is published only with a password. Public expiry = min(30 days, local expiry); downloads follow the local setting. Tightening the local privacy, expiry or downloads, changing the workspace default, or deleting the video removes the public copy (persisted retry queue if offline). A republish keeps the old link live until the new one is ready.
+
+**Verified.** 153 new unit tests (340 in total, all green): fake Backblaze v4 (reproduces its whole-file-range 200 quirk, part sizes, SHA-1, failures), the real Worker code (pages, escaping, password flow incl. Node PBKDF2 ≡ WebCrypto, cookie-gated media, Range, caps, tokens), the publisher (refusals, order, cleanup, enforcement, recovery, expiry), HTTP routes (owner-only, CSRF, masking), and `scripts/public-check.js`. Driven in a real browser through `scripts/dev-public.js` (fake Backblaze + real Worker): publish from the Share dialog, play and seek on the public page, republish with an accented password (the old link returned 404 afterwards), private video refused, Settings Test with seven green ticks.
+
+**Not verified.** Real Backblaze and Cloudflare (first contact is the owner's **Save and test**; expect one fix round), a phone on mobile data, Safari/iOS playback, and the installed app. Backblaze's free daily transaction allowance (2,500) is the limit most likely to be hit; the $0 caps turn it into a "temporarily unavailable" page, not a charge.
+
+**Tradeoffs.** Backblaze holds an unencrypted copy for up to 30 days. A password has no lockout (each wrong try costs 0.5 s). "Downloads off" only hides the button. Old recordings without a Guard scan cannot be published until a re-scan exists (follow-up: "Re-run AI crew" does not re-scan videos already marked cleared).
+
+**Follow-ups.** Re-scan for old recordings; per-recipient links with a "someone opened it" ping; a custom domain (free student `.me`); a recipient-visible expiry reminder.
+

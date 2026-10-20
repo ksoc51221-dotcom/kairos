@@ -6,8 +6,9 @@ const security = require('./security');
 const extras = require('./extras');
 const { pub } = require('./util');
 const { processVideo } = require('../agents/orchestrator');
+const publisher = require('../publish/publisher');
 
-const routes = ['viewer', 'library', 'media', 'owner', 'settings', 'editor', 'actions'].map((n) => require(`./routes/${n}`));
+const routes = ['viewer', 'library', 'media', 'owner', 'settings', 'editor', 'actions', 'publish'].map((n) => require(`./routes/${n}`));
 
 // port 0 picks a free port (tests). `ready` resolves once the server is listening, with the port it got.
 function startServer({ port, host, models, openLauncher } = {}) {
@@ -34,6 +35,7 @@ function startServer({ port, host, models, openLauncher } = {}) {
   }
   listen();
   extras.startMaintenance();
+  publisher.start(); // expiry sweep + retry of copies that could not be removed; does nothing until public links are set up
   return { app, ready, get server() { return server; }, close: () => new Promise((r) => { if (!server) return r(); server.closeAllConnections?.(); server.close(() => r()); }) };
 }
 

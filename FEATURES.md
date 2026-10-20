@@ -60,6 +60,10 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Captions + translation to 50+ languages (local model) | ✅ |
 | Analytics: who watched, engagement heatmap, CSV export, admin insights | ✅ |
 | Password, ask-for-email, private, link expiry, download control, default privacy, activity log | ✅ |
+| **Public links** (Phase 8): publish a Guard-cleared copy to your own private Backblaze B2 bucket, served by a free Cloudflare Worker at a random, unguessable link that opens on any network; works with the Mac asleep | ✅ unit-tested against a fake Backblaze and the real Worker code, and driven in a real browser; ⚠️ not yet run against real Backblaze/Cloudflare |
+| Public link privacy rules: never for Private / Ask-for-email / unscanned / failed videos; a password video only with a password; public copy never looser than the local setting (expiry, downloads); tightening privacy or deleting the video removes the copy; 30-day lifetime enforced by the Worker, by Kairos and by a bucket rule | ✅ |
+| Public link password: derived in the viewer's browser (PBKDF2-SHA256, 200k rounds), the Worker never sees the password; cookie-gated video; no lockout (documented) | ✅ |
+| Share dialog "Public link" block, Settings > Public links with a seven-step Test, storage meter and "Remove all public copies" | ✅ |
 | Branding: logo, colour, hide branding | ✅ |
 | Retention policy, disable downloads, data export/delete | ✅ |
 | Share over LAN (owner/viewer separation) | ✅ |

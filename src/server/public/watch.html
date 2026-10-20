@@ -433,7 +433,7 @@ async function previewSend(action, target) {
 // ---- share (reference: share-modal.webp): people, general access, then Copy link · Share at time · Set password · Share ----
 const ACCESS = { link: ['Public', 'Anyone can find and view', 'globe'], email: ['Ask for email', 'Viewers enter their email to watch', 'mail'], password: ['Password', 'Viewers need the password', 'lock'], private: ['Only me', 'Nobody else can open it', 'lock'] };
 async function openShare() {
-  const [spaces, s] = await Promise.all([api('/api/spaces'), api('/api/settings')]);
+  const [spaces, s, pub0] = await Promise.all([api('/api/spaces'), api('/api/settings'), api(`/api/videos/${id}/publish`).catch(() => vm.publish || null)]);
   const base = s.lan && s.lanIp ? `http://${s.lanIp}:${s.port}` : location.origin, p0 = vm.privacy || {}, t0 = Math.floor(now());
   const st = { mode: p0.mode || 'link', pw: '', people: [], spaces: new Set(vm.spaces || []), startedSpaces: new Set(vm.spaces || []), withTime: false, panel: null };
   const link = () => `${base}/v/${id}${st.withTime && t0 ? `?t=${t0}` : ''}`;
@@ -447,12 +447,13 @@ async function openShare() {
     ${spaces.filter((sp) => !st.spaces.has(sp.id)).length ? `<div class="sug">${spaces.filter((sp) => !st.spaces.has(sp.id)).map((sp) => `<button data-as="${sp.id}">${I('plus')}${esc(sp.name)}</button>`).join('')}</div>` : ''}
     <h5>General access</h5><div class="acc"><span class="tile ${lockd ? 'lockd' : ''}">${I(a[2])}</span><div><b id="m-acc">${a[0]}${I('down')}</b><small>${a[1]}</small></div></div>
     ${st.mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="m-pw" placeholder="${p0.hasPassword ? 'Leave empty to keep the current password' : 'Choose a password'}" value="${esc(st.pw)}"></div>` : ''}
+    <div id="m-pub"></div>
     ${st.panel === 'embed' ? `<div class="more"><b style="font-size:14px">Embed in Notion, Zendesk, Intercom, Confluence or any site</b><code class="b" style="margin-top:10px">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code><button class="btn sm" id="m-ecopy" style="margin-top:10px">Copy embed code</button></div>` : ''}
     ${st.panel === 'social' ? `<div class="more"><div class="rowf" style="flex-wrap:wrap"><a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/tweet?url=${encodeURIComponent(link())}&text=${encodeURIComponent(vm.title)}">Post on X</a><a class="btn" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link())}">LinkedIn</a><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(vm.title + ' ' + link())}">WhatsApp</a></div>${s.lan ? '' : '<p class="note" style="margin:10px 0 0;color:var(--mute);font-size:13px">This link opens on this computer only. Turn on “People on my network” in Settings to share on your Wi-Fi.</p>'}</div>` : ''}
-    <div class="ft"><button class="t" id="m-copy">${I('link')}Copy link</button><label class="t"><input type="checkbox" id="m-time" ${st.withTime ? 'checked' : ''}>Share video at ${fmt(t0)}</label><button class="t" id="m-lock">${I('lock')}Set password</button><button class="btn go ${dirty() ? 'pri' : ''}" id="m-go" ${dirty() ? '' : 'disabled'}>Share</button></div></div>`;
-    wire();
+    <div class="ft"><button class="t" id="m-copy" title="This link opens on this Mac only (or on your Wi-Fi if you turned that on). For a link anyone can open, use Public link above.">${I('link')}Copy local link (this Mac only)</button><label class="t"><input type="checkbox" id="m-time" ${st.withTime ? 'checked' : ''}>Share video at ${fmt(t0)}</label><button class="t" id="m-lock">${I('lock')}Set password</button><button class="btn go ${dirty() ? 'pri' : ''}" id="m-go" ${dirty() ? '' : 'disabled'}>Share</button></div></div>`;
+    wire(); drawPub();
   };
-  const close = () => { m.hidden = true; document.removeEventListener('keydown', trap, true); opener?.focus(); };
+  const close = () => { clearInterval(pubTimer); m.hidden = true; document.removeEventListener('keydown', trap, true); opener?.focus(); };
   const opener = document.activeElement;
   const trap = (e) => { // U16: Esc closes, Tab stays inside the dialog
     if (e.key === 'Escape') { e.preventDefault(); close(); return; }
@@ -467,6 +468,68 @@ async function openShare() {
     if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t)) { if (!st.people.includes(t)) st.people.push(t); return true; }
     toast('Type an email address or the name of a Space'); return false;
   };
+  // ---- public link (Backblaze + Cloudflare): a separate block with its own state, so the local sharing controls above keep working untouched ----
+  let pub = pub0, pubTimer = null;
+  const pu = { mode: null, pw: '', ok: false, form: false, busy: false, err: '' };
+  const PMODES = { link: 'Anyone with the link', password: 'Password' };
+  const pday = (t) => new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const pmb = (b) => `${(b / 1048576).toFixed(b > 1e8 ? 0 : 1)} MB`;
+  const pollPub = () => {
+    clearInterval(pubTimer); if (pub?.state !== 'working') return;
+    pubTimer = setInterval(async () => { try { pub = await api(`/api/videos/${id}/publish`); vm.publish = pub; if (pub.state !== 'working') clearInterval(pubTimer); drawPub(); } catch { /* keep polling */ } }, 1200);
+  };
+  const pubForm = (P) => {
+    const modes = P.can.modes, mode = (pu.mode = modes.includes(pu.mode) ? pu.mode : modes.includes(P.mode) ? P.mode : modes[0]);
+    return `<div class="rowf" style="flex-wrap:wrap;gap:8px">${modes.map((k) => `<button class="btn sm ${mode === k ? 'pri' : ''}" data-pm="${k}">${PMODES[k]}</button>`).join('')}</div>
+      ${mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="pub-pw" autocomplete="new-password" placeholder="Choose a password (8 or more characters). You must tell people yourself." value="${esc(pu.pw)}"></div>` : ''}
+      ${(P.can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:#b45309">${esc(w)}</p>`).join('')}
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;line-height:1.45"><input type="checkbox" id="pub-ok" ${pu.ok ? 'checked' : ''} style="margin-top:3px"><span>I have watched this video on this Mac. I understand Kairos will upload a copy of <b>${esc(vm.title)}</b> to Backblaze and Cloudflare servers for up to 30 days. The Privacy Guard blurs what it recognises, but it cannot catch everything.</span></label>
+      ${pu.err ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#d33">${esc(pu.err)}</p>` : ''}
+      <div class="rowf" style="margin-top:12px;gap:8px"><button class="btn pri" id="pub-go" ${pu.ok && !pu.busy && (mode !== 'password' || pu.pw.length >= 8) ? '' : 'disabled'}>${pu.busy ? 'Starting…' : P.state === 'live' ? 'Republish' : 'Publish'}</button>${pu.form && P.state === 'live' ? '<button class="btn sm" id="pub-cancel-form">Never mind</button>' : ''}</div>`;
+  };
+  function drawPub() {
+    const el = m.querySelector('#m-pub'); if (!el) return;
+    const P = pub; if (!P) { el.innerHTML = ''; return; }
+    let h = '';
+    if (!P.configured) h = `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">Not set up yet. <a href="/settings">Set up public links in Settings</a> (free, no card, about 15 minutes).</p>`;
+    else if (P.state === 'working') {
+      const pct = Math.round((P.progress || 0) * 100);
+      h = `<div style="font-size:14px">${P.stage === 'uploading' ? 'Uploading' : 'Making a small copy'}… ${pct}%</div><progress max="1" value="${P.progress || 0}" style="width:100%;margin:8px 0"></progress>
+        ${P.previous ? `<p class="note" style="margin:0 0 8px;font-size:13px;color:var(--mute)">The earlier link keeps working until the new one is ready.</p>` : ''}<button class="btn sm" id="pub-cancel">Cancel</button>`;
+    } else {
+      if (P.state === 'live') {
+        h = `<div class="rowf" style="gap:8px"><input class="field" readonly id="pub-url" value="${esc(P.url)}" style="flex:1;min-width:0"><button class="btn sm" id="pub-copy">Copy</button><a class="btn sm" target="_blank" rel="noopener" href="${esc(P.url)}">Open</a></div>
+          <p class="note" style="margin:8px 0 0;font-size:13px;color:var(--mute)">${esc(PMODES[P.mode] || P.mode)} · available until ${pday(P.expiresAt)} · ${pmb(P.bytes || 0)}${P.allowDownload ? '' : ' · downloads off'}</p>
+          ${P.stale ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#b45309"><b>Out of date:</b> ${esc(P.staleWhy)}. The public link still shows the old version. Republish to update it.</p>` : ''}
+          ${P.notice ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#b45309">${esc(P.notice)}</p>` : ''}
+          ${pu.form ? `<div style="margin-top:12px">${P.can.ok ? pubForm(P) : `<p class="note" style="font-size:13px">${esc(P.can.message)}</p>`}</div>` : `<div class="rowf" style="margin-top:12px;gap:8px"><button class="btn sm" id="pub-re">Republish…</button><button class="btn sm danger" id="pub-un">Unpublish</button></div>`}`;
+      } else {
+        const why = P.state === 'failed' ? `Publishing failed: ${P.error || 'unknown problem'}` : P.state === 'removed' ? P.reason : P.state === 'expired' ? 'The earlier public link expired and its copy was deleted.' : '';
+        h = `${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? '#d33' : 'var(--mute)'}">${esc(why)}</p>` : ''}${P.can.ok ? pubForm(P) : `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">${esc(P.can.message)}</p>`}`;
+      }
+    }
+    el.innerHTML = `<h5>Public link <small style="font-weight:400;color:var(--mute)">opens on any phone or computer, even when this Mac is off</small></h5><div class="more" style="margin-top:6px">${h}</div>`;
+    const q = (x) => el.querySelector(x);
+    el.querySelectorAll('[data-pm]').forEach((b) => (b.onclick = () => { pu.mode = b.dataset.pm; drawPub(); }));
+    const pw = q('#pub-pw'); if (pw) pw.oninput = () => { pu.pw = pw.value; const g = q('#pub-go'); if (g) g.disabled = !(pu.ok && !pu.busy && pu.pw.length >= 8); };
+    const ok = q('#pub-ok'); if (ok) ok.onchange = () => { pu.ok = ok.checked; const g = q('#pub-go'); if (g) g.disabled = !(pu.ok && !pu.busy && (pu.mode !== 'password' || pu.pw.length >= 8)); };
+    if (q('#pub-copy')) q('#pub-copy').onclick = async (e) => { await navigator.clipboard.writeText(P.url); copied(e.currentTarget); };
+    if (q('#pub-re')) q('#pub-re').onclick = () => { pu.form = true; pu.ok = false; pu.err = ''; drawPub(); };
+    if (q('#pub-cancel-form')) q('#pub-cancel-form').onclick = () => { pu.form = false; drawPub(); };
+    if (q('#pub-un')) q('#pub-un').onclick = async () => {
+      if (!confirm('Delete the public copy? The link stops working for everyone.')) return;
+      try { pub = await api(`/api/videos/${id}/publish`, { method: 'DELETE' }); vm.publish = pub; toast(pub.removal === 'queued' ? 'Link is off. The copy will be deleted as soon as the internet is back.' : 'Public link removed'); } catch (e) { toast(e.message); }
+      pu.form = false; drawPub();
+    };
+    if (q('#pub-cancel')) q('#pub-cancel').onclick = async () => { try { pub = await api(`/api/videos/${id}/publish`, { method: 'DELETE' }); vm.publish = pub; } catch (e) { toast(e.message); } clearInterval(pubTimer); drawPub(); };
+    if (q('#pub-go')) q('#pub-go').onclick = async () => {
+      pu.busy = true; pu.err = ''; drawPub();
+      try { pub = await api(`/api/videos/${id}/publish`, { body: { mode: pu.mode, password: pu.mode === 'password' ? pu.pw : undefined, confirm: true } }); vm.publish = pub; pu.form = false; pu.pw = ''; pu.ok = false; pollPub(); }
+      catch (e) { pu.err = e.message; }
+      pu.busy = false; drawPub();
+    };
+  }
+  pollPub();
   function wire() {
     m.querySelector('#m-x').onclick = close; m.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { st.panel = st.panel === b.dataset.p ? null : b.dataset.p; draw(); }));
     const to = m.querySelector('#m-to'); to.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ',') && to.value.trim()) { e.preventDefault(); if (addPerson(to.value)) { draw(); m.querySelector('#m-to').focus(); } } }; to.onblur = () => { if (to.value.trim() && addPerson(to.value)) draw(); };

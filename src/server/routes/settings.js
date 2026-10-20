@@ -3,6 +3,7 @@ const store = require('../../store');
 const { requireOwner: own } = require('../auth');
 const extras = require('../extras');
 const { lanIp } = require('../util');
+const publisher = require('../../publish/publisher');
 
 // B17: what the AI tools need and whether it is on disk. `dataDir` is set by the app (ctx.models); tests leave it unset.
 let dl = { state: 'idle', percent: 0, error: '' };
@@ -16,11 +17,14 @@ function mount(app, ctx) {
     const cur = settings(), b = q.body, patch = {};
     for (const k of ['ownerName', 'defaultPrivacy', 'linkExpiryDays', 'disableDownloads', 'retentionDays', 'privacyGuard', 'speechGuard', 'keepOriginal', 'model', 'follows']) if (k in b) patch[k] = b[k];
     if ('defaultPrivacy' in b && !['link', 'email', 'private'].includes(b.defaultPrivacy)) return res.status(400).json({ error: 'The default can be link, email or private. A password has to be set per video.' }); // B6
+    const wu = b.integrations?.publish?.workerUrl;
+    if (typeof wu === 'string' && wu.trim()) { try { publisher.parseWorkerUrl(wu); } catch (e) { return res.status(400).json({ error: e.message }); } }
     if (b.brand) patch.brand = { ...cur.brand, ...b.brand };
     if (b.integrations) { const m = { ...cur.integrations }; for (const [k, v] of Object.entries(b.integrations)) m[k] = { ...(m[k] || {}), ...Object.fromEntries(Object.entries(v).filter(([, x]) => !/^••••/.test(String(x)))) }; patch.integrations = m; }
     const lanChanged = 'lan' in b && !!b.lan !== !!cur.lan; if ('lan' in b) patch.lan = !!b.lan;
     store.setSettings(patch); if (patch.model) require('../../agents/llm').setModel(patch.model);
     res.json({ ok: true, lanIp: lanIp() });
+    if (['defaultPrivacy', 'linkExpiryDays', 'disableDownloads'].some((k) => k in b)) publisher.enforceAll().catch(() => {});
     if (lanChanged) ctx.relisten();
   });
 

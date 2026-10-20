@@ -128,7 +128,13 @@ function update(id, patch) {
   if (v) events.emit('video', id);
   return v;
 }
-function remove(id) { mutate((d) => { delete d.videos[id]; }); fs.rmSync(videoDir(id), { recursive: true, force: true }); events.emit('video', id); }
+function remove(id) {
+  const rec = db && db.videos[id];
+  mutate((d) => { delete d.videos[id]; }); fs.rmSync(videoDir(id), { recursive: true, force: true });
+  // Every way a video can disappear (Delete, retention sweep, delete-all, a cancelled recording) lands here, so this is where a public copy is told to go too.
+  if (rec) { try { events.emit('removed', rec); } catch (e) { say('store: a removed-handler failed:', e.message); } }
+  events.emit('video', id);
+}
 
 const DEFAULT_SETTINGS = {
   privacyGuard: true, ownerName: 'You', defaultPrivacy: 'link', linkExpiryDays: 0, lan: false, disableDownloads: false, retentionDays: 0,

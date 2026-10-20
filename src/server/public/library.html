@@ -212,17 +212,41 @@ async function saveSettings(patchFn, doneMsg = 'Saved ✓') {
   try { await J('/api/settings', 'PUT', patchFn()); $('saved').textContent = doneMsg; settings = await J('/api/settings'); renderNav(); } catch (e) { $('saved').textContent = e.message; }
 }
 async function renderSettings(m) {
-  const s = (settings = await J('/api/settings'));
+  const s = (settings = await J('/api/settings')), P_ = s.integrations?.publish || {};
   m.innerHTML = head('Settings', 'Personal settings') + `<div class="sp-wrap">
     <div class="sec"><h3>Name and photo</h3><p class="d">This is the name on your videos, comments and share pages.</p><div class="ident"><span class="avatar lg">${esc(UI.initials(s.ownerName))}</span><div class="nm"><small>Full name</small><input class="field" id="s-name" value="${esc(s.ownerName)}" style="max-width:340px"></div></div></div>
     <div class="sec"><h3>Sharing</h3><p class="d">Kairos runs on your computer. Links only work for people who can reach it.</p>
       ${frow('People on my network', `<input type="checkbox" class="sw" id="s-lan" ${s.lan ? 'checked' : ''}>`, s.lan ? `Anyone on your Wi-Fi can open links at <b>http://${esc(s.lanIp || '?')}:${s.port}</b>. Only videos you shared are visible to them; the library and settings stay owner-only.` : 'Off: only this computer can open links. Turn on to share with colleagues on the same Wi-Fi.')}
       ${frow('Default who can watch', `<select id="s-dp">${[['link', 'Anyone with the link'], ['email', 'Ask for email'], ['private', 'Only me']].map(([k, l]) => `<option value="${k}" ${s.defaultPrivacy === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`)}
       ${frow('Links expire after', `<input id="s-exp" type="number" min="0" value="${s.linkExpiryDays}">`, 'Days. 0 means never.')}</div>
-    <div class="sec"><h3>Your data</h3><p class="d">${(s.storage / 1048576).toFixed(1)} MB stored in the app's data folder on this computer. Nothing is uploaded anywhere.</p>
+    <div class="sec" id="pubsec"><h3>Public links</h3><p class="d">A normal Kairos link only opens on this Mac. A public link opens on any phone or computer, even when this Mac is asleep. Only the video copy and its title leave your Mac, only when you click Publish on a video, and each copy is deleted after 30 days. It uses free Backblaze and Cloudflare accounts, no card needed.</p>
+      <div class="fr note"><label></label><small id="p-meter">Checking…</small></div>
+      ${frow('Worker address', `<input id="p-url" placeholder="https://kairos-links.yourname.workers.dev" value="${esc(P_.workerUrl || '')}">`)}
+      ${frow('Bucket name', `<input id="p-bkt" value="${esc(P_.bucket || '')}">`)}
+      ${frow('Write key ID', `<input id="p-kid" value="${esc(P_.accessId || '')}">`)}
+      ${frow('Write key', `<input id="p-key" type="password" value="${esc(P_.appKey || '')}">`, 'The Backblaze key that can write to the bucket. It stays on this Mac. The Worker gets a different, read-only key.')}
+      <div class="fr"><label></label><div><button class="btn pri" id="p-test">Save and test</button> <button class="btn danger" id="p-rm">Remove all public copies…</button><div id="p-out" style="margin-top:12px"></div>
+        <details style="margin-top:10px"><summary class="chip" style="cursor:pointer">How to set this up</summary><ol style="line-height:1.7;font-size:14px;padding-left:20px"><li>Backblaze (backblaze.com): create a free account, a <b>private</b> bucket, and set Caps &amp; Alerts to $0 so nothing can ever charge you.</li><li>Add a lifecycle rule for the folder <code>p/</code>: hide after 31 days, delete 1 day later.</li><li>Create two keys limited to that bucket: <b>kairos-write</b> (Read and Write, goes in the boxes above) and <b>kairos-read</b> (Read Only, for the Worker).</li><li>Cloudflare (cloudflare.com): free account, then deploy the <code>cloud</code> folder with <code>npx wrangler deploy</code>. The full click-by-click guide is in <code>cloud/README.md</code>.</li><li>Paste the Worker address above and press Save and test. Then open a link on your phone with Wi-Fi off.</li></ol></details></div></div></div>
+    <div class="sec"><h3>Your data</h3><p class="d">${(s.storage / 1048576).toFixed(1)} MB stored in the app's data folder on this computer. Nothing is uploaded unless you publish a public link.</p>
       <a class="btn" href="/api/export.json">Export library (JSON)</a> <button class="btn danger" id="wipe">Delete everything…</button></div>
     <div class="savebar"><span id="saved" class="chip"></span><button class="btn pri" id="save">Save</button></div></div>`;
   $('save').onclick = () => saveSettings(() => ({ ownerName: $('s-name').value, lan: $('s-lan').checked, defaultPrivacy: $('s-dp').value, linkExpiryDays: +$('s-exp').value || 0 }));
+  const meter = async () => { try { const t = await J('/api/publish/status'); $('p-meter').textContent = !t.configured ? 'Not set up yet.' : `${t.live} public link${t.live === 1 ? '' : 's'} live · ${(t.used / 1048576).toFixed(0)} MB of ${(t.cap / 1e9).toFixed(0)} GB used${t.queued ? ` · ${t.queued} copy(ies) waiting to be deleted` : ''}`; } catch { $('p-meter').textContent = ''; } };
+  meter();
+  $('p-test').onclick = async () => {
+    const b = $('p-test'), out = $('p-out'); b.disabled = true; b.textContent = 'Testing…'; out.textContent = '';
+    try {
+      await J('/api/settings', 'PUT', { integrations: { publish: { workerUrl: $('p-url').value.trim(), bucket: $('p-bkt').value.trim(), accessId: $('p-kid').value.trim(), appKey: $('p-key').value } } });
+      const r = await J('/api/publish/test', 'POST', {});
+      out.innerHTML = r.steps.map((x) => `<div style="margin:4px 0"><b style="color:${x.ok ? '#16a34a' : '#d33'}">${x.ok ? '✓' : '✗'}</b> <b>${esc(x.name)}</b> <span class="chip">${esc(x.detail || '')}</span></div>`).join('') + `<p style="margin:10px 0 0"><b>${r.ok ? 'All good. Publish a video from its Share window.' : 'Not working yet. Fix the first ✗ above and test again.'}</b></p>`;
+    } catch (e) { out.innerHTML = `<span style="color:#d33">${esc(e.message)}</span>`; }
+    b.disabled = false; b.textContent = 'Save and test'; meter();
+  };
+  $('p-rm').onclick = async () => {
+    if (prompt('This deletes every public copy and turns every public link off. Your recordings on this Mac are not touched. Type REMOVE to confirm.') !== 'REMOVE') return;
+    try { const r = await J('/api/publish/remove-all', 'POST', { confirm: 'REMOVE' }); $('p-out').textContent = r.queued ? 'Links are off. The copies will be deleted as soon as the internet is back.' : 'All public copies deleted.'; } catch (e) { $('p-out').textContent = e.message; }
+    meter();
+  };
   $('wipe').onclick = async () => { if (prompt('This deletes every video. Type DELETE to confirm.') === 'DELETE') { await J('/api/data', 'DELETE', { confirm: 'DELETE' }); await refresh(); location.hash = '#/home'; } };
 }
 async function renderWorkspace(m) {

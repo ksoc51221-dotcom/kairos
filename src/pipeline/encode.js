@@ -21,9 +21,12 @@ function videoArgs(height, useHw = hasVideoToolbox()) {
 const audioArgs = () => ['-c:a', 'aac', '-b:a', '160k'];
 
 // Resolves { stderr } on success. onProgress(0..1) fires as ffmpeg reports output time (needs `duration` in seconds).
-function runFfmpeg(args, { duration = 0, onProgress } = {}) {
+// `signal` (an AbortSignal) kills ffmpeg and rejects with "cancelled".
+function runFfmpeg(args, { duration = 0, onProgress, signal } = {}) {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new Error('cancelled'));
     const p = spawn(ffmpeg, ['-hide_banner', '-nostats', '-progress', 'pipe:1', ...args]);
+    const stop = () => p.kill('SIGKILL'); signal?.addEventListener('abort', stop, { once: true });
     let err = '', buf = '';
     p.stderr.on('data', (d) => { err += d; if (err.length > 20000) err = err.slice(-10000); });
     p.stdout.on('data', (d) => {
@@ -35,7 +38,11 @@ function runFfmpeg(args, { duration = 0, onProgress } = {}) {
       }
     });
     p.on('error', reject);
-    p.on('close', (code) => (code === 0 ? resolve({ stderr: err }) : reject(new Error(`ffmpeg ${code}: ${err.slice(-500)}`))));
+    p.on('close', (code) => {
+      signal?.removeEventListener('abort', stop);
+      if (signal?.aborted) return reject(new Error('cancelled'));
+      code === 0 ? resolve({ stderr: err }) : reject(new Error(`ffmpeg ${code}: ${err.slice(-500)}`));
+    });
   });
 }
 
