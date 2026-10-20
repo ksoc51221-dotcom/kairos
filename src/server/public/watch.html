@@ -468,9 +468,11 @@ async function openShare() {
     if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t)) { if (!st.people.includes(t)) st.people.push(t); return true; }
     toast('Type an email address or the name of a Space'); return false;
   };
-  // ---- public link (Backblaze + Cloudflare): a separate block with its own state, so the local sharing controls above keep working untouched ----
+  // ---- public link (Backblaze + Cloudflare, or GitHub): a separate block with its own state, so the local sharing controls above keep working untouched ----
   let pub = pub0, pubTimer = null;
-  const pu = { mode: null, pw: '', ok: false, form: false, busy: false, err: '' };
+  const pu = { mode: null, pw: '', ok: false, form: false, busy: false, err: '', host: null };
+  const HOSTS = { b2: 'Backblaze + Cloudflare', github: 'GitHub' };
+  const avail = (P) => [['b2', P.configured, P.can], ['github', P.github?.configured, P.github?.can]].filter((x) => x[1]); // the routes that are set up
   const PMODES = { link: 'Anyone with the link', password: 'Password' };
   const pday = (t) => new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   const pmb = (b) => `${(b / 1048576).toFixed(b > 1e8 ? 0 : 1)} MB`;
@@ -478,53 +480,61 @@ async function openShare() {
     clearInterval(pubTimer); if (pub?.state !== 'working') return;
     pubTimer = setInterval(async () => { try { pub = await api(`/api/videos/${id}/publish`); vm.publish = pub; if (pub.state !== 'working') clearInterval(pubTimer); drawPub(); } catch { /* keep polling */ } }, 1200);
   };
+  const GH_WARN = `<div style="margin-top:10px;padding:10px 12px;border:1px solid #d97706;border-radius:8px;background:rgba(217,119,6,.08);font-size:13px;line-height:1.5"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos deletes the repository after 30 days or when you click Unpublish, but GitHub may keep copies in caches, and anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
   const pubForm = (P) => {
-    const modes = P.can.modes, mode = (pu.mode = modes.includes(pu.mode) ? pu.mode : modes.includes(P.mode) ? P.mode : modes[0]);
-    return `<div class="rowf" style="flex-wrap:wrap;gap:8px">${modes.map((k) => `<button class="btn sm ${mode === k ? 'pri' : ''}" data-pm="${k}">${PMODES[k]}</button>`).join('')}</div>
-      ${mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="pub-pw" autocomplete="new-password" placeholder="Choose a password (8 or more characters). You must tell people yourself." value="${esc(pu.pw)}"></div>` : ''}
-      ${(P.can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:#b45309">${esc(w)}</p>`).join('')}
-      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;line-height:1.45"><input type="checkbox" id="pub-ok" ${pu.ok ? 'checked' : ''} style="margin-top:3px"><span>I have watched this video on this Mac. I understand Kairos will upload a copy of <b>${esc(vm.title)}</b> to Backblaze and Cloudflare servers for up to 30 days. The Privacy Guard blurs what it recognises, but it cannot catch everything.</span></label>
+    const hs = avail(P), host = (pu.host = hs.some((h) => h[0] === pu.host) ? pu.host : hs.some((h) => h[0] === 'b2') ? 'b2' : 'github'), can = hs.find((h) => h[0] === host)[2];
+    const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--mute)">${host === 'github' ? 'Simplest. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Needs the Backblaze and Cloudflare setup.'}</p>` : '';
+    if (!can.ok) return picker + `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">${esc(can.message)}</p>`;
+    const modes = can.modes, mode = (pu.mode = modes.includes(pu.mode) ? pu.mode : modes.includes(P.mode) ? P.mode : modes[0]);
+    const what = host === 'github' ? 'I understand it will be <b>public on GitHub with no password</b>, that deleting it later is <b>not guaranteed</b>, and that the Privacy Guard cannot catch everything. It does not blur faces.'
+      : `I understand Kairos will upload a copy of <b>${esc(vm.title)}</b> to Backblaze and Cloudflare servers for up to 30 days. The Privacy Guard blurs what it recognises, but it cannot catch everything, and it does not blur faces.`;
+    return `${picker}${host === 'github' ? GH_WARN : `<div class="rowf" style="flex-wrap:wrap;gap:8px">${modes.map((k) => `<button class="btn sm ${mode === k ? 'pri' : ''}" data-pm="${k}">${PMODES[k]}</button>`).join('')}</div>`}
+      ${host !== 'github' && mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="pub-pw" autocomplete="new-password" placeholder="Choose a password (8 or more characters). You must tell people yourself." value="${esc(pu.pw)}"></div>` : ''}
+      ${(can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:#b45309">${esc(w)}</p>`).join('')}
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;line-height:1.45"><input type="checkbox" id="pub-ok" ${pu.ok ? 'checked' : ''} style="margin-top:3px"><span>I have watched this video on this Mac. ${what}</span></label>
       ${pu.err ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#d33">${esc(pu.err)}</p>` : ''}
-      <div class="rowf" style="margin-top:12px;gap:8px"><button class="btn pri" id="pub-go" ${pu.ok && !pu.busy && (mode !== 'password' || pu.pw.length >= 8) ? '' : 'disabled'}>${pu.busy ? 'Starting…' : P.state === 'live' ? 'Republish' : 'Publish'}</button>${pu.form && P.state === 'live' ? '<button class="btn sm" id="pub-cancel-form">Never mind</button>' : ''}</div>`;
+      <div class="rowf" style="margin-top:12px;gap:8px"><button class="btn pri" id="pub-go" ${pu.ok && !pu.busy && (host === 'github' || mode !== 'password' || pu.pw.length >= 8) ? '' : 'disabled'}>${pu.busy ? 'Starting…' : P.state === 'live' ? 'Republish' : host === 'github' ? 'Publish to GitHub' : 'Publish'}</button>${pu.form && P.state === 'live' ? '<button class="btn sm" id="pub-cancel-form">Never mind</button>' : ''}</div>`;
   };
   function drawPub() {
     const el = m.querySelector('#m-pub'); if (!el) return;
     const P = pub; if (!P) { el.innerHTML = ''; return; }
     let h = '';
-    if (!P.configured) h = `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">Not set up yet. <a href="/settings">Set up public links in Settings</a> (free, no card, about 15 minutes).</p>`;
+    if (!avail(P).length) h = `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">Not set up yet. <a href="/settings">Set up public links in Settings</a>: GitHub takes about two minutes (no password on links), Backblaze + Cloudflare about 15 (password links, really deleted). Both are free.</p>`;
     else if (P.state === 'working') {
       const pct = Math.round((P.progress || 0) * 100);
-      h = `<div style="font-size:14px">${P.stage === 'uploading' ? 'Uploading' : 'Making a small copy'}… ${pct}%</div><progress max="1" value="${P.progress || 0}" style="width:100%;margin:8px 0"></progress>
+      h = `<div style="font-size:14px">${P.stage === 'uploading' ? 'Uploading' : P.stage === 'finishing' && P.host === 'github' ? 'GitHub is building the page (this can take a minute or two)' : P.stage === 'finishing' ? 'Finishing' : 'Making a small copy'}… ${pct}%</div><progress max="1" value="${P.progress || 0}" style="width:100%;margin:8px 0"></progress>
         ${P.previous ? `<p class="note" style="margin:0 0 8px;font-size:13px;color:var(--mute)">The earlier link keeps working until the new one is ready.</p>` : ''}<button class="btn sm" id="pub-cancel">Cancel</button>`;
     } else {
       if (P.state === 'live') {
         h = `<div class="rowf" style="gap:8px"><input class="field" readonly id="pub-url" value="${esc(P.url)}" style="flex:1;min-width:0"><button class="btn sm" id="pub-copy">Copy</button><a class="btn sm" target="_blank" rel="noopener" href="${esc(P.url)}">Open</a></div>
-          <p class="note" style="margin:8px 0 0;font-size:13px;color:var(--mute)">${esc(PMODES[P.mode] || P.mode)} · available until ${pday(P.expiresAt)} · ${pmb(P.bytes || 0)}${P.allowDownload ? '' : ' · downloads off'}</p>
+          <p class="note" style="margin:8px 0 0;font-size:13px;color:var(--mute)">${P.host === 'github' ? 'GitHub · no password, anyone with the link can watch and save it' : esc(PMODES[P.mode] || P.mode)} · available until ${pday(P.expiresAt)} · ${pmb(P.bytes || 0)}${P.allowDownload ? '' : ' · downloads off'}</p>
+          ${P.host === 'github' && P.repoUrl ? `<p class="note" style="margin:6px 0 0;font-size:13px;color:var(--mute)"><a target="_blank" rel="noopener" href="${esc(P.repoUrl)}">View the repository on GitHub</a></p>` : ''}
           ${P.stale ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#b45309"><b>Out of date:</b> ${esc(P.staleWhy)}. The public link still shows the old version. Republish to update it.</p>` : ''}
           ${P.notice ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#b45309">${esc(P.notice)}</p>` : ''}
-          ${pu.form ? `<div style="margin-top:12px">${P.can.ok ? pubForm(P) : `<p class="note" style="font-size:13px">${esc(P.can.message)}</p>`}</div>` : `<div class="rowf" style="margin-top:12px;gap:8px"><button class="btn sm" id="pub-re">Republish…</button><button class="btn sm danger" id="pub-un">Unpublish</button></div>`}`;
+          ${pu.form ? `<div style="margin-top:12px">${pubForm(P)}</div>` : `<div class="rowf" style="margin-top:12px;gap:8px"><button class="btn sm" id="pub-re">Republish…</button><button class="btn sm danger" id="pub-un">Unpublish</button></div>`}`;
       } else {
         const why = P.state === 'failed' ? `Publishing failed: ${P.error || 'unknown problem'}` : P.state === 'removed' ? P.reason : P.state === 'expired' ? 'The earlier public link expired and its copy was deleted.' : '';
-        h = `${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? '#d33' : 'var(--mute)'}">${esc(why)}</p>` : ''}${P.can.ok ? pubForm(P) : `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">${esc(P.can.message)}</p>`}`;
+        h = `${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? '#d33' : 'var(--mute)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
       }
     }
     el.innerHTML = `<h5>Public link <small style="font-weight:400;color:var(--mute)">opens on any phone or computer, even when this Mac is off</small></h5><div class="more" style="margin-top:6px">${h}</div>`;
     const q = (x) => el.querySelector(x);
     el.querySelectorAll('[data-pm]').forEach((b) => (b.onclick = () => { pu.mode = b.dataset.pm; drawPub(); }));
+    el.querySelectorAll('[data-ph]').forEach((b) => (b.onclick = () => { pu.host = b.dataset.ph; pu.mode = null; pu.ok = false; pu.err = ''; drawPub(); }));
     const pw = q('#pub-pw'); if (pw) pw.oninput = () => { pu.pw = pw.value; const g = q('#pub-go'); if (g) g.disabled = !(pu.ok && !pu.busy && pu.pw.length >= 8); };
-    const ok = q('#pub-ok'); if (ok) ok.onchange = () => { pu.ok = ok.checked; const g = q('#pub-go'); if (g) g.disabled = !(pu.ok && !pu.busy && (pu.mode !== 'password' || pu.pw.length >= 8)); };
+    const ok = q('#pub-ok'); if (ok) ok.onchange = () => { pu.ok = ok.checked; const g = q('#pub-go'); if (g) g.disabled = !(pu.ok && !pu.busy && (pu.host === 'github' || pu.mode !== 'password' || pu.pw.length >= 8)); };
     if (q('#pub-copy')) q('#pub-copy').onclick = async (e) => { await navigator.clipboard.writeText(P.url); copied(e.currentTarget); };
     if (q('#pub-re')) q('#pub-re').onclick = () => { pu.form = true; pu.ok = false; pu.err = ''; drawPub(); };
     if (q('#pub-cancel-form')) q('#pub-cancel-form').onclick = () => { pu.form = false; drawPub(); };
     if (q('#pub-un')) q('#pub-un').onclick = async () => {
-      if (!confirm('Delete the public copy? The link stops working for everyone.')) return;
-      try { pub = await api(`/api/videos/${id}/publish`, { method: 'DELETE' }); vm.publish = pub; toast(pub.removal === 'queued' ? 'Link is off. The copy will be deleted as soon as the internet is back.' : 'Public link removed'); } catch (e) { toast(e.message); }
+      if (!confirm(P.host === 'github' ? 'Delete the GitHub repository? The link stops working for everyone. Copies someone already saved or forked stay with them.' : 'Delete the public copy? The link stops working for everyone.')) return;
+      try { pub = await api(`/api/videos/${id}/publish`, { method: 'DELETE' }); vm.publish = pub; toast(pub.removal === 'queued' ? (pub.removalError ? `Link is off in Kairos, but the copy is still there. ${pub.removalError}` : 'Link is off. The copy will be deleted as soon as the internet is back.') : 'Public link removed'); } catch (e) { toast(e.message); }
       pu.form = false; drawPub();
     };
     if (q('#pub-cancel')) q('#pub-cancel').onclick = async () => { try { pub = await api(`/api/videos/${id}/publish`, { method: 'DELETE' }); vm.publish = pub; } catch (e) { toast(e.message); } clearInterval(pubTimer); drawPub(); };
     if (q('#pub-go')) q('#pub-go').onclick = async () => {
       pu.busy = true; pu.err = ''; drawPub();
-      try { pub = await api(`/api/videos/${id}/publish`, { body: { mode: pu.mode, password: pu.mode === 'password' ? pu.pw : undefined, confirm: true } }); vm.publish = pub; pu.form = false; pu.pw = ''; pu.ok = false; pollPub(); }
+      try { pub = await api(`/api/videos/${id}/publish`, { body: { host: pu.host, mode: pu.host === 'github' ? 'link' : pu.mode, password: pu.host !== 'github' && pu.mode === 'password' ? pu.pw : undefined, confirm: true } }); vm.publish = pub; pu.form = false; pu.pw = ''; pu.ok = false; pollPub(); }
       catch (e) { pu.err = e.message; }
       pu.busy = false; drawPub();
     };
