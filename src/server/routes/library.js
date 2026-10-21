@@ -69,7 +69,7 @@ function mount(app, ctx = {}) {
   });
 
   // data controls
-  app.get('/api/export.json', own, (_q, res) => res.attachment('spool-library.json').json(store.list().map(({ viewers, heat, ...v }) => v)));
+  app.get('/api/export.json', own, (_q, res) => res.attachment('kairos-library.json').json(store.list().map(({ viewers, heat, ...v }) => v)));
   app.delete('/api/data', own, (q, res) => { if (q.body?.confirm !== 'DELETE') return res.status(400).json({ error: 'confirm' }); store.list().forEach((v) => store.remove(v.id)); res.json({ ok: true }); });
 }
 module.exports = { mount };

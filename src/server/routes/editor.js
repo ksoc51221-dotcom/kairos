@@ -13,7 +13,9 @@ const { waveform, detectSilences, silenceCuts, findFillers } = require('../../pi
 const { sanitizeEdits } = require('../../pipeline/edits');
 const { proposeRambles } = require('../../agents/rambles');
 const { interpretEdit, EditIntentError } = require('../../agents/edit-intent');
-const { runFfmpeg } = require('../../pipeline/encode');
+const { interpretRedact, listSentences, sanitizeRanges } = require('../../agents/redact-intent');
+const redactJob = require('../../agents/redact-job');
+const { runFfmpeg, hasAudioStream } = require('../../pipeline/encode');
 const { frameAt } = require('../../agents/media');
 
 const cache = new Map(); // `${id}:${kind}` -> { key, value }: proposals are recomputed when the video file changes
@@ -83,6 +85,44 @@ function mount(app, ctx) {
       if (e instanceof EditIntentError) res.status(502).json({ error: e.message });
       else res.status(500).json({ error: 'Could not work out that edit. Try again.' });
     } finally { describing.delete(v.id); }
+  });
+
+  // "Bleep speech": pick sentences, or describe what to bleep in a sentence. Like "Describe an edit", describe only proposes; nothing changes until the owner
+  // sends the ranges they accepted to apply, which bleeps the audio (same length, picture untouched), keeps the old file as the one undo, and scrubs the notes.
+  const redactable = (v) => busy(v) || /^Timing every word/.test(v.stage || '');
+  const redacting = new Set();
+  app.get('/api/videos/:id/redact/sentences', own, (q, res) => {
+    const v = video(q, res); if (!v) return;
+    res.json(listSentences({ words: v.words || null, segments: v.segments || [], duration: v.duration }));
+  });
+  app.post('/api/videos/:id/redact/describe', own, async (q, res) => {
+    const v = video(q, res); if (!v) return;
+    const text = q.body && typeof q.body.text === 'string' ? q.body.text.trim() : '';
+    if (!text || text.length > 500) return res.status(400).json({ error: 'Describe what to bleep in 1 to 500 characters.' });
+    const at = q.body && q.body.at !== null && q.body.at !== undefined && q.body.at !== '' && Number.isFinite(+q.body.at) ? Math.max(0, +q.body.at) : undefined;
+    if (redactable(v)) return res.status(409).json({ error: 'This video is still being processed. Try again in a moment.' });
+    if (redacting.has(v.id)) return res.status(409).json({ error: 'Still working on your last request for this video.' });
+    redacting.add(v.id);
+    try { res.json(await interpretRedact({ text, duration: v.duration, segments: v.segments || [], words: v.words || null, at })); }
+    catch { res.status(500).json({ error: 'Could not work out that request. Try again.' }); }
+    finally { redacting.delete(v.id); }
+  });
+  app.post('/api/videos/:id/redact/apply', own, (q, res) => {
+    const v = video(q, res); if (!v) return;
+    if (redactable(v)) return res.status(409).json({ error: 'This video is still being processed. Try again in a moment.' });
+    if (!hasAudioStream(path.join(store.videoDir(v.id), 'video.mp4'))) return res.status(400).json({ error: 'This video has no audio to bleep.' });
+    const r = sanitizeRanges(q.body && q.body.ranges, v.duration);
+    if (r.error) return res.status(400).json({ error: r.error });
+    store.update(v.id, { stage: 'Bleeping speech', redactRequest: { ranges: r.ranges, rewriteNotes: !(q.body && q.body.rewriteNotes === false), at: Date.now() }, editError: null, redactResult: null });
+    res.status(202).json({ ok: true, parts: r.ranges.length, seconds: r.seconds });
+    orchestrator.applyRedaction(v.id).catch(() => {}); // the job records its own error on the video (editError)
+  });
+  // "Delete the unbleeped copy": after this there is no Undo, and the old transcript is gone from the library file as well.
+  app.post('/api/videos/:id/redact/finalize', own, (q, res) => {
+    const v = video(q, res); if (!v) return;
+    if (busy(v)) return res.status(409).json({ error: 'Wait for the current job to finish' });
+    if (!redactJob.finalizeRedaction(v.id)) return res.status(404).json({ error: 'There is no unbleeped copy to delete.' });
+    cache.clear(); res.json(viewModel(store.get(v.id), true));
   });
 
   // the edit list (a draft until Apply)

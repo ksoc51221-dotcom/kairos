@@ -106,7 +106,7 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padd
 <aside class="wk-side"><div class="tabs" id="tabs"></div><div class="wk-sub" id="sub"></div><div class="wk-body panel" id="panel"><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:56px"></div><div class="skeleton" style="height:56px"></div></div>
   <form class="wk-foot" id="form"><div class="inwrap"><input class="field" id="ctext" placeholder="Comment at the current time… use @name to mention" autocomplete="off"><button class="send" aria-label="Send comment" data-i="send"></button></div></form></aside></div></div>
 <div id="modal" class="modal" hidden></div><div id="toast" class="toast"></div>
-<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script><script src="/static/edit-prompt.js"></script>
+<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script><script src="/static/edit-prompt.js"></script><script src="/static/redact-prompt.js"></script>
 <script>
 const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP, { i: I } = UI;
 const id = location.pathname.split('/').pop();
@@ -145,9 +145,18 @@ async function refetch() {
   if (refetching) { again = true; return; }
   if (['ctext', 'title'].includes(document.activeElement.id) || !$('modal').hidden || document.activeElement.closest?.('#panel input,#panel select,#panel textarea')) { setTimeout(refetch, 1500); return; }
   refetching = true;
-  try { vm = await api(`/api/v/${id}`); ctl?.setVM(vm); render(); } catch {}
+  try { takeVM(await api(`/api/v/${id}`)); render(); } catch {}
   refetching = false; if (again) { again = false; refetch(); }
 }
+// Bleep speech replaces video.mp4 and the captions under the same URLs: when a bleep (or its undo) lands, load both again so the old words are not left in the player
+const mediaSig = (x) => (x && x.redactResult && x.redactResult.at) || '';
+function mediaChanged() {
+  if (vm.type === 'image' || !loaded) return;
+  const el = $('v'), t = el.currentTime, was = !el.paused;
+  el.src = `/media/${id}/video.mp4?v=${Date.now()}`; el.addEventListener('loadedmetadata', () => { el.currentTime = t; if (was) el.play().catch(() => {}); }, { once: true });
+  const l = $('cc').value; if (l) ctl?.setCaptions(l).catch(() => {});
+}
+function takeVM(nv) { const before = mediaSig(vm); vm = nv; ctl?.setVM(vm); if (before !== mediaSig(vm)) mediaChanged(); }
 function listen() {
   if (!window.EventSource) return void setInterval(() => { if (!document.hidden) refetch(); }, 5000);
   const es = new EventSource(`/api/events?video=${id}`);
@@ -191,7 +200,7 @@ function render() {
   if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); if (vm.captionsDefault) { $('cc').value = 'original'; ctl?.setCaptions('original').catch(() => {}); } }
   if (loaded && ctl && vm.captionsDefault !== undefined && $('cc').dataset.d !== String(!!vm.captionsDefault)) { $('cc').dataset.d = String(!!vm.captionsDefault); if (vm.captionsDefault && !$('cc').value) { $('cc').value = 'original'; ctl.setCaptions('original').catch(() => {}); } else if (!vm.captionsDefault && $('cc').value === 'original') { $('cc').value = ''; ctl.setCaptions(null); } }
   renderStrip(); renderNotes(); renderMetrics(); renderTabs(); renderSub();
-  const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy, vm.edits, vm.captionsDefault, vm.cursorFx, vm.autoZoom, vm.folder, vm.tags, vm.spaces, vm.summary, vm.words, vm.duration]);
+  const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy, vm.edits, vm.captionsDefault, vm.cursorFx, vm.autoZoom, vm.folder, vm.tags, vm.spaces, vm.summary, vm.words, vm.duration, vm.undoKind, vm.canUndo, vm.redactResult?.at, vm.editError, vm.hasOriginal]);
   if (key !== lastKey) { lastKey = key; renderPanel(); }
 }
 // ---- the status strip, the Privacy Guard card and the metric cards: only values the app really has ----
@@ -227,7 +236,7 @@ function renderNotes() {
   else if (ready && me.owner && vm.shareable === false) n.push(box('warn', '<span class="spin"></span>', 'Privacy Guard · checking', 'You can watch now. Viewers can watch when it is done.'));
   else if (ready) {
     const t = []; if (vm.redactionCount) t.push(`${plural(vm.redactionCount, 'sensitive item')} blurred before anyone could watch`);
-    if (me.owner && vm.speechRedactions) t.push(`${plural(vm.speechRedactions, 'spoken secret')} bleeped in the audio and removed from the transcript and captions`);
+    if (me.owner && vm.speechRedactions) t.push(`${plural(vm.speechRedactions, 'part')} of the audio bleeped and removed from the transcript and captions`);
     n.push(box('ok', I('shield-check'), 'Privacy Guard · cleared', t.length ? t.map(esc).join('<br>') : 'No items were blurred or bleeped.'));
   }
   if (busy && me.owner && vm.shareable !== false) n.push(`<div class="callout"><span class="spin"></span><div>${esc(vm.stage)}…</div></div>`);
@@ -300,8 +309,9 @@ function renderEdit(p) {
   const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"><span class="tile sm ${disabled ? 'off' : ''}">${I(icon)}</span><div class="grow"><div class="olab">${label}</div>${sub ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
   p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div>${busy ? '<div class="osub">Describing an edit opens when the video is not being processed.</div>' : '<div id="epHost"></div>'}</section>
     ${cuts || vm.edits?.inserts?.length ? `<div class="apply"><div><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` and ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready.</b> Nothing changes until you apply them; the previous version is kept so you can undo once.</div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
-    ${vm.canUndo ? `<div class="apply"><div>Edits were applied to this video.</div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
-    ${vm.editError ? `<div class="err">${esc(vm.editError)}</div>` : ''}
+    ${vm.canUndo && vm.undoKind !== 'redact' ? `<div class="apply"><div>Edits were applied to this video.</div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
+    ${vm.editError && !/^Could not bleep/.test(vm.editError) ? `<div class="err">${esc(vm.editError)}</div>` : ''}
+    <section class="sec"><div class="sl">Bleep speech</div><div id="rpHost"></div></section>
     <section class="sec"><div class="sl">Quick clean-up</div><div class="opts">
     ${opt('silence', sil === null ? 'Looking for silence…' : `${sil}s of silence ${countKind('silence') ? 'will be removed' : 'found'}`, sil ? 'Pauses over 0.8 s, shortened to a 0.3 s breath' : '', countKind('silence') > 0, !sil, 'silence')}
     ${opt('filler', vm.words ? `${fil ?? '…'} filler word${fil === 1 ? '' : 's'} ${countKind('filler') ? 'will be removed' : 'found'}` : 'Filler words need word timing', vm.words ? 'um, uh, “you know,” and “like” when it is set apart' : `<button class="btn sm" id="wordsBtn" style="margin-top:6px">Time every word</button>${vm.wordsError ? ` <span class="err">${esc(vm.wordsError)}</span>` : ''}`, countKind('filler') > 0, !fil, 'filler')}
@@ -309,6 +319,10 @@ function renderEdit(p) {
     <section class="sec"><div class="sl">More</div><a class="btn" href="/edit/${id}">${I('scissors')}Edit and enhance video</a><button class="btn" id="genDoc">${I('doc')}Generate a document</button></section>`;
   const eh = $('epHost');
   if (eh && me.owner && window.EditPrompt) EditPrompt.mount(eh, { videoId: id, api, getDuration: () => vm.duration || 0, getDraft: draft, saveDraft: saveCuts, seek, icon: I, esc, fmt, toast, onSaved: () => {} });
+  // "Bleep speech": it reads the current view model itself (stage, undo, result); after a bleep starts, or Undo / Delete, it hands back the new one
+  const rh = $('rpHost');
+  if (rh && me.owner && window.RedactPrompt) RedactPrompt.mount(rh, { videoId: id, api, getVM: () => vm, getDuration: () => vm.duration || 0, getTime: () => $('v').currentTime, seek, icon: I, esc, fmt, toast,
+    onChange: (nv) => { takeVM(nv && nv.id ? nv : { ...vm, ...nv }); an = null; anFor = ''; lastKey = ''; render(); } });
   p.querySelectorAll('[data-sw]').forEach((s) => (s.onchange = async () => {
     const k = s.dataset.sw;
     if (k === 'captions') { try { await patch({ captionsDefault: s.checked, ...(s.checked && !vm.captionStyle ? { captionStyle: 'bold' } : {}) }); } catch (e) { toast(e.message); } } else await setCuts(k, s.checked);
@@ -512,7 +526,7 @@ async function openShare() {
   let pub = pub0, pubTimer = null;
   const pu = { mode: null, pw: '', ok: false, form: false, busy: false, err: '', host: null };
   const HOSTS = { b2: 'Backblaze + Cloudflare', github: 'GitHub' };
-  const avail = (P) => [['b2', P.configured, P.can], ['github', P.github?.configured, P.github?.can]].filter((x) => x[1]); // the routes that are set up
+  const avail = (P) => [['github', P.github?.configured, P.github?.can], ['b2', P.configured, P.can]].filter((x) => x[1]); // the routes that are set up, GitHub first: it is the fast one and the default
   const PMODES = { link: 'Anyone with the link', password: 'Password' };
   const pday = (t) => new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   const pmb = (b) => `${(b / 1048576).toFixed(b > 1e8 ? 0 : 1)} MB`;
@@ -522,8 +536,8 @@ async function openShare() {
   };
   const GH_WARN = `<div class="callout warn" style="margin-top:10px;display:block"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos deletes the repository after 30 days or when you click Unpublish, but GitHub may keep copies in caches, and anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
   const pubForm = (P) => {
-    const hs = avail(P), host = (pu.host = hs.some((h) => h[0] === pu.host) ? pu.host : hs.some((h) => h[0] === 'b2') ? 'b2' : 'github'), can = hs.find((h) => h[0] === host)[2];
-    const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--mute)">${host === 'github' ? 'Simplest. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Needs the Backblaze and Cloudflare setup.'}</p>` : '';
+    const hs = avail(P), host = (pu.host = hs.some((h) => h[0] === pu.host) ? pu.host : hs[0][0]), can = hs.find((h) => h[0] === host)[2];
+    const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--mute)">${host === 'github' ? 'Fastest and free. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Slower to set up: two accounts.'}</p>` : '';
     if (!can.ok) return picker + `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">${esc(can.message)}</p>`;
     const modes = can.modes, mode = (pu.mode = modes.includes(pu.mode) ? pu.mode : modes.includes(P.mode) ? P.mode : modes[0]);
     const what = host === 'github' ? 'I understand it will be <b>public on GitHub with no password</b>, that deleting it later is <b>not guaranteed</b>, and that the Privacy Guard cannot catch everything. It does not blur faces.'

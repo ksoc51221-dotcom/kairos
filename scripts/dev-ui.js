@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 // Dev harness for the web UI: starts the REAL src/server on 127.0.0.1:$UI_PORT (default 4848) against a throw-away library, seeded with
 // realistic videos in every state (ready, processing, checking, failed, screenshot, password / email / private / expired links, folders, spaces),
-// so every page can be opened and screenshotted without Electron. Nothing leaves the machine and no AI model or queue is started.
+// so every page can be opened and screenshotted without Electron. Nothing leaves the machine and no AI model or queue is started (unless UI_QUEUE=1).
 //
 //   node scripts/dev-ui.js            (npm run dev:ui)      Ctrl-C stops it and deletes the temp library
 //   UI_PORT=4900 node scripts/dev-ui.js                      another port (several harnesses can run side by side)
 //   UI_KEEP=1 node scripts/dev-ui.js                         keep the temp library folder on exit
+//   UI_QUEUE=1 node scripts/dev-ui.js                         also run the real job queue (ffmpeg, and the local model if Ollama is running), so Apply edits and
+//                                                             Bleep speech really run instead of waiting for a queue that is not there
 //
 // Owner sign-in: the real one-time link (security.ownerLoginPath) lives 2 minutes and works once, so the harness adds three dev-only routes to its
 // own copy of the app (never to src/server): GET /dev (index of every page), /dev/go/<key> (mints a fresh one-time code and redirects through the real
 // /owner-login, so the sp_owner cookie is set exactly as in the app) and /dev/viewer/<key> (same page, seen as a viewer). /dev/urls.json lists them all.
+if (process.env.UI_QUEUE) process.env.SPOOL_OCR = process.env.SPOOL_OCR || 'tesseract'; // the queue starts below: do not compile the Vision tool for a harness
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -249,6 +252,7 @@ const portFree = (port) => new Promise((resolve) => { const t = require('net').c
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kairos-devui-lib-'));
   store.init(dir, { log: () => {} });
   const { sEng, sDesign } = await seed(log);
+  if (process.env.UI_QUEUE) require('../src/agents/orchestrator').init(dir, { log: () => {} });
   addPage('library', 'Library (home)', 'Owner pages', '/'); addPage('settings', 'Settings', 'Owner pages', '/settings');
   addPage('space-engineering', 'Space: Engineering (public page)', 'Space pages', `/space/${sEng.id}`); addPage('space-design', 'Space: Design review (public page)', 'Space pages', `/space/${sDesign.id}`);
 

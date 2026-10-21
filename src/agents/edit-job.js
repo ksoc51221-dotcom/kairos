@@ -56,9 +56,11 @@ function undoEdits(id) {
   if (!fs.existsSync(prev)) return false;
   fs.rmSync(video, { force: true }); fs.renameSync(prev, video);
   const tlPrev = path.join(dir, 'timeline.prev.json'); if (fs.existsSync(tlPrev)) fs.renameSync(tlPrev, timelinePath(dir));
-  const { at, hadTimeline, edits, ...fields } = v.editPrev;
-  store.update(id, { ...fields, edits: { cuts: [], inserts: [], undone: Date.now() }, editPrev: null, stage: 'done' });
-  store.log(id, 'Edits undone', 'owner');
+  // `kind` and `count` describe a bleep (src/agents/redact-job.js), which shares this undo slot. A bleep does not move anything in time, so the cuts the owner
+  // is drafting stay as they are; an edit's undo clears them because they were written for the video that is going away.
+  const { at, hadTimeline, edits, kind, count, ...fields } = v.editPrev;
+  store.update(id, { ...fields, ...(kind === 'redact' ? {} : { edits: { cuts: [], inserts: [], undone: Date.now() } }), editPrev: null, redactResult: null, stage: 'done' });
+  store.log(id, kind === 'redact' ? 'Bleep undone' : 'Edits undone', 'owner');
   return true;
 }
 

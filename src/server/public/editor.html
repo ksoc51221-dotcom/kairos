@@ -21,7 +21,8 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; b
 .tlwrap { position: relative; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); overflow: hidden; flex: none; touch-action: none; }
 #tl { display: block; width: 100%; height: 150px; cursor: crosshair; }
 .right { border-left: 1px solid var(--line-soft); background: var(--surface); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-#epHost { flex: none; max-height: 52%; overflow: auto; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); background: var(--surface-1); }
+#dock { flex: none; max-height: 52%; overflow: auto; border-bottom: 1px solid var(--line-soft); background: var(--surface-1); }
+#epHost { padding: 12px 16px; } #rpHost { padding: 0 16px 12px; } #rpHost .ep-hint { display: none; }
 .right .tabs { border-bottom: 1px solid var(--line-soft); padding: 0 16px; gap: 18px; flex: none; position: relative; } .right .tabs button { font-size: 13px; padding: 12px 0 10px; }
 .panel { flex: 1; overflow: auto; padding: 16px 16px 28px; }
 .sub { font: 500 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin: 22px 0 10px; } .sub:first-child { margin-top: 0; }
@@ -56,20 +57,20 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; b
   <button class="btn" id="undoApply" hidden><span data-i="undo"></span>Undo last apply</button><button class="btn" id="discard" hidden>Discard draft</button><button class="btn pri" id="apply" disabled>Apply edits</button></header>
 <div class="work"><section class="left">
   <div class="stagebox"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" playsinline crossorigin="anonymous"></video><div id="ov"></div><div id="eov"></div></div><div id="cap"></div><a id="cta" hidden></a></div></div>
-  <div class="bar"><button class="btn sm" id="play" data-i="play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (Backspace)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
+  <div class="bar"><button class="btn sm" id="play" data-i="play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (Backspace)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="bleep" title="Bleep the sound in the selection" disabled><span data-i="volume-off"></span>Bleep selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
   <div class="tlwrap"><canvas id="tl"></canvas></div>
   <div class="bar"><span class="meta">Zoom</span><input type="range" id="zoom" min="0" max="100" value="0" aria-label="Zoom"><span class="meta" id="zl">1×</span><span class="meta nocase" style="margin-left:auto">Drag on the waveform to select · <kbd>Space</kbd> play · <kbd>S</kbd> split · <kbd>Backspace</kbd> delete · <kbd>Cmd</kbd><kbd>Z</kbd> undo</span></div>
 </section>
-<aside class="right"><div id="epHost"></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></div>
+<aside class="right"><div id="dock"><div id="epHost"></div><div id="rpHost"></div></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></div>
 <div id="toast" class="toast"></div>
-<script src="/static/csrf.js"></script><script src="/static/edit-prompt.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
+<script src="/static/csrf.js"></script><script src="/static/edit-prompt.js"></script><script src="/static/redact-prompt.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
 <script>
 const { $, fmt, esc, api, attach, CAPTION_STYLES, BACKGROUNDS } = SP, { i: I } = UI;
 const id = location.pathname.split('/').pop(), put = (u, b) => api(u, { method: 'PUT', body: b }), post = (u, b = {}) => api(u, { method: 'POST', body: b });
 const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 2200); };
 const mmss = (t, d = 1) => { const s = Math.max(0, t), m = Math.floor(s / 60); return `${m}:${(s % 60).toFixed(d).padStart(d ? d + 3 : 2, '0')}`; };
 const rid = () => Math.random().toString(36).slice(2, 7), round3 = (x) => Math.round(x * 1000) / 1000, MIN = 0.02;
-let vm, ctl, D = { cuts: [], inserts: [] }, hist = [], dur = 0, peaks = null, tab = 'transcript', sel = null, selWords = null, splits = [], ovSel = null, prop = { silence: null, filler: null, rambles: null, busyRamble: false }, saveT = null, applying = false;
+let vm, ctl, D = { cuts: [], inserts: [] }, hist = [], dur = 0, peaks = null, tab = 'transcript', sel = null, selWords = null, splits = [], ovSel = null, prop = { silence: null, filler: null, rambles: null, busyRamble: false }, saveT = null, applying = false, rp = null;
 
 // ---------- the edit list: merging, history, saving ----------
 function merged() { const a = D.cuts.map((c) => ({ start: Math.max(0, c.start), end: Math.min(dur, c.end) })).filter((c) => c.end - c.start >= MIN).sort((x, y) => x.start - y.start), o = []; for (const c of a) { const l = o[o.length - 1]; if (l && c.start <= l.end + 1e-6) l.end = Math.max(l.end, c.end); else o.push({ ...c }); } return o; }
@@ -87,7 +88,7 @@ function refresh(quiet) {
   $('apply').disabled = applying || vm.busy || !(D.cuts.length || D.inserts.length); $('discard').hidden = !(D.cuts.length || D.inserts.length); $('undoApply').hidden = !vm.canUndo;
   const n = D.cuts.length + D.inserts.length; $('apply').textContent = n ? `Apply ${merged().length} cut${merged().length === 1 ? '' : 's'}${D.inserts.length ? ` + ${D.inserts.length} insert${D.inserts.length === 1 ? '' : 's'}` : ''}` : 'Apply edits';
   const result = dur - cutLen() + insLen(); $('res').textContent = n ? `Result ${mmss(result)}  (${result - dur >= 0 ? '+' : '−'}${mmss(Math.abs(result - dur))})` : '';
-  $('del').disabled = !sel; const over = sel && D.cuts.some((c) => c.end > sel.a && c.start < sel.b); $('restore').hidden = !over; draw(); if (!quiet) renderPanel();
+  $('del').disabled = !sel; $('bleep').disabled = !sel || !!vm.busy; $('undoApply').lastChild.textContent = vm.undoKind === 'redact' ? 'Undo the bleep' : 'Undo last apply'; const over = sel && D.cuts.some((c) => c.end > sel.a && c.start < sel.b); $('restore').hidden = !over; draw(); if (!quiet) renderPanel();
 }
 
 // ---------- boot ----------
@@ -112,10 +113,17 @@ function mountPrompt() {
   EditPrompt.mount($('epHost'), { videoId: id, api, getDuration: () => dur, getDraft: () => D.cuts.map((c) => ({ ...c })), seek: (t) => { $('v').currentTime = Math.max(0, t); $('v').play().catch(() => {}); }, icon: I, esc, fmt, toast,
     saveDraft: async (cuts) => { const next = { ...D, cuts: cuts.map((c) => ({ start: round3(c.start), end: round3(c.end), kind: c.kind || 'prompt' })) }; commit(next); clearTimeout(saveT); await put(`/api/videos/${id}/edits`, D); $('st').textContent = 'Draft saved'; },
     onSaved: () => { prop.silence = null; prop.filler = null; refresh(); } });
+  // "Bleep speech": it reads the view model itself (stage, undo, result). A bleep, an undo or a delete changes the sound, the transcript and the captions, so the page loads them again.
+  if (window.RedactPrompt) rp = RedactPrompt.mount($('rpHost'), { videoId: id, api, getVM: () => vm, getDuration: () => dur, getTime: () => $('v').currentTime, seek: (t) => { $('v').currentTime = Math.max(0, t); $('v').play().catch(() => {}); }, icon: I, esc, fmt, toast,
+    onChange: async (nv) => { if (nv && nv.id) await reloadAfter(); else { Object.assign(vm, nv, { busy: true }); refresh(true); rp.refresh(); } } });
 }
 function listen() { // progress and completion of Apply, and word timing finishing
   const es = new EventSource(`/api/events?video=${id}`); es.addEventListener('video', async () => {
     const was = applying; const nv = await api(`/api/videos/${id}/editor`).catch(() => null); if (!nv) return;
+    if (rp) { // Bleep speech: a bleep landing (or its undo, from another window) changes the sound; anything else only changes the status the panel shows
+      if ((nv.redactResult?.at || '') !== (vm.redactResult?.at || '')) { await reloadAfter(); toast(nv.redactResult ? 'Speech bleeped' : 'Bleep undone'); }
+      else { const keys = ['stage', 'busy', 'undoKind', 'canUndo', 'redactResult', 'editError', 'hasOriginal', 'shareable'], was0 = JSON.stringify(keys.map((k) => vm[k])); keys.forEach((k) => (vm[k] = nv[k])); if (was0 !== JSON.stringify(keys.map((k) => vm[k]))) { refresh(true); rp.refresh(); } }
+    }
     const m = /^Applying edits (\d+)%/.exec(nv.stage || '');
     if (m) { $('prog').hidden = false; $('progbar').style.width = m[1] + '%'; $('progtxt').textContent = `Applying edits ${m[1]}%`; applying = true; $('apply').disabled = true; return; }
     if (was && !m && !nv.busy) { applying = false; $('prog').hidden = true; if (nv.editError) toast(nv.editError); else { toast('Edits applied'); await reloadAfter(); } return; }
@@ -124,7 +132,7 @@ function listen() { // progress and completion of Apply, and word timing finishi
     if (!vm.words && nv.words) { vm = { ...vm, ...nv }; $('st').textContent = ''; if (tab === 'transcript' || tab === 'cleanup') { prop.filler = null; renderPanel(); } }
   });
 }
-async function reloadAfter() { sel = null; selWords = null; splits = []; hist = []; prop = { silence: null, filler: null, rambles: null, busyRamble: false }; await load(true); $('v').src = `/media/${id}/video.mp4?v=${Date.now()}`; ctl.setVM({ ...vm, autoZoom: false }); refresh(); }
+async function reloadAfter() { sel = null; selWords = null; splits = []; hist = []; prop = { silence: null, filler: null, rambles: null, busyRamble: false }; await load(true); $('v').src = `/media/${id}/video.mp4?v=${Date.now()}`; ctl.setVM({ ...vm, autoZoom: false }); if (vm.segments?.length) ctl.setCaptions('original').catch(() => {}); refresh(); if (rp) rp.refresh(); }
 
 // ---------- timeline ----------
 const cv = $('tl'), g = cv.getContext('2d'), tlv = { zoom: 1, t0: 0 };
@@ -198,7 +206,9 @@ $('split').onclick = () => { const t = round3($('v').currentTime); if (t > 0.05 
 $('del').onclick = () => { if (sel) { addCuts([{ start: sel.a, end: sel.b }], 'manual'); sel = null; refresh(); } };
 $('restore').onclick = () => { if (sel) { removeCutsIn(sel.a, sel.b); sel = null; } };
 $('discard').onclick = () => { if (confirm('Throw away the draft edits?')) { commit({ cuts: [], inserts: [] }); sel = null; } };
-$('undoApply').onclick = async () => { if (!confirm('Undo the last applied edit? The video goes back to how it was before.')) return; try { await post(`/api/videos/${id}/edits/undo`); toast('Undone'); await reloadAfter(); } catch (e) { toast(e.message); } };
+$('undoApply').onclick = async () => { if (!confirm(vm.undoKind === 'redact' ? 'Undo the bleep? The old audio, transcript and notes come back.' : 'Undo the last applied edit? The video goes back to how it was before.')) return; try { await post(`/api/videos/${id}/edits/undo`); toast('Undone'); await reloadAfter(); } catch (e) { toast(e.message); } };
+const textIn = (a, b) => (vm.words || []).filter((w) => w.e > a && w.s < b).map((w) => w.w).join(' ').slice(0, 300); // what is said in a stretch, for the Bleep list
+$('bleep').onclick = () => { if (sel && rp && rp.addRange(sel.a, sel.b, textIn(sel.a, sel.b))) $('rpHost').scrollIntoView({ block: 'nearest' }); };
 $('apply').onclick = async () => { try { applying = true; $('apply').disabled = true; $('prog').hidden = false; $('progtxt').textContent = 'Starting…'; clearTimeout(saveT); await put(`/api/videos/${id}/edits`, D); await post(`/api/videos/${id}/edits/apply`); } catch (e) { applying = false; $('prog').hidden = true; toast(e.message); refresh(); } };
 addEventListener('keydown', (e) => {
   if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.altKey) return;
@@ -228,8 +238,8 @@ function tTranscript(p) {
 const range = (a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); return Array.from({ length: hi - lo + 1 }, (_, k) => lo + k); };
 function paintSel() {
   const bar = $('selbar'); document.querySelectorAll('#wd span.sel').forEach((s) => s.classList.remove('sel')); (selWords || []).forEach((k) => document.querySelector(`#wd span[data-k="${k}"]`)?.classList.add('sel'));
-  if (!bar) return; bar.className = selWords?.length ? 'selbar' : ''; bar.innerHTML = selWords?.length ? `<span style="flex:1">${selWords.length} word${selWords.length === 1 ? '' : 's'} selected</span><button class="btn sm" id="wdel">Delete</button><button class="btn sm ghost" id="wclr" style="color:inherit">Clear</button>` : '';
-  if ($('wdel')) { $('wdel').onclick = deleteWords; $('wclr').onclick = () => { selWords = null; paintSel(); }; }
+  if (!bar) return; bar.className = selWords?.length ? 'selbar' : ''; bar.innerHTML = selWords?.length ? `<span style="flex:1">${selWords.length} word${selWords.length === 1 ? '' : 's'} selected</span><button class="btn sm" id="wdel">Delete</button><button class="btn sm" id="wbleep">Bleep</button><button class="btn sm ghost" id="wclr" style="color:inherit">Clear</button>` : '';
+  if ($('wdel')) { $('wdel').onclick = deleteWords; $('wclr').onclick = () => { selWords = null; paintSel(); }; $('wbleep').onclick = () => { const w = vm.words, ks = selWords.slice(); if (rp && ks.length && rp.addRange(w[ks[0]].s, w[ks[ks.length - 1]].e, ks.map((k) => w[k].w).join(' '))) $('rpHost').scrollIntoView({ block: 'nearest' }); }; }
   if (selWords?.length) { const w = vm.words; sel = { a: w[selWords[0]].s, b: w[selWords[selWords.length - 1]].e }; draw(); }
 }
 function deleteWords() { // neighbouring selected words become one cut; the cut is exactly from the first word's start to the last word's end

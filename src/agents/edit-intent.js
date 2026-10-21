@@ -409,4 +409,4 @@ async function interpretEdit({ text, duration, segments, words, silence, deps = 
   };
 }
 
-module.exports = { interpretEdit, parseRules, validateModelRanges, prepare, fmt, EditIntentError, MSG, EXAMPLES, SYSTEM };
+module.exports = { interpretEdit, parseRules, validateModelRanges, prepare, fmt, dur, clean, EditIntentError, MSG, EXAMPLES, SYSTEM };

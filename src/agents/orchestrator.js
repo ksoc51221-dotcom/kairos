@@ -17,6 +17,7 @@ const privacy = require('./privacy');
 const { insights } = require('./insights');
 const { makeGuide, plan } = require('./guide');
 const editJob = require('./edit-job');
+const redactJob = require('./redact-job');
 const speechGuard = require('./speech-guard');
 
 let dataDir, say = (...a) => console.log(...a), busy = () => false;
@@ -38,8 +39,14 @@ function init(dir, { log, isBusy } = {}) {
 // B4: one job at a time. `process` = the whole pipeline for a new video; `ai` = re-run the notes (and the Privacy Guard if the video was never cleared).
 // `edit` and `words` are the editor's jobs (Phase 3): apply an edit list, and time every word of a video that has none.
 async function processJobs(job) {
-  const run = { ai: rerunJob, process: processJob, still: stillJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }) }[job.kind] || processJob;
-  try { return await run(job); } finally { if (!['edit', 'words', 'still'].includes(job.kind)) { cleanLeftovers(job.videoId); writeAgentPlan(job.videoId); } warmWhenIdle(2000); }
+  const run = { ai: rerunJob, process: processJob, still: stillJob, edit: (j) => editJob.applyEdits(j, { dataDir }), words: (j) => editJob.wordsJob(j, { dataDir }), redact: redactJob.applyRedaction }[job.kind] || processJob;
+  try {
+    const r = await run(job);
+    // "Bleep speech": the notes were scrubbed of the bleeped words at once; if the owner asked, the AI crew now rewrites them from the bleeped transcript.
+    // Not for a video the Privacy Guard has not cleared yet: that re-run would transcribe the whole video again.
+    if (job.kind === 'redact' && r && r.rewrite) rerunAI(job.videoId).catch(() => store.update(job.videoId, { stage: 'done' }));
+    return r;
+  } finally { if (!['edit', 'words', 'still'].includes(job.kind)) { if (job.kind !== 'redact') cleanLeftovers(job.videoId); writeAgentPlan(job.videoId); } warmWhenIdle(2000); }
 }
 // "Record for agent": once the guard has cleared the video, the Action Plan brief is written next to it as action-plan.md (the same text the MCP server
 // and the watch page's "Copy action plan" hand out), so a coding agent can be pointed at one file.
@@ -62,6 +69,7 @@ const rerunAI = (id) => queue.enqueue(id, 'ai');
 const guardStill = (id) => queue.enqueue(id, 'still');
 const applyEdits = (id) => queue.enqueue(id, 'edit');
 const timeWords = (id) => queue.enqueue(id, 'words');
+const applyRedaction = (id) => queue.enqueue(id, 'redact');
 
 const CREW = [
   { id: 'transcriber', name: 'Transcriber', role: 'Local Whisper turns speech into a timestamped transcript' },
@@ -338,4 +346,4 @@ async function rerunJob(job) {
   await runAgents(id, { segments: v.segments || [], text: v.transcript || '', scan: null, meta: { duration: v.duration }, finalVideo: path.join(dir, 'video.mp4'), work: null });
 }
 
-module.exports = { guardStill, stillJob, dropDerivedPictures, cleanLeftovers, init, processVideo, rerunAI, applyEdits, timeWords, CREW, ORDER };
+module.exports = { guardStill, stillJob, dropDerivedPictures, cleanLeftovers, init, processVideo, rerunAI, applyEdits, timeWords, applyRedaction, CREW, ORDER };

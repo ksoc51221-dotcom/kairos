@@ -1,4 +1,4 @@
-/* "Describe an edit" composer (edit-prompt.js). Uses the tokens and components of app.css only: .btn .card .field .tag .meta .tstamp .badge .callout. */
+/* "Describe an edit" composer (edit-prompt.js) and the "Bleep speech" panel (redact-prompt.js). Uses the tokens and components of app.css only: .btn .card .field .tag .meta .tstamp .badge .callout. */
 .ep { display: flex; flex-direction: column; gap: 8px; }
 .ep-open { width: 100%; min-height: 36px; }
 .ep-hint { margin: 0; font: 400 12px/18px var(--font); color: var(--mute); }
@@ -35,3 +35,18 @@
 .ep-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .ep-act > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ep-foot { margin: 0; font: 400 12px/18px var(--font); color: var(--mute); }
+
+/* "Bleep speech" (redact-prompt.js) reuses the .ep-* rules above and adds only what is new. */
+.rp-quote { font: 400 13px/20px var(--font); color: var(--ink); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rp-tools { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.rp-pick { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.rp-pick > * { max-width: 100%; }
+.rp-pick .rp-q, .rp-pick .rp-sbox, .rp-pick .callout { width: 100%; }
+.rp-sbox { display: flex; flex-direction: column; gap: 8px; }
+.rp-opt { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font: 400 13px/20px var(--font); color: var(--ink); }
+.rp-opt input { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.rp-opt > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rp-done { display: flex; flex-direction: column; gap: 10px; }
+.rp-done-h { display: flex; align-items: center; gap: 8px; }
+.rp-done-h svg.i { flex: none; width: 16px; height: 16px; color: var(--accent); }
+.rp-facts { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font: 400 12px/18px var(--font); color: var(--ink-2); }

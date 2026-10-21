@@ -7,6 +7,7 @@ const extras = require('./extras');
 const { pub } = require('./util');
 const { processVideo } = require('../agents/orchestrator');
 const publisher = require('../publish/publisher');
+require('../agents/redact-job').deps.unpublish = (id, o) => publisher.unpublish(id, o); // Bleep speech takes a public link down; agents/ may not import the publisher itself
 
 const routes = ['viewer', 'library', 'media', 'owner', 'settings', 'editor', 'actions', 'publish'].map((n) => require(`./routes/${n}`));
 

@@ -836,3 +836,17 @@ How it is stored: a zoom row is `[t, cx, cy, z]` as before, with an optional 5th
 
 **Follow-ups.** Re-scan for old recordings; per-recipient links with a "someone opened it" ping; a custom domain (free student `.me`); a recipient-visible expiry reminder.
 
+
+## Phase 9: Bleep speech · 2026-10-22
+
+**Ask.** Pick a spoken sentence and bleep it; or say "bleep everything after crush until I said school"; or let the AI read the context ("everything I said about my crush", "you missed my password around 1:23").
+
+**Design.** One review screen, three ways in. (1) Rules, no model: anchor words, quoted words, times, and secrets said after a cue. (2) The local model (qwen3:8b), only for a topic or a moment: it answers with line numbers and exact words, and `redact-intent.js` checks every answer against the real transcript, so nothing it invents is shown; the transcript is untrusted data in the prompt. A model pick that does not use the owner's words, when other picks do, is flagged "Check this one" and left unticked (found in the first real-model run: it cited the idempotency key for a line that never mentions it). (3) A sentence picker over the transcript, and a "Bleep" button on a selection in the editor. Nothing is applied until the owner ticks and presses Bleep. Apply is a queued job (`redact`): bleep to `video.redact.mp4` (picture copied, only the audio replaced by a 1 kHz beep), verify the length, take any public link down, swap files, delete captions and the Action Plan, scrub transcript, summary, chapters and tasks, then optionally re-run the AI crew on the bleeped transcript. The old file stays as `video.prev.mp4` for one undo shared with edits; a second bleep makes the first permanent, and the panel says so. The publisher is injected (`redact-job.deps.unpublish`, wired in `server.js`) because `src/agents` may not import it.
+
+**Verified.** Unit tests for the intent reader (18), the job (15, including fail-closed when the takedown is not wired) and the routes; full suite 614+ green. In a real browser against the dev harness (`UI_QUEUE=1 node scripts/dev-ui.js`): word-anchor request, sentence picker, real-model topic request, Apply, done card, transcript showing `[bleep]`, Undo restoring the words, and the same on the editor page (selection to Bleep to Apply to Undo).
+
+**Not verified.** A real Whisper recording with the installed app; the pointed-moment request ("around 1:23") against the real model; the "Delete the unbleeped copy" button in the browser (route is unit-tested); a real public copy being taken down (fake Backblaze and fake GitHub only).
+
+**Tradeoffs.** The kept unblurred original (Settings) is not touched and the panel says so; copies already downloaded or sent cannot be recalled; a secret said without a cue can still be missed; word times can be off by about 0.1 s, so edges are padded. The bleep is the same 1 kHz beep the Privacy Guard already uses for spoken secrets (0.2 amplitude), so it is audible where the words were.
+
+**Follow-ups.** A one-click delete of the kept original; a "bleep every time" list for names; lower the beep level if it is too loud on real speech.

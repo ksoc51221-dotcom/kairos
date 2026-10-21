@@ -132,4 +132,4 @@ async function bleepAudio(video, out, intervals, duration) {
   return true;
 }
 
-module.exports = { findSpokenSecrets, guardTranscript, bleepFilter, bleepAudio, mergeIntervals, BLEEP };
+module.exports = { findSpokenSecrets, guardTranscript, bleepFilter, bleepAudio, mergeIntervals, wordsFromSegments, BLEEP };

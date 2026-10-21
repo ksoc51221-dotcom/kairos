@@ -29,19 +29,19 @@ Who feels it: developers filing bug reports, support and QA people, anyone who w
 
 Kairos records your screen and camera, publishes the video to a link you control, and runs a crew of local AI agents on it. Everything runs on your Mac. There is no account and no cloud, unless you choose to turn on **public links** (below): then, and only for a video you click Publish on, a small copy goes to a free storage bucket you own, or to a public repository on your own GitHub account.
 
-1. **The Privacy Guard reads the screen and listens to you.** Before anyone but you can open a recording, it OCRs the picture and covers e-mail addresses, API keys, tokens, card numbers and passwords with a solid black box. It also checks what you *said*: a password or PIN spoken with a phrase like "the password is…" is bleeped in the audio and removed from the transcript and captions. If any check fails, the recording stays "only you can watch". A failure never means "everyone can".
+1. **The Privacy Guard reads the screen and listens to you.** Before anyone but you can open a recording, it OCRs the picture and covers e-mail addresses, API keys, tokens, card numbers and passwords with a solid black box. It also checks what you *said*: a password or PIN spoken with a phrase like "the password is…" is bleeped in the audio and removed from the transcript and captions. Missed something? **Bleep speech** (Edit tab and the editor) lets you pick a sentence, name the words ("after crush until school"), give a time ("my password around 1:23") or describe a topic ("everything I said about my crush"); you review each part before anything changes, and you can undo it. If any check fails, the recording stays "only you can watch". A failure never means "everyone can".
 2. **It is built for agents.** Press **Record for agent** and Kairos writes an *Action Plan*: a markdown brief with what you said, the steps you showed, where you clicked and the screenshots. An MCP server hands it to Claude Code, Cursor or any MCP client: *"List my Kairos videos and turn the latest one into a fix."*
 3. **A crew of local agents** (Planner, Insights, Guide Writer, Guide Critic, AI Actions) writes the title, summary, chapters and a fact-checked step-by-step guide, then turns the recording into a PR description, bug report or SOP.
 
 The full checklist, with what is tested and what is not, is in [FEATURES.md](docs/FEATURES.md).
 
-## Public links (optional, free, no card)
+## Public links (optional, free)
 
-A normal link only opens on your Mac. For judges, customers or friends, turn on public links: Kairos makes a small copy (1080p, about 37 MB a minute) of the Privacy-Guard-cleared video, uploads it to a **private** Backblaze B2 bucket you own, and a free Cloudflare Worker you deploy serves it at `https://<you>.workers.dev/v/<random>`. It works when your Mac is asleep, supports a password, and the copy is deleted after 30 days. Private and "Ask for email" recordings can never be published, and nothing is ever uploaded without a click. Set-up takes about 20 minutes: [cloud/README.md](cloud/README.md). Check a finished link from anywhere with `node scripts/public-check.js <link>`.
+A normal link only opens on your Mac. For judges, customers or friends, turn on public links. There are two routes and both are free. **GitHub is the recommended one: it is the fast one.** Private and "Ask for email" recordings can never be published, and nothing is ever uploaded without a click.
 
-### The quick route: Publish to GitHub
+### Recommended: Publish to GitHub (about 2 minutes)
 
-If you do not want Backblaze and Cloudflare, Settings → **Publish to GitHub** takes two minutes: paste a GitHub token (classic, "repo" and "delete_repo" permissions) or tick "Use my GitHub CLI login". In a video's Share dialog choose **GitHub** and Kairos makes a smaller copy (720p, about 16 MB a minute, 3 minutes at most), creates one repository on your account for that video, fills it while it is still **private**, and only then makes it public and turns on GitHub Pages. The link looks like `https://<you>.github.io/kairos-share-<random>/` and shows a plain page with the video.
+Settings → **Publish to GitHub**: paste a GitHub token (classic, "repo" and "delete_repo" permissions) or tick "Use my GitHub CLI login". In a video's Share dialog choose **GitHub** and Kairos makes a smaller copy (720p, about 16 MB a minute, 3 minutes at most), creates one repository on your account for that video, fills it while it is still **private**, and only then makes it public and turns on GitHub Pages. The link looks like `https://<you>.github.io/kairos-share-<random>/` and shows a plain page with the video.
 
 What you give up compared with the Backblaze route, and the dialog says so before you publish:
 
@@ -49,7 +49,12 @@ What you give up compared with the Backblaze route, and the dialog says so befor
 - **Deleting is not guaranteed.** Kairos deletes the repository after 30 days, on Unpublish, when you delete the video and when privacy is tightened. GitHub may keep copies in caches and anyone who saved or forked the video keeps it. Without the "delete_repo" permission Kairos cannot delete at all: it turns the link off in Kairos and shows you the repository to delete yourself.
 - The token is stored on this Mac in Kairos's settings file next to your other settings, not in the Keychain. Anyone who can read your Mac's files can read it.
 
-Private, "Ask for email", unscanned and failed recordings are refused on this route exactly as on the other one. The Privacy Guard does not blur faces on either route.
+### Advanced: private links with a password (Backblaze + Cloudflare, about 20 minutes)
+
+Only worth it if you need a password or a copy that is really deleted. It takes two free accounts. Kairos makes a small copy (1080p, about 37 MB a minute) of the Privacy-Guard-cleared video, uploads it to a **private** Backblaze B2 bucket you own, and a free Cloudflare Worker you deploy serves it at `https://<you>.workers.dev/v/<random>`. It works when your Mac is asleep, supports a password, and the copy is deleted after 30 days. Backblaze's free tier is 10 GB of storage with free downloads up to a multiple of what you store (check backblaze.com for the current terms), and Backblaze may ask for a card at sign-up, so set Caps & Alerts to $0 as the guide says. Set-up: [cloud/README.md](cloud/README.md). Check a finished link from anywhere with `node scripts/public-check.js <link>`.
+
+Private, "Ask for email", unscanned and failed recordings are refused on both routes. The Privacy Guard does not blur faces on either route.
+
 
 ## Run it (about 5 minutes)
 
@@ -168,7 +173,7 @@ Planner, Insights, Guide Writer, Guide Critic and the AI Actions use the local m
 | Privacy | Screen OCR with a solid fill, spoken-secret bleeping, fail-closed viewer gate, owner sign-in cookie, password / e-mail / private links, link expiry, lockout after wrong passwords |
 | Editing | Timeline with waveform, edit by transcript, remove filler words and silences, insert clips, overlays with `{{variables}}`, CTA button, thumbnail and GIF, one-level undo |
 | AI | Title, summary, chapters, tasks, step-by-step guide, captions, translation, SOP / PR description / bug report / issue / follow-up / recap |
-| Sharing | Local library with spaces, folders and search; comments, reactions, analytics; link, embed, LAN sharing, optional public links that open on any phone (Backblaze + Cloudflare, or a quick GitHub route with no password); Slack / GitHub / Linear / Jira with a preview before anything is sent |
+| Sharing | Local library with spaces, folders and search; comments, reactions, analytics; link, embed, LAN sharing, optional public links that open on any phone (GitHub, the quick recommended route with no password, or Backblaze + Cloudflare for password links); Slack / GitHub / Linear / Jira with a preview before anything is sent |
 | For agents | MCP server and Action Plan brief |
 
 The full checklist, with what is tested and what is not, is in [FEATURES.md](docs/FEATURES.md).
@@ -194,7 +199,7 @@ Then: *"List my Kairos videos and turn the latest one into a fix."* The tools ar
 
 ## Privacy model
 
-- **Local first.** Recordings, transcripts and models stay in `~/Library/Application Support/spool`. Nothing is uploaded unless you press Publish on a video's public link (to your own free Backblaze bucket or your own GitHub account, never for a Private recording). The only other network use is downloading the speech model once, and any Send-to action you click.
+- **Local first.** Recordings, transcripts and models stay in `~/Library/Application Support/spool`. Nothing is uploaded unless you press Publish on a video's public link (to your own GitHub account or your own free Backblaze bucket, never for a Private recording). The only other network use is downloading the speech model once, and any Send-to action you click.
 - **Viewers are gated.** Every request from anyone but you goes through one function. It says "blocked" unless the Privacy Guard has cleared the video. "You" means this machine *and* a per-launch sign-in cookie that only the app hands out, so a tunnel to the port is just another viewer.
 - **Secrets are covered, not trusted to a blur.** What the guard finds on screen gets a solid black box, the blurred file replaces the original, and thumbnails and GIFs made earlier are regenerated or deleted. Screenshots go through the same pass.
 - **Send-to tokens** stay in local settings and are write-only in the UI. Every send shows the exact request first.
