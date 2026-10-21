@@ -135,7 +135,7 @@ test('records from older versions get the new fields', () => {
 test('settings merge defaults and notifications cap at 300', () => {
   const dir = tmp(); store.init(dir, quiet);
   assert.equal(store.getSettings().privacyGuard, true);
-  store.setSettings({ brand: { name: 'X' } }); assert.equal(store.getSettings().brand.accent, '#3267d4');
+  store.setSettings({ brand: { name: 'X' } }); assert.equal(store.getSettings().brand.accent, '#047857');
   for (let i = 0; i < 320; i++) store.notify({ type: 'comment', n: i });
   assert.equal(store.load().notifications.length, 300); assert.equal(store.load().notifications[0].n, 319);
 });

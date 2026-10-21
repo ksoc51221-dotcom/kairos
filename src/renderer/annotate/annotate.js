@@ -41,5 +41,5 @@ $('undo').onclick = () => { ops.pop(); render(); };
 addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'z') { ops.pop(); render(); } if (e.key === 'Escape') spool.send('annotate:cancel'); });
 const out = () => { commitText(); return c.toDataURL('image/png'); };
 $('save').onclick = () => spool.send('annotate:save', out());
-$('copy').onclick = () => { spool.send('annotate:copy', out()); $('copy').textContent = 'Copied ✓'; setTimeout(() => ($('copy').textContent = 'Copy'), 1200); };
+$('copy').onclick = () => { spool.send('annotate:copy', out()); $('copy').textContent = 'Copied'; setTimeout(() => ($('copy').textContent = 'Copy'), 1200); };
 $('cancel').onclick = () => spool.send('annotate:cancel');

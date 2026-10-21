@@ -1,137 +1,138 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kairos</title><!--OG--><link rel="stylesheet" href="/static/app.css"><style>
-/* Watch page, in the layout of the Loom reference: header, title row, player, reaction bar on the left; a tabbed panel on the right. */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) 460px; min-height: calc(100vh - 68px); }
-@media (max-width: 1040px) { .layout { grid-template-columns: 1fr; } .side { position: static !important; height: 560px !important; border-left: 0 !important; border-top: 1px solid var(--line-soft); } }
-.main { padding: 28px 36px 48px; min-width: 0; }
-.titlerow { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
-#title { font: 700 32px/1.15 var(--font); letter-spacing: -.015em; border: 0; background: transparent; color: var(--ink); width: 100%; padding: 2px 0; border-radius: 8px; }
-#title:not([readonly]):hover, #title:focus { background: var(--wash); outline: 0; padding-left: 8px; margin-left: -8px; }
-.by { color: var(--mute); font-size: 17px; margin-top: 4px; } .by b { font-weight: 500; color: var(--mute); }
-.views { flex: none; border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; font: 500 17px/1 var(--font); }
-.stagewrap { max-width: 1100px; margin: 0 auto; }
-#proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: #14161a; text-align: center; z-index: 6; }
-.spin { width: 34px; height: 34px; border: 4px solid #444; border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 12px; }
+<title>Kairos</title><!--OG--><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
+/* Watch page: workstation layout (media canvas left, 460px inspector right). Tokens and components come from app.css; this block holds the page-only rules. */
+:root { --vb: 0px; }
+.wk { height: calc(100vh - var(--topbar-h) - var(--vb)); }
+.viewas { background: var(--accent-soft); color: var(--accent-d); text-align: center; font: 500 11px/16px var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--line-soft); } .viewas a { text-decoration: underline; margin-left: 8px; }
+/* top bar */
+#title { font: 600 16px/24px var(--font); letter-spacing: -.01em; border: 1px solid transparent; background: transparent; color: var(--ink); width: min(340px, 28vw); min-width: 100px; padding: 2px 6px; border-radius: var(--r); text-overflow: ellipsis; }
+#title:not([readonly]):hover { background: var(--surface-1); border-color: var(--line-soft); } #title:focus { outline: 1px solid var(--accent); background: var(--surface); }
+#by { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; }
+.top .acts .avatar { text-decoration: none; }
+@media (max-width: 640px) { .top { gap: 8px; padding: 0 8px; } .top .brand { padding-right: 0; border-right: 0; } .top .brand > span:not(.logo) { display: none; } #by, .lbl, .top .vsep { display: none; } #title { flex: 1; width: auto; min-width: 0; } }
+/* canvas */
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 22px; }
+.strip .sep { color: var(--off); }
+#proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: var(--stage); text-align: center; z-index: 6; font-size: 13px; }
+.spin { width: 14px; height: 14px; border: 2px solid var(--surface-4); border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; flex: none; } .spin.lg { width: 28px; height: 28px; border-width: 3px; margin: 0 auto 12px; border-color: #475569; border-top-color: var(--code-accent); }
 @keyframes s { to { transform: rotate(360deg); } }
-.tools { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin: 10px 0 0; min-height: 34px; }
-.notes { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-.banner { display: flex; align-items: center; gap: 10px; background: var(--accent-soft); border-radius: 12px; padding: 11px 16px; font-size: 14px; }
-.banner .spin { width: 16px; height: 16px; border-width: 3px; margin: 0; }
-.shield { display: inline-flex; gap: 6px; align-items: center; background: var(--good-tile); color: var(--good); border-radius: 99px; padding: 5px 12px; font: 600 13px/1.2 var(--font); width: fit-content; }
-.actions { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 22px auto 0; max-width: 1100px; }
-.rbar { display: flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 18px; padding: 8px 10px; background: var(--card); box-shadow: 0 2px 8px rgba(0, 0, 0, .04); }
-.rbar .em { border: 0; background: none; font-size: 28px; line-height: 1; padding: 8px 9px; border-radius: 12px; cursor: pointer; position: relative; transition: transform 120ms var(--ease), background 120ms var(--ease); }
-.rbar .em:hover { background: var(--wash); transform: scale(1.12); }
-.rbar .em small { position: absolute; right: -1px; top: -1px; background: var(--ink); color: #fff; border-radius: 99px; font: 600 11px/1 var(--font); padding: 3px 6px; }
-.rbar .sep { width: 1px; height: 36px; background: var(--line); margin: 0 8px; }
-.rbar .cbtn { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--wash); border-radius: 12px; padding: 0 20px; height: 54px; font: 500 20px/1 var(--font); cursor: pointer; }
-.rbar .cbtn:hover { background: var(--wash-d); }
-.rbar .cbtn svg { width: 26px; height: 26px; }
-.sq { width: 68px; height: 68px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .04); }
-.sq:hover { background: var(--wash); } .sq svg { width: 30px; height: 30px; }
-.pop { position: absolute; z-index: 20; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-pop); padding: 8px; }
-.pop .emrow { display: flex; flex-wrap: wrap; gap: 2px; max-width: 280px; } .pop .emrow button { border: 0; background: none; font-size: 26px; padding: 6px 8px; border-radius: 10px; cursor: pointer; } .pop .emrow button:hover { background: var(--wash); }
-.pop .mi { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; text-align: left; padding: 11px 14px; border-radius: 10px; font: 500 15px/1.2 var(--font); cursor: pointer; white-space: nowrap; }
-.pop .mi:hover { background: var(--wash); } .pop .mi.danger { color: var(--danger); } .pop .mi svg { color: var(--mute); }
-
-/* side panel */
-.side { background: var(--card); border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; height: calc(100vh - 68px); position: sticky; top: 68px; min-width: 0; }
-.side .tabs { border-bottom: 1px solid var(--line-soft); flex: none; }
-.panel { flex: 1; overflow: auto; padding: 20px 24px 28px; }
-.add { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line-soft); flex: none; }
-.add input { flex: 1; }
-.powered { font: 500 17px/1 var(--font); margin: 0 0 20px 4px; display: flex; gap: 6px; align-items: center; } .powered svg { width: 18px; height: 18px; }
-.sh { display: flex; align-items: center; gap: 10px; margin: 6px 0 14px; } .sh h3 { margin: 0; font: 700 25px/1.2 var(--font); letter-spacing: -.01em; } .sh .grow { text-align: right; color: var(--ink); font-weight: 500; }
-.hl { display: flex; align-items: center; gap: 16px; border: 2px solid transparent; border-radius: 14px; padding: 16px 20px; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; cursor: pointer; margin-bottom: 14px; font: 500 18px/1.2 var(--font); }
-.hl .tile { width: 46px; height: 46px; border-radius: 12px; background: var(--wash); color: var(--ink); }
-.row2 { display: flex; align-items: center; gap: 16px; padding: 10px 4px; font: 500 18px/1.2 var(--font); } .row2.off { color: var(--off); } .row2 .tile { width: 60px; height: 60px; border-radius: 14px; }
-.row2 .lab { flex: 1; min-width: 0; } .row2 small { display: block; color: var(--mute); font: 400 13px/1.3 var(--font); margin-top: 3px; }
-.promo { background: var(--accent-soft); border-radius: 16px; padding: 18px 20px; position: relative; margin: 6px 0 12px; }
-.promo h4 { margin: 0 0 8px; display: flex; align-items: center; gap: 10px; font: 600 18px/1.2 var(--font); } .promo p { margin: 0; font-size: 15px; line-height: 1.5; } .promo a, .promo button.lnk { color: var(--accent); border: 0; background: none; padding: 0; font: 500 15px var(--font); cursor: pointer; }
-.promo .x { position: absolute; right: 12px; top: 12px; width: 30px; height: 30px; }
-.nav2 { display: flex; align-items: center; gap: 16px; width: 100%; border: 0; background: none; padding: 12px 4px; font: 500 18px/1.2 var(--font); cursor: pointer; text-align: left; border-radius: 12px; } .nav2:hover { background: var(--wash); } .nav2 .tile { width: 46px; height: 46px; border-radius: 12px; background: var(--wash); color: var(--ink); } .nav2 > svg:last-child { color: var(--ink); }
-.apply { background: var(--accent-soft); border-radius: 14px; padding: 14px 16px; margin: 6px 0 12px; font-size: 15px; display: flex; flex-direction: column; gap: 10px; }
+.pframe { display: flex; flex-direction: column; gap: 8px; }
+.pframe:fullscreen { background: #000; gap: 0; } .pframe:fullscreen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:fullscreen .pc { border-radius: 0; border-width: 1px 0 0; }
+.pframe:-webkit-full-screen { background: #000; gap: 0; } .pframe:-webkit-full-screen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:-webkit-full-screen .pc { border-radius: 0; border-width: 1px 0 0; }
+.pc { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
+.pc .scrub { height: 20px; touch-action: none; } .pc .scrub:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.pc .scrub .thumb { top: 3px; }
+.pc-marks { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; } .pc-mk { position: absolute; top: 2px; width: 2px; height: 5px; margin-left: -1px; background: var(--ink-2); } .pc-mk.r { background: var(--accent); }
+.pc-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .pc-time { white-space: nowrap; } .pc-time b { color: var(--ink); }
+.pc-vol { width: 72px; accent-color: var(--accent); }
+.markers { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rbar { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.rb { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); font: 500 12px/16px var(--font); cursor: pointer; transition: background 150ms var(--ease), border-color 150ms var(--ease); }
+.rb:hover { background: var(--surface-1); border-color: var(--line-strong); } .rb svg.i { width: 16px; height: 16px; color: var(--accent); } .rb .n { font: 600 11px/14px var(--mono); color: var(--mute); }
+.rb.cm-b { margin-left: auto; } .rb.cm-b svg.i { color: var(--ink); }
+.notes { display: flex; flex-direction: column; gap: 8px; } .notes:empty { display: none; }
+.callout .tag { display: block; margin-bottom: 2px; } .callout.warn .tag { color: var(--warn-ink); } .callout.ok .tag { color: var(--accent-d); } .callout.bad .tag { color: var(--danger-ink); }
+.imgview { display: grid; place-items: center; } .imgview img { max-width: 100%; max-height: 70vh; }
+/* inspector */
+.wk-side { min-height: 0; } .wk-body.panel { gap: 20px; }
+.sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sl { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); display: flex; align-items: center; gap: 8px; }
+.sl .grow { text-align: right; }
+.opts { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line-soft); } .opt:last-child { border-bottom: 0; } .opt.off { color: var(--off); }
+.olab { font-weight: 500; } .osub { color: var(--mute); font-size: 12px; line-height: 18px; margin-top: 2px; }
+.apply { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .apply .r { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.cm { margin-bottom: 18px; display: flex; gap: 12px; } .cm .avatar { width: 34px; height: 34px; font-size: 13px; } .cm b { font-size: 14px; } .cm .at { color: var(--accent); font: 600 13px var(--font); cursor: pointer; margin-left: 8px; }
-.cm p { margin: 3px 0 0; font-size: 15px; line-height: 1.45; } .men { color: var(--accent); font-weight: 600; }
-.empty { color: var(--mute); font-size: 14px; text-align: center; margin: 36px 0; }
-.card2 { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; } .card2 h4 { margin: 0 0 8px; font: 600 13px/1 var(--font); letter-spacing: .05em; text-transform: uppercase; color: var(--mute); } .card2 p { margin: 0; line-height: 1.55; font-size: 15px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; } .chip2 { border: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); border-radius: 99px; padding: 6px 13px; font: 500 13px var(--font); cursor: pointer; } .chip2 b { color: var(--accent); margin-right: 6px; } .chip2:hover { border-color: var(--accent); } .chip2.tag { background: var(--wash); cursor: default; }
-.tasks { margin: 0; padding-left: 20px; font-size: 15px; line-height: 1.6; }
-.step { margin-bottom: 20px; } .step h5 { margin: 0 0 4px; font-size: 15px; } .step h5 i { font-style: normal; background: var(--accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-grid; place-items: center; font-size: 12px; margin-right: 8px; }
-.step p { margin: 0 0 8px; font-size: 14.5px; line-height: 1.5; color: var(--mute); } .step img { width: 100%; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; display: block; }
-.crew { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); } .dot { flex: 0 0 10px; height: 10px; border-radius: 50%; margin-top: 6px; background: var(--line); }
-.dot.running { background: var(--accent); animation: p 1s infinite; } .dot.done { background: var(--good); } .dot.error { background: var(--danger); } .dot.skipped { background: var(--off); } @keyframes p { 50% { opacity: .3; } }
-.crew b { font-size: 14.5px; } .crew small { display: block; color: var(--mute); font-size: 13px; line-height: 1.4; margin-top: 2px; } .crew .d { font-size: 13px; margin-top: 3px; }
-.ghead { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; } .stats div { background: var(--wash); border-radius: 12px; padding: 12px; text-align: center; } .stats b { display: block; font-size: 22px; } .stats span { font-size: 12px; color: var(--mute); }
-.heat { display: flex; align-items: flex-end; height: 56px; gap: 1px; margin: 8px 0 14px; cursor: pointer; } .heat i { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; opacity: .8; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; } td, th { padding: 7px 4px; border-bottom: 1px solid var(--line-soft); text-align: left; } th { color: var(--mute); font-weight: 600; }
-.act { font-size: 13.5px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); } .act small { color: var(--mute); display: block; }
-.set { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-size: 15px; } .set .lab { flex: 1; } .set small { display: block; color: var(--mute); font-size: 13px; }
-.set .field { width: auto; max-width: 220px; padding: 8px 10px; font-size: 14px; }
-.sub { font: 600 13px/1 var(--font); letter-spacing: .05em; text-transform: uppercase; color: var(--mute); margin: 22px 0 4px; }
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 11px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; z-index: 99; } #toast.on { opacity: 1; }
+.cms { display: flex; flex-direction: column; gap: 16px; }
+.cm { display: flex; gap: 10px; } .cm .avatar { width: 28px; height: 28px; } .cm b { font-weight: 600; }
+.cm .at { color: var(--accent); font: 500 11px/16px var(--mono); cursor: pointer; margin-left: 8px; letter-spacing: .02em; } .cm p { margin: 2px 0 0; line-height: 20px; overflow-wrap: anywhere; } .men { color: var(--accent); font-weight: 600; }
+.tr { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; } .tr .tstamp { cursor: pointer; flex: none; }
+.empty { color: var(--mute); text-align: center; margin: 24px 0; }
+.chaps { display: flex; flex-direction: column; gap: 4px; } .chap { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 10px; cursor: pointer; font: 400 13px/20px var(--font); } .chap:hover { border-color: var(--accent); }
+.chap .tstamp { flex: none; cursor: pointer; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tasks { margin: 0; padding-left: 18px; line-height: 20px; } .tasks li + li { margin-top: 4px; }
+.card p { margin: 0; line-height: 20px; } .card p + p { margin-top: 6px; }
+.stp .gh { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .stp .gh b { font-weight: 600; }
+.stp .gd { color: var(--mute); margin: 0 0 8px; } .stp img { width: 100%; border-radius: var(--r); border: 1px solid var(--line); cursor: pointer; display: block; }
+.crew { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); align-items: flex-start; } .crew .dot { margin-top: 7px; }
+.crew small { display: block; color: var(--mute); font-size: 12px; line-height: 16px; margin-top: 2px; } .crew .d { font-size: 12px; margin-top: 3px; }
+.ghead { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.kvs3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.heat { display: flex; align-items: flex-end; height: 56px; gap: 1px; cursor: pointer; } .heat i { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; opacity: .8; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padding: 6px 4px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; } th { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.act { padding: 6px 0; border-bottom: 1px solid var(--line-soft); } .act small { color: var(--mute); display: block; font: 500 11px/14px var(--mono); letter-spacing: .02em; margin-top: 2px; }
+.set { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); } .set .lab { flex: 1; min-width: 0; } .set small { display: block; color: var(--mute); font-size: 12px; line-height: 18px; }
+.set .field { width: auto; max-width: 200px; }
+.md { white-space: pre-wrap; word-break: break-word; font: 400 12px/18px var(--mono); background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 10px 12px; margin: 8px 0; max-height: 320px; overflow: auto; }
+.axrow { display: flex; align-items: center; gap: 10px; } .axrow .lab { flex: 1; min-width: 0; font-weight: 500; } .axrow small { display: block; color: var(--mute); font-weight: 400; font-size: 12px; line-height: 16px; margin-top: 2px; }
+.axbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; } .prev dt { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin-top: 12px; } .prev dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.pop { position: absolute; z-index: 60; padding: 4px; min-width: 180px; }
+.pop .mi { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; text-align: left; padding: 7px 10px; border-radius: var(--r); font: 500 12px/16px var(--font); cursor: pointer; white-space: nowrap; color: var(--ink); } .pop .mi:hover { background: var(--surface-1); } .pop .mi.danger { color: var(--danger); } .pop .mi svg { color: var(--mute); }
 .fade { animation: fadein 150ms var(--ease); } @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.viewas { background: var(--good-tile); color: var(--good); text-align: center; font-size: 14px; padding: 8px; font-weight: 600; } .viewas a { text-decoration: underline; margin-left: 8px; }
-.imgview { display: grid; place-items: center; background: #0e0e10; } .imgview img { max-width: 100%; max-height: 70vh; }
-.md { white-space: pre-wrap; word-break: break-word; font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--wash); border-radius: 10px; padding: 14px 16px; margin: 10px 0; max-height: 340px; overflow: auto; }
-.axrow { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid var(--line); } .axrow .lab { flex: 1; min-width: 0; font: 500 16px/1.25 var(--font); } .axrow small { display: block; color: var(--mute); font: 400 13px/1.3 var(--font); margin-top: 2px; }
-.axrow .tile { width: 44px; height: 44px; border-radius: 12px; flex: none; } .axbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; } .prev dt { font-weight: 600; margin-top: 12px; } .prev dd { margin: 4px 0 0; }
-/* share modal (reference: share-modal.webp) */
-.sm .hd { display: flex; align-items: center; gap: 22px; } .sm .hd h3 { flex: 1; } .sm .lk { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; font: 500 16px var(--font); cursor: pointer; padding: 6px; border-radius: 8px; } .sm .lk:hover { background: var(--wash); } .sm .lk.on { color: var(--accent); }
-.sm .to { margin-top: 22px; position: relative; } .sm .to .field { font-size: 17px; padding: 15px 16px; border-radius: 10px; border-color: var(--line); }
-.sm .sug { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 10px 14px; font: 500 16px var(--font); cursor: pointer; }
-.sm .got { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; } .sm .got span { cursor: default; background: var(--accent-soft); border-color: transparent; padding: 7px 8px 7px 12px; font-size: 15px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 0; color: var(--mute); }
-.sm h5 { margin: 26px 0 10px; font: 600 16px var(--font); }
-.sm .acc { display: flex; align-items: center; gap: 14px; } .sm .acc .tile { width: 56px; height: 56px; border-radius: 14px; background: var(--good-tile); color: var(--good); } .sm .acc .tile.lockd { background: var(--wash); color: var(--ink); }
-.sm .acc b { display: inline-flex; align-items: center; gap: 6px; font: 600 18px var(--font); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--mute); font-size: 15px; margin-top: 2px; }
-.sm .ft { display: flex; align-items: center; gap: 22px; margin: 26px -32px -28px; padding: 18px 32px; border-top: 1px solid var(--line-soft); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
-.sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 9px; border: 0; background: none; font: 500 16px var(--font); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
-.sm .more { margin-top: 18px; padding: 16px; background: var(--wash); border-radius: 12px; }
-.sm .more code.b { background: var(--card); }
-.sm .pwrow { margin-top: 12px; }
-@media (prefers-reduced-motion: reduce) { .fade { animation: none; } }
+@media (max-width: 1040px) { .wk { flex-direction: column; height: auto; } .wk-canvas { overflow: visible; border-right: 0; } .wk-side { width: 100%; border-top: 1px solid var(--line-soft); overflow: visible; min-height: 480px; } .wk-body { overflow: visible; } }
+@media (max-width: 640px) { .wk-canvas > .in { padding: 12px; } .rb.cm-b { margin-left: 0; } }
+/* share modal */
+.sm .hd { display: flex; align-items: center; gap: 12px; } .sm .hd h3 { flex: 1; } .sm .lk { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none; font: 500 12px/16px var(--font); cursor: pointer; padding: 6px 8px; border-radius: var(--r); } .sm .lk:hover { background: var(--surface-1); border-color: var(--line-soft); } .sm .lk.on { color: var(--accent); border-color: var(--accent); }
+.sm .to { margin-top: 14px; position: relative; }
+.sm .sug, .sm .got { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 4px 10px; font: 500 12px/18px var(--font); cursor: pointer; }
+.sm .got span { cursor: default; background: var(--accent-soft); border-color: transparent; padding: 3px 4px 3px 10px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 2px; color: var(--mute); }
+.sm h5 { margin: 20px 0 8px; font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); } .sm h5 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sm .acc { display: flex; align-items: center; gap: 12px; } .sm .acc b { display: inline-flex; align-items: center; gap: 4px; font: 600 13px/20px var(--font); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
+.sm .ft { display: flex; align-items: center; gap: 16px; margin: 20px -24px -20px; padding: 12px 24px; border-top: 1px solid var(--line-soft); background: var(--surface-1); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
+.sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font: 500 12px/16px var(--font); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+.sm .more { margin-top: 12px; padding: 12px; background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: var(--r); } .sm .pwrow { margin-top: 10px; }
+.sm .note { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--mute); } .sm .note.w { color: var(--warn-ink); } .sm .note.e { color: var(--danger); }
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
-<header class="top"><a class="iconbtn" id="back" href="/" title="Library" data-i="sidebar"></a><a class="brand" href="/" id="brand"></a><div class="grow"></div>
-  <span id="ownerBtns" hidden style="display:contents"><span class="split"><button class="btn pri" id="share"><span data-i="globe"></span>Share</button><button class="btn pri" id="copy" title="Copy link" data-i="link"></button></span>
-    <button class="iconbtn" id="moreBtn" title="More" data-i="more"></button><a class="iconbtn" href="/#/library" title="Search your library" data-i="search"></a><a class="avatar" id="who" href="/#/settings" title="Settings"></a></span>
-  <button class="btn pri" id="vcopy" hidden><span data-i="link"></span>Copy link</button></header>
-<div id="root"><div class="layout"><main class="main">
-  <div class="titlerow"><div style="flex:1;min-width:0"><input id="title" spellcheck="false" aria-label="Title"><div class="by" id="by"></div></div><div class="views" id="views"></div></div>
-  <div class="stagewrap"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin"></div>Processing…</div></div></div>
-    <div class="tools"><select class="sp" id="cc" aria-label="Captions"></select><select class="sp" id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
-    <div class="notes" id="notes"></div></div>
-  <div class="actions"><div class="rbar" id="react"></div><button class="sq" id="later" title="Watch later" hidden></button></div>
-</main>
-<aside class="side"><div class="tabs" id="tabs"></div><div class="panel" id="panel"><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:56px;margin-top:14px"></div><div class="skeleton" style="height:56px;margin-top:12px"></div></div>
-  <form class="add" id="form"><input class="field" id="ctext" placeholder="Add a comment at the current time… use @name to mention" autocomplete="off"><button class="btn pri">Send</button></form></aside></div></div>
-<div id="modal" class="modal" hidden></div><div id="toast"></div>
-<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
+<header class="top"><a class="brand" href="/" id="brand"></a>
+  <nav class="topnav" id="nav" hidden><a href="/">Library</a><a href="/#/settings">Settings</a></nav><span class="vsep"></span>
+  <input id="title" spellcheck="false" aria-label="Title"><span class="meta" id="by"></span><div class="grow"></div>
+  <div class="acts"><span id="ownerBtns" hidden style="display:contents"><button class="btn" id="planBtn" hidden><span data-i="list"></span><span class="lbl">Action plan</span></button><span class="split"><button class="btn pri" id="share"><span data-i="share"></span><span class="lbl">Share</span></button><button class="btn pri" id="copy" title="Copy link" aria-label="Copy link" data-i="link"></button></span>
+    <button class="iconbtn" id="moreBtn" title="More" aria-label="More" data-i="more"></button><a class="avatar" id="who" href="/#/settings" title="Settings"></a></span>
+  <button class="btn pri" id="vcopy" hidden><span data-i="link"></span>Copy link</button></div></header>
+<div id="root"><div class="wk"><main class="wk-canvas"><div class="in">
+  <div class="strip" id="strip"></div>
+  <div class="pframe" id="pframe"><div class="stage framed" id="stage"><div id="zoomwrap"><video id="v" playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin lg"></div>Processing…</div></div></div>
+    <div class="pc" id="pc"><div class="scrub" data-pc="scrub" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuenow="0"><div class="trk"><i class="buf"></i><i class="fil"></i></div><span class="pc-marks"></span><i class="thumb"></i></div>
+      <div class="pc-row"><button class="btn icon sm" data-pc="play" aria-label="Play" data-i="play"></button><span class="meta nocase pc-time" data-pc="time">0:00 / 0:00</span><span class="grow"></span>
+        <button class="btn icon sm ghost" data-pc="mute" aria-label="Mute" data-i="volume"></button><input class="pc-vol" type="range" data-pc="vol" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+        <select class="sp" id="cc" aria-label="Captions"></select><select class="sp" id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+        <button class="btn icon sm ghost" data-pc="pip" title="Picture in picture" aria-label="Picture in picture" data-i="pip"></button><button class="btn icon sm ghost" data-pc="fs" title="Fullscreen" aria-label="Fullscreen" data-i="fullscreen"></button></div></div></div>
+  <div class="markers"><div class="rbar" id="react"></div><button class="btn icon" id="later" hidden></button></div>
+  <div class="notes" id="notes"></div>
+  <div class="kvs" id="metrics"></div>
+</div></main>
+<aside class="wk-side"><div class="tabs" id="tabs"></div><div class="wk-sub" id="sub"></div><div class="wk-body panel" id="panel"><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:56px"></div><div class="skeleton" style="height:56px"></div></div>
+  <form class="wk-foot" id="form"><div class="inwrap"><input class="field" id="ctext" placeholder="Comment at the current time… use @name to mention" autocomplete="off"><button class="send" aria-label="Send comment" data-i="send"></button></div></form></aside></div></div>
+<div id="modal" class="modal" hidden></div><div id="toast" class="toast"></div>
+<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script><script src="/static/edit-prompt.js"></script>
 <script>
 const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP, { i: I } = UI;
-const id = location.pathname.split('/').pop(), EMOJI = ['❤️', '👍', '🔥', '👏', '🙌', '👀'], MORE_EMOJI = ['😂', '🎉', '😮', '😢', '🤔', '💯', '🚀', '👎', '🙏', '😍', '🤝', '✅'];
-let me = { owner: false }, vm, ctl, tab = null, loaded = false, lastKey = '', an = null, anFor = '', promoShut = false;
+const id = location.pathname.split('/').pop();
+const KINDS = [['good', 'Looks good', 'check-circle'], ['question', 'Question', 'help-circle'], ['issue', 'Problem', 'alert-triangle'], ['idea', 'Idea', 'lightbulb'], ['key', 'Key moment', 'flag']];
+let me = { owner: false }, vm, ctl, tab = null, loaded = false, lastKey = '', an = null, anFor = '';
 const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1800); };
 const now = () => $('v')?.currentTime || 0; // B10: screenshots replace #v with an <img>
-const copied = (btn) => { const t = btn.innerHTML; btn.textContent = 'Copied ✓'; setTimeout(() => (btn.innerHTML = t), 1400); }; // U16
+const copied = (btn) => { const t = btn.innerHTML; btn.textContent = 'Copied'; setTimeout(() => (btn.innerHTML = t), 1400); }; // U16
 const seek = (t) => { const v = $('v'); if (!v) return; v.currentTime = t; v.play(); };
 const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const patch = async (body) => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); lastKey = ''; render(); };
 
 async function boot() {
   UI.fill(document); $('v').poster = `/media/${id}/thumb.jpg`; // U12: the poster and the skeletons are on screen before any API call returns
   me = await api('/api/me'); UI.brand(me.brand);
   $('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${esc(me.brand.name)}</span>`);
-  if (document.cookie.includes('sp_asviewer=1')) $('viewas').hidden = false;
-  $('ownerBtns').hidden = !me.owner; $('vcopy').hidden = me.owner; $('later').hidden = !me.owner; $('who').textContent = UI.initials(me.name || me.brand.name);
+  if (document.cookie.includes('sp_asviewer=1')) { $('viewas').hidden = false; document.documentElement.style.setProperty('--vb', '34px'); }
+  $('ownerBtns').hidden = !me.owner; $('nav').hidden = !me.owner; $('vcopy').hidden = me.owner; $('later').hidden = !me.owner; $('who').textContent = UI.initials(me.name || me.brand.name);
   $('title').readOnly = !me.owner;
   try { vm = await api(`/api/v/${id}`); }
   catch (e) { if (e.data?.gate || e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
   tab = me.owner ? (vm.forAgent && vm.type !== 'image' ? 'actions' : 'edit') : 'activity'; // "Record for agent" opens on the Action Plan
-  if (vm.type === 'image') { $('stage').className = 'stage imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('cc').hidden = $('speed').hidden = true; }
-  else { ctl = attach({ stage: $('stage'), video: $('v'), vm }); }
+  $('planBtn').hidden = !(me.owner && vm.type !== 'image');
+  if (vm.type === 'image') { $('stage').className = 'stage framed imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('pc').hidden = true; }
+  else { ctl = attach({ stage: $('stage'), video: $('v'), vm, controls: $('pc') }); }
   setupCC(); render(); listen();
 }
 function setupCC() {
@@ -142,7 +143,7 @@ function setupCC() {
 let refetching = false, again = false;
 async function refetch() {
   if (refetching) { again = true; return; }
-  if (['ctext', 'title'].includes(document.activeElement.id) || !$('modal').hidden || document.activeElement.closest?.('.panel input,.panel select')) { setTimeout(refetch, 1500); return; }
+  if (['ctext', 'title'].includes(document.activeElement.id) || !$('modal').hidden || document.activeElement.closest?.('#panel input,#panel select,#panel textarea')) { setTimeout(refetch, 1500); return; }
   refetching = true;
   try { vm = await api(`/api/v/${id}`); ctl?.setVM(vm); render(); } catch {}
   refetching = false; if (again) { again = false; refetch(); }
@@ -154,7 +155,7 @@ function listen() {
   es.onerror = () => { if (es.readyState === EventSource.CLOSED) setInterval(() => { if (!document.hidden) refetch(); }, 5000); };
 }
 
-// ---- tabs: Edit · Activity · Generate · Transcript · Settings (owner); Activity · Generate · Transcript (viewers) ----
+// ---- tabs: Edit · Activity · Generate · AI Actions · Transcript · Settings (owner); Activity · Generate · Transcript (viewers) ----
 const hasGen = () => !!(vm.summary || vm.chapters?.length || vm.tasks?.length || vm.guide);
 function tabsFor() { const t = []; if (me.owner) t.push(['edit', 'Edit']); t.push(['activity', 'Activity']); if (me.owner || hasGen()) t.push(['generate', 'Generate']); if (me.owner && vm.type !== 'image') t.push(['actions', 'AI Actions']); t.push(['transcript', 'Transcript']); if (me.owner) t.push(['settings', 'Settings']); return t; }
 const scrollOf = {};
@@ -163,42 +164,91 @@ function renderTabs() {
   if (!t.some((x) => x[0] === tab)) tab = t[0][0];
   if ($('tabs').dataset.sig !== sig) {
     $('tabs').dataset.sig = sig;
-    $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}">${l}${k === 'generate' && vm.stage && vm.stage !== 'done' && me.owner ? '<span class="pill" style="padding:1px 7px">…</span>' : ''}</button>`).join('') + '<i class="ind"></i>';
+    $('tabs').innerHTML = t.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('') + '<i class="ind"></i>';
     $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => go(b.dataset.t));
   }
-  let on = null; $('tabs').querySelectorAll('button').forEach((b) => { const is = b.dataset.t === tab; b.classList.toggle('on', is); if (is) on = b; });
+  let on = null; $('tabs').querySelectorAll('button').forEach((b) => { const is = b.dataset.t === tab; b.classList.toggle('on', is); if (is) on = b; if (b.dataset.t === 'generate') { const busy = me.owner && vm.stage && vm.stage !== 'done'; b.querySelector('.dot')?.remove(); if (busy) b.insertAdjacentHTML('beforeend', '<span class="dot pulse"></span>'); } });
   if (on) { const ind = $('tabs').querySelector('.ind'); ind.style.width = on.offsetWidth + 'px'; ind.style.transform = `translateX(${on.offsetLeft}px)`; }
 }
 function go(t) { scrollOf[tab] = $('panel').scrollTop; tab = t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; }
+// the inspector sub-header: a real fact on the left, small neutral badges (only true ones) on the right
+function renderSub() {
+  const busy = vm.stage && vm.stage !== 'done', local = me.owner ? '<span class="badge">On this device</span>' : '';
+  const [left, right] = { edit: [plural(draft().length, 'cut') + ' in draft', local], activity: [plural(vm.comments.length, 'comment'), me.owner ? `<span class="badge">${plural(vm.views, 'view')}</span>` : ''],
+    generate: [busy ? 'AI crew working' : 'AI notes', local], actions: ['AI actions', local], transcript: [plural((vm.segments || []).length, 'segment'), ''], settings: ['Owner only', ''] }[tab] || ['', ''];
+  const h = `<span class="meta">${esc(left)}</span><span>${right}</span>`; if ($('sub').dataset.h !== h) { $('sub').dataset.h = h; $('sub').innerHTML = h; }
+}
 
 function render() {
   document.title = vm.title + ' · ' + (me.brand?.name || 'Kairos');
   if (document.activeElement !== $('title')) $('title').value = vm.title;
-  $('by').innerHTML = `<b>${esc(vm.by || me.brand.name)}</b> · ${UI.ago(vm.createdAt)}${vm.type === 'image' ? '' : ' · ' + fmt(vm.duration)}`;
-  $('views').textContent = `${vm.views} view${vm.views === 1 ? '' : 's'}`;
-  $('later').innerHTML = I(vm.watchLater ? 'bookmark-on' : 'bookmark'); $('later').title = vm.watchLater ? 'Saved to Watch later' : 'Watch later';
+  $('by').textContent = [vm.by || me.brand.name, UI.ago(vm.createdAt), vm.type === 'image' ? '' : fmt(vm.duration), plural(vm.views, 'view')].filter(Boolean).join(' · ');
+  $('later').innerHTML = I(vm.watchLater ? 'bookmark-on' : 'bookmark'); $('later').title = vm.watchLater ? 'Saved to Watch later' : 'Watch later'; $('later').setAttribute('aria-label', $('later').title);
   drawReactions();
   const ready = vm.status === 'ready' || vm.status === undefined;
   $('proc').hidden = ready;
-  if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
+  if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin lg"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
   if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); if (vm.captionsDefault) { $('cc').value = 'original'; ctl?.setCaptions('original').catch(() => {}); } }
   if (loaded && ctl && vm.captionsDefault !== undefined && $('cc').dataset.d !== String(!!vm.captionsDefault)) { $('cc').dataset.d = String(!!vm.captionsDefault); if (vm.captionsDefault && !$('cc').value) { $('cc').value = 'original'; ctl.setCaptions('original').catch(() => {}); } else if (!vm.captionsDefault && $('cc').value === 'original') { $('cc').value = ''; ctl.setCaptions(null); } }
-  renderNotes(); renderTabs();
+  renderStrip(); renderNotes(); renderMetrics(); renderTabs(); renderSub();
   const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy, vm.edits, vm.captionsDefault, vm.cursorFx, vm.autoZoom, vm.folder, vm.tags, vm.spaces, vm.summary, vm.words, vm.duration]);
   if (key !== lastKey) { lastKey = key; renderPanel(); }
 }
+// ---- the status strip, the Privacy Guard card and the metric cards: only values the app really has ----
+const isReady = () => vm.status === 'ready' || vm.status === undefined;
+function renderStrip() {
+  const ready = isReady(), parts = [];
+  if (vm.status === 'failed') parts.push(`<span class="badge err">${I('alert-triangle')}Failed</span>`);
+  else if (!ready) parts.push('<span class="badge"><span class="dot warn pulse"></span>Processing</span>');
+  else if (me.owner && vm.shareable === false) parts.push('<span class="badge warn"><span class="dot warn pulse"></span>Guard checking</span>');
+  else parts.push(`<span class="badge ok">${I('shield-check')}Guard cleared</span>`);
+  if (vm.type !== 'image' && vm.duration) parts.push(`<span class="meta">${fmt(vm.duration)}</span>`);
+  if (vm.width && vm.height) parts.push(`<span class="meta">${vm.width}×${vm.height}</span>`);
+  if (me.owner) parts.push('<span class="meta">On this device</span>');
+  const h = parts.join('<span class="sep">·</span>'); if ($('strip').dataset.h !== h) { $('strip').dataset.h = h; $('strip').innerHTML = h; }
+}
+function renderMetrics() {
+  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`, c = [];
+  const reacts = Object.values(vm.reactions || {}).reduce((a, n) => a + n, 0), vs = (vm.viewers || []).filter((x) => !x.owner);
+  if (vm.type !== 'image' && vm.duration) c.push(kv('Duration', fmt(vm.duration)));
+  if (vm.width && vm.height) c.push(kv('Resolution', `${vm.width}×${vm.height}`));
+  c.push(kv('Views', vm.views));
+  if (vm.comments.length) c.push(kv('Comments', vm.comments.length));
+  if (reacts) c.push(kv('Markers', reacts));
+  if (vm.chapters?.length) c.push(kv('Chapters', vm.chapters.length));
+  if (me.owner && vs.length && vm.duration) c.push(kv('Avg. watched', Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) + '%'));
+  if (me.owner && an?.silenceSeconds > 0) c.push(kv('Silence found', an.silenceSeconds + 's'));
+  const h = c.join(''); if ($('metrics').dataset.h !== h) { $('metrics').dataset.h = h; $('metrics').innerHTML = h; }
+}
+function renderNotes() {
+  const n = [], ready = isReady(), busy = ready && vm.stage && vm.stage !== 'done';
+  const box = (cls, icon, tag, txt) => `<div class="callout ${cls}">${icon}<div><span class="tag">${tag}</span>${txt}</div></div>`;
+  if (vm.status === 'failed') n.push(box('bad', I('alert-triangle'), 'Privacy Guard · failed', esc(vm.stage || 'Processing did not finish.')));
+  else if (ready && me.owner && vm.shareable === false) n.push(box('warn', '<span class="spin"></span>', 'Privacy Guard · checking', 'You can watch now. Viewers can watch when it is done.'));
+  else if (ready) {
+    const t = []; if (vm.redactionCount) t.push(`${plural(vm.redactionCount, 'sensitive item')} blurred before anyone could watch`);
+    if (me.owner && vm.speechRedactions) t.push(`${plural(vm.speechRedactions, 'spoken secret')} bleeped in the audio and removed from the transcript and captions`);
+    n.push(box('ok', I('shield-check'), 'Privacy Guard · cleared', t.length ? t.map(esc).join('<br>') : 'No items were blurred or bleeped.'));
+  }
+  if (busy && me.owner && vm.shareable !== false) n.push(`<div class="callout"><span class="spin"></span><div>${esc(vm.stage)}…</div></div>`);
+  if (me.owner && vm.guard && ready && vm.shareable) {
+    const w = []; if (!vm.guard.model) w.push('Rules-only check: the local model was not loaded, so names and addresses were not judged.'); if (vm.guard.speech === 'off') w.push('Speech was not checked (turned off in Settings).');
+    if (w.length) n.push(box('warn', I('alert-triangle'), 'Rules-only check', esc(w.join(' ')) + ' Keep the model loaded in Ollama for the fuller check.'));
+  }
+  const html = n.join('');
+  if ($('notes').dataset.h !== html) { $('notes').innerHTML = html; $('notes').dataset.h = html; }
+}
 // U15: the count goes up the instant you click; the server's answer replaces it a moment later (and corrects it if the write failed)
 function drawReactions() {
-  const html = EMOJI.map((e) => `<button class="em" data-e="${e}" title="React ${e}">${e}${vm.reactions[e] ? `<small>${vm.reactions[e]}</small>` : ''}</button>`).join('') + `<button class="em" id="moreEm" title="More reactions" style="padding:8px 10px">${I('smile-plus')}</button><span class="sep"></span><button class="cbtn" id="cfocus">${I('comment')}Comment</button>`;
+  const html = KINDS.map(([k, l, ic]) => `<button class="rb" data-k="${k}" title="Mark this moment: ${l}">${I(ic)}${l}${vm.reactions[k] ? `<span class="n">${vm.reactions[k]}</span>` : ''}</button>`).join('') + `<button class="rb cm-b" id="cfocus">${I('comment')}Comment</button>`;
   if ($('react').dataset.h === html) return; $('react').dataset.h = html; $('react').innerHTML = html;
-  const react = async (e, sup) => {
-    const at = now(), before = vm.reactions[e] || 0;
-    ctl?.floatReaction(e, sup); vm.reactions = { ...vm.reactions, [e]: before + (sup ? 3 : 1) }; drawReactions();
-    try { vm = await api(`/api/v/${id}/reactions`, { body: { emoji: e, at, super: sup } }); } catch (er) { vm.reactions = { ...vm.reactions, [e]: before }; toast(er.status === 429 ? 'Slow down a little' : er.message); }
-    drawReactions();
+  const react = async (k) => {
+    const at = now(), before = vm.reactions[k] || 0;
+    ctl?.floatReaction(k); vm.reactions = { ...vm.reactions, [k]: before + 1 }; drawReactions();
+    try { vm = await api(`/api/v/${id}/reactions`, { body: { kind: k, at } }); ctl?.setVM(vm); } catch (er) { vm.reactions = { ...vm.reactions, [k]: before }; toast(er.status === 429 ? 'Slow down a little' : er.message); }
+    drawReactions(); renderMetrics();
   };
-  $('react').querySelectorAll('.em[data-e]').forEach((b) => b.onclick = (ev) => react(b.dataset.e, ev.shiftKey));
-  $('moreEm').onclick = (ev) => popover($('moreEm'), `<div class="emrow">${MORE_EMOJI.map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div>`, (p, close) => p.querySelectorAll('button').forEach((b) => (b.onclick = () => { close(); react(b.dataset.e, false); })), 'up');
+  $('react').querySelectorAll('.rb[data-k]').forEach((b) => b.onclick = () => react(b.dataset.k));
   $('cfocus').onclick = () => { go('activity'); setTimeout(() => $('ctext').focus(), 50); };
 }
 // small popover anchored to a button; closes on outside click or Esc
@@ -206,23 +256,10 @@ function popover(anchor, html, wire, dir = 'down', right = false) {
   document.querySelectorAll('.pop').forEach((p) => p.remove());
   const p = document.createElement('div'); p.className = 'pop fade'; p.innerHTML = html; document.body.appendChild(p);
   const r = anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
-  p.style.left = Math.max(8, Math.min(innerWidth - w - 8, right ? r.right - w : r.left)) + 'px'; p.style.top = (dir === 'up' ? Math.max(8, r.top - h - 8) : r.bottom + 8) + 'px';
+  p.style.left = Math.max(8, Math.min(innerWidth - w - 8, right ? r.right - w : r.left)) + 'px'; p.style.top = (dir === 'up' ? Math.max(8, r.top - h - 8) : r.bottom + 8 + scrollY) + 'px';
   const close = () => { p.remove(); document.removeEventListener('mousedown', out, true); document.removeEventListener('keydown', esc_, true); };
   const out = (e) => { if (!p.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) close(); }, esc_ = (e) => { if (e.key === 'Escape') close(); };
   setTimeout(() => { document.addEventListener('mousedown', out, true); document.addEventListener('keydown', esc_, true); }); wire(p, close); return close;
-}
-function renderNotes() {
-  const n = [], busy = vm.status === 'ready' && vm.stage && vm.stage !== 'done';
-  if (me.owner && vm.status === 'ready' && vm.shareable === false) n.push(`<div class="banner"><div class="spin"></div><span><b>Privacy Guard is checking…</b> You can watch now. Viewers can watch when it's done.</span></div>`);
-  else if (busy && me.owner) n.push(`<div class="banner"><div class="spin"></div>${esc(vm.stage)}…</div>`);
-  if (vm.redactionCount) n.push(`<div><span class="shield" title="Blurred by the Privacy Guard before anyone could watch">🛡 ${vm.redactionCount} sensitive item${vm.redactionCount > 1 ? 's' : ''} blurred by Privacy Guard</span></div>`);
-  if (me.owner && vm.speechRedactions) n.push(`<div><span class="shield" title="Spoken passwords, keys or numbers were bleeped in the audio and removed from the transcript and captions">🛡 ${vm.speechRedactions} spoken secret${vm.speechRedactions > 1 ? 's' : ''} bleeped by Privacy Guard</span></div>`);
-  if (me.owner && vm.guard && vm.status === 'ready' && vm.shareable) {
-    const w = []; if (!vm.guard.model) w.push('Rules-only check: the local model was not loaded, so names and addresses were not judged.'); if (vm.guard.speech === 'off') w.push('Speech was not checked (turned off in Settings).');
-    if (w.length) n.push(`<div class="chip" title="Keep the model loaded in Ollama (it warms up 45 s after the app starts) for the fuller check">⚠ ${esc(w.join(' '))}</div>`);
-  }
-  const html = n.join('');
-  if ($('notes').dataset.h !== html) { $('notes').innerHTML = html; $('notes').dataset.h = html; }
 }
 
 function renderPanel() {
@@ -234,12 +271,12 @@ function renderPanel() {
   else if (tab === 'actions') renderActions(p);
   else if (tab === 'transcript') {
     p.dataset.k = 'transcript';
-    p.innerHTML = vm.segments?.length ? `<div class="ghead"><input class="field" id="tq" placeholder="Search transcript…"></div><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
-    if (vm.segments?.length) { const draw = () => { const q = $('tq').value.toLowerCase(); $('tl').innerHTML = vm.segments.filter((s) => !q || s.text.toLowerCase().includes(q)).map((s) => `<div class="cm"><div><span class="at" data-at="${s.start}" style="margin:0 8px 0 0">${fmt(s.start)}</span>${esc(s.text)}</div></div>`).join(''); bind(); }; $('tq').oninput = draw; draw(); }
+    p.innerHTML = vm.segments?.length ? `<input class="field" id="tq" placeholder="Search transcript…"><div id="tl"></div>` : '<div class="empty">Transcript appears here once the AI agents finish.</div>';
+    if (vm.segments?.length) { const draw = () => { const q = $('tq').value.toLowerCase(); $('tl').innerHTML = vm.segments.filter((s) => !q || s.text.toLowerCase().includes(q)).map((s) => `<div class="tr"><span class="tstamp" data-at="${s.start}">${fmt(s.start)}</span><span>${esc(s.text)}</span></div>`).join(''); bind(); }; $('tq').oninput = draw; draw(); }
   } else if (tab === 'settings') renderSettings(p);
 }
 
-// ---- Edit: the clean-up switches and the way into the editor ----
+// ---- Edit: describe an edit, the clean-up switches and the way into the editor ----
 async function loadAnalysis() {
   const sig = `${id}:${vm.duration}:${vm.words ? 1 : 0}`;
   if (anFor === sig) return; anFor = sig;
@@ -252,25 +289,26 @@ async function setCuts(kind, on) {
   const rest = draft().filter((c) => c.kind !== kind), add = on ? (kind === 'silence' ? an.silence : (an.filler || []).map(({ start, end }) => ({ start, end, kind: 'filler' }))) : [];
   try { vm = await api(`/api/videos/${id}/edits`, { method: 'PUT', body: { cuts: [...rest, ...add.map((c) => ({ start: c.start, end: c.end, kind }))], inserts: vm.edits?.inserts || [] } }); lastKey = ''; render(); } catch (e) { toast(e.message); }
 }
+// the "Describe an edit" composer hands over the WHOLE new cut list (draft + accepted proposals); it goes through the same PUT as the switches below
+async function saveCuts(cuts) { vm = await api(`/api/videos/${id}/edits`, { method: 'PUT', body: { cuts, inserts: vm.edits?.inserts || [] } }); lastKey = ''; render(); }
 function renderEdit(p) {
   p.dataset.k = 'edit';
   if (vm.type === 'image' || vm.status !== 'ready') { p.innerHTML = `<div class="empty">${vm.type === 'image' ? 'Screenshots have no edits to make.' : 'Editing opens when the video is ready.'}</div>`; return; }
-  if (me.owner && vm.type !== 'image' && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !(vm.stage && vm.stage !== 'done')) loadAnalysis();
+  const busy = !!(vm.stage && vm.stage !== 'done');
+  if (me.owner && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !busy) loadAnalysis();
   const sil = an?.silenceSeconds ?? null, fil = an?.fillerCount ?? null, cuts = draft().length, applying = /^Applying edits/.test(vm.stage || '');
-  const row = (icon, label, sub, checked, disabled, key) => `<div class="row2 ${disabled ? 'off' : ''}"><span class="tile ${disabled ? 'off' : ''}">${I(icon, 'lg')}</span><div class="lab">${label}${sub ? `<small>${sub}</small>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
-  p.innerHTML = `<div class="powered">Powered by AI ${I('sparkle')}</div>
-    <div class="sh"><h3>Make edits</h3><span class="pill">${I('sparkle')} On this computer</span></div>
-    <a class="hl" href="/edit/${id}">${'<span class="tile">' + I('scissors') + '</span>'}Edit and enhance video</a>
-    ${row('silence', sil === null ? 'Looking for silence…' : `${sil}s of silence ${countKind('silence') ? 'will be removed' : 'found'}`, sil ? 'Pauses over 0.8 s, shortened to a 0.3 s breath' : '', countKind('silence') > 0, !sil, 'silence')}
-    ${row('filler', vm.words ? `${fil ?? '…'} filler word${fil === 1 ? '' : 's'} ${countKind('filler') ? 'will be removed' : 'found'}` : 'Filler words need word timing', vm.words ? 'um, uh, “you know,”, and “like” when it is set apart' : `<button class="btn sm" id="wordsBtn" style="margin-top:6px">Time every word</button>${vm.wordsError ? ` <span class="err">${esc(vm.wordsError)}</span>` : ''}`, countKind('filler') > 0, !fil, 'filler')}
-    ${row('captions', 'Add stylized captions', 'Shown from the first second, in the style you pick in the editor', !!vm.captionsDefault, !(vm.segments || []).length, 'captions')}
-    ${cuts || vm.edits?.inserts?.length ? `<div class="apply"><div><b>${cuts} cut${cuts === 1 ? '' : 's'}${vm.edits?.inserts?.length ? ` and ${vm.edits.inserts.length} insert${vm.edits.inserts.length === 1 ? '' : 's'}` : ''} ready.</b> Nothing changes until you apply them; the previous version is kept so you can undo once.</div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
+  const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"><span class="tile sm ${disabled ? 'off' : ''}">${I(icon)}</span><div class="grow"><div class="olab">${label}</div>${sub ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
+  p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div>${busy ? '<div class="osub">Describing an edit opens when the video is not being processed.</div>' : '<div id="epHost"></div>'}</section>
+    ${cuts || vm.edits?.inserts?.length ? `<div class="apply"><div><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` and ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready.</b> Nothing changes until you apply them; the previous version is kept so you can undo once.</div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
     ${vm.canUndo ? `<div class="apply"><div>Edits were applied to this video.</div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
     ${vm.editError ? `<div class="err">${esc(vm.editError)}</div>` : ''}
-    <div class="sh" style="margin-top:28px"><h3>Take action</h3><span class="pill">${I('sparkle')} Local</span></div>
-    ${promoShut ? '' : `<div class="promo"><button class="iconbtn x" id="promoX" title="Dismiss" data-i="x"></button><h4>${I('transform')} Transform your video</h4><p>Turn this recording into a how-to guide, bug report or team resource. <button class="lnk" id="tryNow">Try now</button></p></div>`}
-    <button class="nav2" id="genDoc"><span class="tile">${I('doc')}</span><span style="flex:1">Generate a document</span>${I('right')}</button>`;
-  UI.fill(p);
+    <section class="sec"><div class="sl">Quick clean-up</div><div class="opts">
+    ${opt('silence', sil === null ? 'Looking for silence…' : `${sil}s of silence ${countKind('silence') ? 'will be removed' : 'found'}`, sil ? 'Pauses over 0.8 s, shortened to a 0.3 s breath' : '', countKind('silence') > 0, !sil, 'silence')}
+    ${opt('filler', vm.words ? `${fil ?? '…'} filler word${fil === 1 ? '' : 's'} ${countKind('filler') ? 'will be removed' : 'found'}` : 'Filler words need word timing', vm.words ? 'um, uh, “you know,” and “like” when it is set apart' : `<button class="btn sm" id="wordsBtn" style="margin-top:6px">Time every word</button>${vm.wordsError ? ` <span class="err">${esc(vm.wordsError)}</span>` : ''}`, countKind('filler') > 0, !fil, 'filler')}
+    ${opt('captions', 'Add stylized captions', 'Shown from the first second, in the style you pick in the editor', !!vm.captionsDefault, !(vm.segments || []).length, 'captions')}</div></section>
+    <section class="sec"><div class="sl">More</div><a class="btn" href="/edit/${id}">${I('scissors')}Edit and enhance video</a><button class="btn" id="genDoc">${I('doc')}Generate a document</button></section>`;
+  const eh = $('epHost');
+  if (eh && me.owner && window.EditPrompt) EditPrompt.mount(eh, { videoId: id, api, getDuration: () => vm.duration || 0, getDraft: draft, saveDraft: saveCuts, seek, icon: I, esc, fmt, toast, onSaved: () => {} });
   p.querySelectorAll('[data-sw]').forEach((s) => (s.onchange = async () => {
     const k = s.dataset.sw;
     if (k === 'captions') { try { await patch({ captionsDefault: s.checked, ...(s.checked && !vm.captionStyle ? { captionStyle: 'bold' } : {}) }); } catch (e) { toast(e.message); } } else await setCuts(k, s.checked);
@@ -278,57 +316,58 @@ function renderEdit(p) {
   if ($('wordsBtn')) $('wordsBtn').onclick = async () => { $('wordsBtn').disabled = true; $('wordsBtn').textContent = 'Timing…'; try { await api(`/api/videos/${id}/words`, { method: 'POST', body: {} }); toast('Timing every word. This takes a few seconds.'); } catch (e) { toast(e.message); } };
   if ($('applyBtn')) $('applyBtn').onclick = async () => { try { await api(`/api/videos/${id}/edits/apply`, { method: 'POST', body: {} }); toast('Applying edits…'); vm.stage = 'Applying edits 0%'; lastKey = ''; render(); } catch (e) { toast(e.message); } };
   if ($('undoBtn')) $('undoBtn').onclick = async () => { try { vm = await api(`/api/videos/${id}/edits/undo`, { method: 'POST', body: {} }); an = null; anFor = ''; loaded = false; lastKey = ''; render(); toast('Undone'); } catch (e) { toast(e.message); } };
-  if ($('promoX')) $('promoX').onclick = () => { promoShut = true; lastKey = ''; render(); };
-  const gen = () => go('generate'); if ($('tryNow')) $('tryNow').onclick = gen; $('genDoc').onclick = gen;
+  $('genDoc').onclick = () => go('generate');
 }
 
 // ---- Activity: comments (and, for the owner, who watched) ----
-function commentHTML(c) { return `<div class="cm ${''}" data-cid="${c.id}"><span class="avatar">${esc(UI.initials(c.author))}</span><div><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div></div>`; }
+function commentHTML(c) { return `<div class="cm" data-cid="${c.id}"><span class="avatar">${esc(UI.initials(c.author))}</span><div><b>${esc(c.author)}</b><span class="at" data-at="${c.at}">${fmt(c.at)}</span><p>${mentions(c.text)}</p></div></div>`; }
 function renderActivity(p, bind) {
   // U14: when only new comments arrived, append them with a short fade instead of rebuilding the list (keeps scroll and hover)
   const shown = p.dataset.k === 'activity' ? new Set([...p.querySelectorAll('.cm[data-cid]')].map((x) => x.dataset.cid)) : null;
   if (shown && shown.size && vm.comments.some((c) => !shown.has(c.id)) && [...shown].every((cid) => vm.comments.some((c) => c.id === cid)) && !p.querySelector('.owner-sec')) {
-    vm.comments.filter((c) => !shown.has(c.id)).forEach((c) => p.insertAdjacentHTML('beforeend', commentHTML(c).replace('class="cm "', 'class="cm fade"'))); bind(); return;
+    vm.comments.filter((c) => !shown.has(c.id)).forEach((c) => p.querySelector('.cms').insertAdjacentHTML('beforeend', commentHTML(c).replace('class="cm"', 'class="cm fade"'))); bind(); return;
   }
   p.dataset.k = 'activity';
   const vs = (vm.viewers || []).filter((x) => !x.owner), uniq = new Set(vs.map((x) => x.email || x.name)).size;
   const avg = vs.length && vm.duration ? Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) : 0, heat = vm.heat || [], mx = Math.max(1, ...heat);
-  p.innerHTML = (vm.comments.length ? vm.comments.map(commentHTML).join('') : '<div class="empty">No comments yet. Be the first!</div>') +
-    (me.owner ? `<div class="owner-sec"><div class="sub">Insights</div><div class="stats"><div><b>${vs.length}</b><span>views</span></div><div><b>${uniq}</b><span>people</span></div><div><b>${avg}%</b><span>avg. watched</span></div></div>
+  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  p.innerHTML = `<div class="cms">${vm.comments.length ? vm.comments.map(commentHTML).join('') : '<div class="empty">No comments yet. Be the first.</div>'}</div>` +
+    (me.owner ? `<section class="sec owner-sec"><div class="sl">Insights</div><div class="kvs3">${kv('Views', vs.length)}${kv('People', uniq)}${kv('Avg. watched', avg + '%')}</div>
     <div class="heat" id="heat">${heat.map((h, k) => `<i data-at="${k}" style="height:${Math.max(4, (h / mx) * 100)}%" title="${fmt(k)}: ${h}"></i>`).join('') || '<span class="chip">Nobody has watched yet.</span>'}</div>
-    <div class="ghead"><b style="font-size:14px;flex:1">Who watched</b><a class="btn sm" href="/api/videos/${id}/viewers.csv">Export CSV</a></div>
-    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--mute)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>
-    <div class="sub">Activity log</div>${(vm.activity || []).map((a) => `<div class="act">${esc(a.event)}<small>${esc(a.who || '')} · ${new Date(a.at).toLocaleString()}</small></div>`).join('') || '<div class="empty">No activity yet.</div>'}</div>` : '');
+    <div class="ghead"><span class="sl grow">Who watched</span><a class="btn sm" href="/api/videos/${id}/viewers.csv">${I('download')}Export CSV</a></div>
+    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--mute)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td class="mono">${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>
+    <div class="sl" style="margin-top:8px">Activity log</div>${(vm.activity || []).map((a) => `<div class="act">${esc(a.event)}<small>${esc(a.who || '')} · ${new Date(a.at).toLocaleString()}</small></div>`).join('') || '<div class="empty">No activity yet.</div>'}</section>` : '');
   bind(); p.querySelectorAll('#heat i').forEach((h) => (h.onclick = () => seek(+h.dataset.at)));
 }
 
 // ---- Generate: the AI crew's work (summary, chapters, action items, guide) and the crew itself ----
+const DOT = { running: 'dot pulse', done: 'dot', error: 'dot err', skipped: 'dot off' };
 function renderGenerate(p, bind) {
   p.dataset.k = 'generate';
   const sec = [], busy = vm.stage && vm.stage !== 'done';
-  if (vm.summary) sec.push(`<div class="card2"><h4>Summary</h4><p>${esc(vm.summary)}</p></div>`);
-  if (vm.tags?.length) sec.push(`<div class="chips" style="margin-bottom:14px">${vm.tags.map((t) => `<span class="chip2 tag">#${esc(t)}</span>`).join('')}</div>`);
-  if (vm.chapters?.length) sec.push(`<div class="card2"><h4>Chapters</h4><div class="chips">${vm.chapters.map((c) => `<button class="chip2" data-at="${c.start}"><b>${fmt(c.start)}</b>${esc(c.title)}</button>`).join('')}</div></div>`);
-  if (vm.tasks?.length) sec.push(`<div class="card2"><h4>Action items</h4><ul class="tasks">${vm.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`);
+  if (vm.summary) sec.push(`<section class="sec"><div class="sl">Summary</div><div class="card pad"><p>${esc(vm.summary)}</p></div></section>`);
+  if (vm.tags?.length) sec.push(`<div class="tags">${vm.tags.map((t) => `<span class="badge">#${esc(t)}</span>`).join('')}</div>`);
+  if (vm.chapters?.length) sec.push(`<section class="sec"><div class="sl">Chapters</div><div class="chaps">${vm.chapters.map((c) => `<button class="chap" data-at="${c.start}"><span class="tstamp">${fmt(c.start)}</span>${esc(c.title)}</button>`).join('')}</div></section>`);
+  if (vm.tasks?.length) sec.push(`<section class="sec"><div class="sl">Action items</div><div class="card pad"><ul class="tasks">${vm.tasks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div></section>`);
   if (vm.guide) sec.push(guideHTML());
-  else sec.push(`<div class="empty" style="margin:18px 0">${busy ? 'The AI crew is working on this recording…' : 'Nothing was generated for this recording.'}</div>`);
-  if (me.owner) sec.push(`<div class="sub">AI crew</div>` + (vm.crew || []).map((c) => `<div class="crew"><span class="dot ${c.status}"></span><div><b>${esc(c.name)}</b>${c.ms ? `<span class="chip"> · ${(c.ms / 1000).toFixed(1)}s</span>` : ''}<small>${esc(c.role)}</small>${c.detail ? `<div class="d">${esc(c.detail)}</div>` : ''}</div></div>`).join('') +
-    `<p class="chip" style="margin-top:14px">Everything runs on this computer: Whisper, OCR and a local Ollama model.</p><button class="btn" id="rerun">Re-run AI notes</button>`);
+  else sec.push(`<div class="empty">${busy ? 'The AI crew is working on this recording…' : 'Nothing was generated for this recording.'}</div>`);
+  if (me.owner) sec.push(`<section class="sec"><div class="sl">AI crew</div>` + (vm.crew || []).map((c) => `<div class="crew"><span class="${DOT[c.status] || 'dot off'}"></span><div><b>${esc(c.name)}</b>${c.ms ? `<span class="meta nocase"> · ${(c.ms / 1000).toFixed(1)}s</span>` : ''}<small>${esc(c.role)}</small>${c.detail ? `<div class="d">${esc(c.detail)}</div>` : ''}</div></div>`).join('') +
+    `<p class="chip">Everything runs on this computer: Whisper, OCR and a local Ollama model.</p><div><button class="btn" id="rerun">${I('refresh')}Re-run AI notes</button></div></section>`);
   p.innerHTML = sec.join(''); bind();
   if ($('gmd')) { $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); copied($('gmd')); }; $('ghtml').onclick = exportGuideHtml; }
   if ($('rerun')) $('rerun').onclick = async () => { await fetch(`/api/videos/${id}/rerun`, { method: 'POST' }); toast('AI crew restarted'); };
 }
 function guideHTML() {
   const g = vm.guide;
-  return `<div class="sub" style="margin-top:8px">Guide</div><div class="ghead"><span class="badge">${esc(g.label)}</span><button class="btn sm" id="gmd">Copy markdown</button><button class="btn sm" id="ghtml">Export HTML</button></div>
-    <h3 style="margin:0 0 6px">${esc(g.title)}</h3><p style="margin:0 0 16px;color:var(--mute);font-size:14.5px;line-height:1.5">${esc(g.intro)}</p>` +
-    g.steps.map((st) => `<div class="step"><h5><i>${st.n}</i>${esc(st.title)}</h5><p>${esc(st.detail)}</p>${st.image ? `<img src="/media/${id}/guide/${st.image}" data-at="${st.at}" title="Jump to ${fmt(st.at)}">` : ''}</div>`).join('') +
-    `<p style="font-size:14.5px;line-height:1.5">${esc(g.closing)}</p>` + (g.revisions ? `<p class="chip" style="margin-top:12px">The Critic sent the first draft back once${g.criticOk ? ' and approved the revision' : '; it still left notes'}.</p>` : '');
+  return `<section class="sec"><div class="sl">Guide</div><div class="ghead"><span class="badge">${esc(g.label)}</span><button class="btn sm" id="gmd">${I('copy')}Copy markdown</button><button class="btn sm" id="ghtml">${I('download')}Export HTML</button></div>
+    <h3 class="h3">${esc(g.title)}</h3><p class="chip" style="margin:0">${esc(g.intro)}</p>
+    <div class="stepper">${g.steps.map((st) => `<div class="stp"><span class="node"></span><div class="card pad"><div class="gh">${st.at != null ? `<span class="tstamp" data-at="${st.at}" style="cursor:pointer">${fmt(st.at)}</span>` : ''}<b>${st.n}. ${esc(st.title)}</b></div><p class="gd">${esc(st.detail)}</p>${st.image ? `<img src="/media/${id}/guide/${st.image}" data-at="${st.at}" title="Jump to ${fmt(st.at)}" alt="">` : ''}</div></div>`).join('')}</div>
+    <p>${esc(g.closing)}</p>${g.revisions ? `<p class="chip">The Critic sent the first draft back once${g.criticOk ? ' and approved the revision' : '; it still left notes'}.</p>` : ''}</section>`;
 }
 const guideMd = () => { const g = vm.guide; return `# ${g.title}\n\n${g.intro}\n\n` + g.steps.map((s) => `## ${s.n}. ${s.title}\n${s.detail}\n${s.image ? `\n![Step ${s.n}](${location.origin}/media/${id}/guide/${s.image})\n` : ''}`).join('\n') + `\n${g.closing}\n`; };
 async function exportGuideHtml() {
   const g = vm.guide, imgs = await Promise.all(g.steps.map(async (s) => { if (!s.image) return ''; const b = await (await fetch(`/media/${id}/guide/${s.image}`)).blob(); return new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); }));
-  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#292a2e"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, k) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[k] ? `<img src="${imgs[k]}" style="width:100%;border-radius:8px;border:1px solid #ddd">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
+  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#0f172a"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, k) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[k] ? `<img src="${imgs[k]}" style="width:100%;border-radius:4px;border:1px solid #cbd5e1">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = g.title.replace(/[^\w -]/g, '') + '.html'; a.click();
 }
 
@@ -340,16 +379,15 @@ async function renderSettings(p) {
   const { f: folders, s: spaces } = await orgLoaded; if (tab !== 'settings') return;
   const pr = vm.privacy || {}, exp = pr.expiresAt ? new Date(pr.expiresAt).toISOString().slice(0, 10) : '';
   const sw = (k, label, sub, on) => `<div class="set"><div class="lab">${label}${sub ? `<small>${sub}</small>` : ''}</div><input type="checkbox" class="sw" data-k="${k}" ${on ? 'checked' : ''} aria-label="${esc(label)}"></div>`;
-  p.innerHTML = `<div class="sub" style="margin-top:0">Playback</div>${vm.track ? sw('cursorFx', 'Cursor highlight and click ripples', 'Drawn by the player from the recorded cursor', vm.cursorFx !== false) + sw('autoZoom', 'Auto-zoom on clicks', 'Eases in on each click and back out', vm.autoZoom) : '<div class="set"><div class="lab"><small>Cursor effects are only available for recordings made with Kairos.</small></div></div>'}
-    <div class="sub">Organise</div>
+  p.innerHTML = `<section class="sec"><div class="sl">Playback</div>${vm.track ? sw('cursorFx', 'Cursor highlight and click ripples', 'Drawn by the player from the recorded cursor', vm.cursorFx !== false) + sw('autoZoom', 'Auto-zoom on clicks', 'Eases in on each click and back out', vm.autoZoom) : '<div class="set"><div class="lab"><small>Cursor effects are only available for recordings made with Kairos.</small></div></div>'}</section>
+    <section class="sec"><div class="sl">Organise</div>
     <div class="set"><div class="lab">Folder</div><select class="field" id="s-folder"><option value="">No folder</option>${folders.map((x) => `<option value="${x.id}" ${vm.folder === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
     <div class="set"><div class="lab">Tags<small>Comma separated</small></div><input class="field" id="s-tags" value="${esc((vm.tags || []).join(', '))}"></div>
-    ${spaces.length ? `<div class="set"><div class="lab">Spaces</div><div class="seg2">${spaces.map((sp) => `<label><input type="checkbox" class="s-sp" value="${sp.id}" ${(vm.spaces || []).includes(sp.id) ? 'checked' : ''}>${esc(sp.name)}</label>`).join('')}</div></div>` : ''}
-    <div class="sub">Link</div>
+    ${spaces.length ? `<div class="set"><div class="lab">Spaces</div><div class="seg2">${spaces.map((sp) => `<label><input type="checkbox" class="s-sp" value="${sp.id}" ${(vm.spaces || []).includes(sp.id) ? 'checked' : ''}>${esc(sp.name)}</label>`).join('')}</div></div>` : ''}</section>
+    <section class="sec"><div class="sl">Link</div>
     ${sw('allowDownload', 'Allow downloads', 'Viewers can save the file', pr.allowDownload !== false)}
-    <div class="set"><div class="lab">Link expires<small>Leave empty for never</small></div><input class="field" type="date" id="s-exp" value="${exp}"></div>
-    <div class="sub">This video</div>
-    <div class="ghead"><a class="btn" href="/media/${id}/download">${I('download')}Download</a><a class="btn" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">${I('eye')}Preview as viewer</a><button class="btn danger" id="del">${I('trash')}Delete</button></div>`;
+    <div class="set"><div class="lab">Link expires<small>Leave empty for never</small></div><input class="field" type="date" id="s-exp" value="${exp}"></div></section>
+    <section class="sec"><div class="sl">This video</div><div class="ghead"><a class="btn" href="/media/${id}/download">${I('download')}Download</a><a class="btn" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">${I('eye')}Preview as viewer</a><button class="btn danger" id="del">${I('trash')}Delete</button></div></section>`;
   p.querySelectorAll('.sw[data-k]').forEach((s) => (s.onchange = () => (s.dataset.k === 'allowDownload' ? patch({ privacy: { allowDownload: s.checked } }) : patch({ [s.dataset.k]: s.checked }))));
   $('s-folder').onchange = () => patch({ folder: $('s-folder').value || null });
   $('s-tags').onchange = () => patch({ tags: $('s-tags').value.split(',').map((t) => t.trim()).filter(Boolean) });
@@ -361,19 +399,21 @@ async function deleteVideo() { if (confirm('Delete this video for good?')) { awa
 
 // ---- comments / title / header ----
 $('form').onsubmit = async (e) => { e.preventDefault(); const text = $('ctext').value.trim(); if (!text) return; if (!me.owner && !viewer().name) { const n = prompt('Your name for comments?') || 'Guest'; setViewer({ ...viewer(), name: n }); } $('ctext').value = '';
-  vm = await api(`/api/v/${id}/comments`, { body: { text, at: now(), name: me.owner ? me.name : viewer().name } }); lastKey = ''; render(); };
+  vm = await api(`/api/v/${id}/comments`, { body: { text, at: now(), name: me.owner ? me.name : viewer().name } }); ctl?.setVM(vm); lastKey = ''; render(); };
 $('title').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { title: $('title').value } }); };
 $('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
 $('speed').onchange = () => { if ($('v')) $('v').playbackRate = +$('speed').value; };
 $('later').onclick = () => patch({ watchLater: !vm.watchLater });
-const copyLink = async (btn) => { await navigator.clipboard.writeText(location.href.split('?')[0]); toast('Link copied'); };
+const copyLink = async () => { await navigator.clipboard.writeText(location.href.split('?')[0]); toast('Link copied'); };
 $('vcopy').onclick = copyLink; $('copy').onclick = copyLink;
 $('share').onclick = () => openShare();
+$('planBtn').onclick = () => go('actions');
 $('moreBtn').onclick = () => popover($('moreBtn'), `<a class="mi" href="/edit/${id}">${I('scissors')}Edit video</a><a class="mi" href="/media/${id}/download">${I('download')}Download</a><button class="mi" id="mLater">${I('bookmark')}Watch later</button><a class="mi" href="/view-as/viewer?to=${encodeURIComponent('/v/' + id)}">${I('eye')}Preview as viewer</a><button class="mi danger" id="mDel">${I('trash')}Delete</button>`,
   (pp, close) => { pp.querySelector('#mLater').onclick = () => { close(); patch({ watchLater: !vm.watchLater }); }; pp.querySelector('#mDel').onclick = () => { close(); deleteVideo(); }; }, 'down', true);
 
 // ---- AI Actions: one-click documents from the recording, the Action Plan for coding agents, and Send to ----
 const AXICON = { sop: 'doc', pr: 'embed', bug: 'eye', issue: 'check', email: 'mail', recap: 'comment' };
+const MCP_CMD = 'claude mcp add kairos -- node mcp/server.js';
 const ax = { list: null, targets: [], ready: false, open: null, results: {}, busy: {}, err: '', loadedFor: '' };
 async function loadActions() {
   try { const r = await api(`/api/videos/${id}/actions`); Object.assign(ax, { list: r.actions, targets: r.targets, ready: r.ready, err: '' }); } catch (e) { ax.err = e.message; ax.list = ax.list || []; }
@@ -396,21 +436,21 @@ function renderActions(p) {
   const t = ax.targets;
   const rows = ax.list.map((a) => {
     const r = ax.results[a.id], busy = ax.busy[a.id], open = ax.open === a.id;
-    return `<div class="axrow"><span class="tile">${I(AXICON[a.id] || 'doc')}</span><div class="lab">${esc(a.label)}<small>${esc(a.blurb)}${a.cached ? (a.cached.stale ? ' · <b>transcript changed since</b>' : ` · made ${UI.ago(a.cached.at)}`) : ''}</small></div>
+    return `<div class="stp ${open ? 'on' : ''}"><span class="node"></span><div class="card pad"><div class="axrow"><span class="tile sm">${I(AXICON[a.id] || 'doc')}</span><div class="lab">${esc(a.label)}<small>${esc(a.blurb)}${a.cached ? (a.cached.stale ? ' · <b>transcript changed since</b>' : ` · made ${UI.ago(a.cached.at)}`) : ''}</small></div>
       <button class="btn sm ${a.cached ? '' : 'pri'}" data-ax="${a.id}" ${busy || !ax.ready ? 'disabled' : ''}>${busy ? 'Writing…' : a.cached ? (open ? 'Hide' : 'Open') : 'Generate'}</button></div>` +
-      (open && r ? `<div class="card2" style="margin-top:10px"><div class="md" id="axmd">${esc(r.markdown)}</div><div class="axbar"><button class="btn sm" data-axcopy="${a.id}">Copy</button><button class="btn sm" data-axre="${a.id}">${a.cached?.stale ? 'Regenerate (transcript changed)' : 'Regenerate'}</button>
-        <span class="chip" style="align-self:center">Send to</span>${t.map((x) => `<button class="btn sm" data-axsend="${a.id}|${x.id}" ${x.ready ? '' : 'disabled'} title="${x.ready ? 'Shows exactly what will be sent first' : 'Add ' + esc(x.needs) + ' in Settings → Workspace → Integrations'}">${esc(x.label)}</button>`).join('')}</div></div>` : '');
+      (open && r ? `<div class="md" id="axmd">${esc(r.markdown)}</div><div class="axbar"><button class="btn sm" data-axcopy="${a.id}">${I('copy')}Copy</button><button class="btn sm" data-axre="${a.id}">${a.cached?.stale ? 'Regenerate (transcript changed)' : 'Regenerate'}</button>
+        <span class="meta" style="margin-left:4px">Send to</span>${t.map((x) => `<button class="btn sm" data-axsend="${a.id}|${x.id}" ${x.ready ? '' : 'disabled'} title="${x.ready ? 'Shows exactly what will be sent first' : 'Add ' + esc(x.needs) + ' in Settings → Workspace → Integrations'}">${esc(x.label)}</button>`).join('')}</div>` : '') + '</div></div>';
   }).join('');
-  p.innerHTML = `<div class="powered">Powered by AI ${I('sparkle')}</div><div class="sh"><h3>AI Actions</h3><span class="pill">${I('sparkle')} On this computer</span></div>
-    ${ax.ready ? '' : '<div class="banner">Available once the Privacy Guard has cleared the video and it has a transcript.</div>'}${ax.err ? `<div class="err">${esc(ax.err)}</div>` : ''}
-    <div class="card2"><h4>Record for agents</h4><p>Turn this recording into a brief for Claude Code, Cursor or any coding agent: what you said, the steps shown with screenshot files, where you clicked.</p>
-      <div class="axbar"><button class="btn pri sm" id="planCopy" ${ax.ready ? '' : 'disabled'}>Copy action plan</button><a class="btn sm" href="/api/videos/${id}/action-plan?download=1">Download .md</a></div>
-      <p class="chip" style="margin-top:8px">Or let an agent read it itself: <code>claude mcp add spool -- node mcp/server.js</code></p></div>
-    ${rows}`;
+  p.innerHTML = `${ax.ready ? '' : `<div class="callout warn">${I('alert-triangle')}<div>Available once the Privacy Guard has cleared the video and it has a transcript.</div></div>`}${ax.err ? `<div class="err">${esc(ax.err)}</div>` : ''}
+    <section class="sec"><div class="sl">Record for agents</div><div class="card pad"><p>Turn this recording into a brief for Claude Code, Cursor or any coding agent: what you said, the steps shown with screenshot files, where you clicked.</p>
+      <div class="axbar"><button class="btn pri sm" id="planCopy" ${ax.ready ? '' : 'disabled'}>${I('copy')}Copy action plan</button><a class="btn sm" href="/api/videos/${id}/action-plan?download=1">${I('download')}Download .md</a></div>
+      <div class="sl" style="margin:14px 0 6px">Or let an agent read it itself</div><div class="code row"><span><span class="pr">$</span>${esc(MCP_CMD)}</span><button class="btn dark sm" id="mcpCopy">${I('copy')}Copy</button></div></div></section>
+    <section class="sec"><div class="sl">Documents from this recording</div><div class="stepper">${rows}</div></section>`;
   p.querySelectorAll('[data-ax]').forEach((b) => (b.onclick = () => (ax.list.find((x) => x.id === b.dataset.ax).cached ? openAction(b.dataset.ax) : runAction(b.dataset.ax))));
   p.querySelectorAll('[data-axre]').forEach((b) => (b.onclick = () => runAction(b.dataset.axre, true)));
   p.querySelectorAll('[data-axcopy]').forEach((b) => (b.onclick = async () => { await navigator.clipboard.writeText(ax.results[b.dataset.axcopy].markdown); copied(b); }));
   p.querySelectorAll('[data-axsend]').forEach((b) => (b.onclick = () => previewSend(...b.dataset.axsend.split('|'))));
+  if ($('mcpCopy')) $('mcpCopy').onclick = async (e) => { await navigator.clipboard.writeText(MCP_CMD); copied(e.currentTarget); };
   if ($('planCopy')) $('planCopy').onclick = async () => { try { const r = await fetch(`/api/videos/${id}/action-plan`); if (!r.ok) throw new Error((await r.json()).error); await navigator.clipboard.writeText(await r.text()); copied($('planCopy')); } catch (e) { toast(e.message); } };
 }
 // Send to: nothing leaves this computer until the person has seen the exact request (credentials hidden) and pressed Send.
@@ -419,9 +459,9 @@ async function previewSend(action, target) {
   const m = $('modal'); m.hidden = false;
   const close = () => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', onKey, true); }, onKey = (e) => { if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey, true);
-  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Send to ${esc(pv.label)}"><h3>Send to ${esc(pv.label)}?</h3><p style="color:var(--mute)">${esc(pv.summary)}. This is exactly what will be sent; your key is hidden here.</p>
-    <dl class="prev"><dt>Request</dt><dd>${esc(pv.method)} ${esc(pv.url)}</dd><dt>Headers</dt><dd><div class="md">${esc(Object.entries(pv.headers).map(([k, v]) => `${k}: ${v}`).join('\n'))}</div></dd><dt>Body</dt><dd><div class="md">${esc(JSON.stringify(pv.body, null, 2))}</div></dd></dl>
-    <div class="axbar" style="justify-content:flex-end"><button class="btn" id="px-no">Cancel</button><button class="btn pri" id="px-go">Send</button></div></div>`;
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Send to ${esc(pv.label)}"><h3>Send to ${esc(pv.label)}?</h3><p style="color:var(--mute);margin:6px 0 0">${esc(pv.summary)}. This is exactly what will be sent; your key is hidden here.</p>
+    <dl class="prev"><dt>Request</dt><dd class="mono">${esc(pv.method)} ${esc(pv.url)}</dd><dt>Headers</dt><dd><div class="md">${esc(Object.entries(pv.headers).map(([k, v]) => `${k}: ${v}`).join('\n'))}</div></dd><dt>Body</dt><dd><div class="md">${esc(JSON.stringify(pv.body, null, 2))}</div></dd></dl>
+    <div class="axbar" style="justify-content:flex-end"><button class="btn" id="px-no">Cancel</button><button class="btn pri" id="px-go">${I('send')}Send</button></div></div>`;
   m.onclick = (e) => { if (e.target === m) close(); }; $('px-no').onclick = close; $('px-go').focus();
   $('px-go').onclick = async () => {
     $('px-go').disabled = true; $('px-go').textContent = 'Sending…';
@@ -445,10 +485,10 @@ async function openShare() {
     <div class="to"><input class="field" id="m-to" placeholder="Add names, emails, or Space" autocomplete="off"></div>
     ${st.people.length || st.spaces.size ? `<div class="got">${st.people.map((x, k) => `<span>${esc(x)}<button data-rp="${k}" title="Remove">${I('x')}</button></span>`).join('')}${spaces.filter((sp) => st.spaces.has(sp.id)).map((sp) => `<span>${I('users')}${esc(sp.name)}<button data-rs="${sp.id}" title="Remove">${I('x')}</button></span>`).join('')}</div>` : ''}
     ${spaces.filter((sp) => !st.spaces.has(sp.id)).length ? `<div class="sug">${spaces.filter((sp) => !st.spaces.has(sp.id)).map((sp) => `<button data-as="${sp.id}">${I('plus')}${esc(sp.name)}</button>`).join('')}</div>` : ''}
-    <h5>General access</h5><div class="acc"><span class="tile ${lockd ? 'lockd' : ''}">${I(a[2])}</span><div><b id="m-acc">${a[0]}${I('down')}</b><small>${a[1]}</small></div></div>
+    <h5>General access</h5><div class="acc"><span class="tile ${lockd ? 'off' : ''}">${I(a[2])}</span><div><b id="m-acc">${a[0]}${I('down')}</b><small>${a[1]}</small></div></div>
     ${st.mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="m-pw" placeholder="${p0.hasPassword ? 'Leave empty to keep the current password' : 'Choose a password'}" value="${esc(st.pw)}"></div>` : ''}
     <div id="m-pub"></div>
-    ${st.panel === 'embed' ? `<div class="more"><b style="font-size:14px">Embed in Notion, Zendesk, Intercom, Confluence or any site</b><code class="b" style="margin-top:10px">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code><button class="btn sm" id="m-ecopy" style="margin-top:10px">Copy embed code</button></div>` : ''}
+    ${st.panel === 'embed' ? `<div class="more"><b>Embed in Notion, Zendesk, Intercom, Confluence or any site</b><code class="b" style="margin-top:10px">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code><button class="btn sm" id="m-ecopy" style="margin-top:10px">Copy embed code</button></div>` : ''}
     ${st.panel === 'social' ? `<div class="more"><div class="rowf" style="flex-wrap:wrap"><a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/tweet?url=${encodeURIComponent(link())}&text=${encodeURIComponent(vm.title)}">Post on X</a><a class="btn" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link())}">LinkedIn</a><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(vm.title + ' ' + link())}">WhatsApp</a></div>${s.lan ? '' : '<p class="note" style="margin:10px 0 0;color:var(--mute);font-size:13px">This link opens on this computer only. Turn on “People on my network” in Settings to share on your Wi-Fi.</p>'}</div>` : ''}
     <div class="ft"><button class="t" id="m-copy" title="This link opens on this Mac only (or on your Wi-Fi if you turned that on). For a link anyone can open, use Public link above.">${I('link')}Copy local link (this Mac only)</button><label class="t"><input type="checkbox" id="m-time" ${st.withTime ? 'checked' : ''}>Share video at ${fmt(t0)}</label><button class="t" id="m-lock">${I('lock')}Set password</button><button class="btn go ${dirty() ? 'pri' : ''}" id="m-go" ${dirty() ? '' : 'disabled'}>Share</button></div></div>`;
     wire(); drawPub();
@@ -480,7 +520,7 @@ async function openShare() {
     clearInterval(pubTimer); if (pub?.state !== 'working') return;
     pubTimer = setInterval(async () => { try { pub = await api(`/api/videos/${id}/publish`); vm.publish = pub; if (pub.state !== 'working') clearInterval(pubTimer); drawPub(); } catch { /* keep polling */ } }, 1200);
   };
-  const GH_WARN = `<div style="margin-top:10px;padding:10px 12px;border:1px solid #d97706;border-radius:8px;background:rgba(217,119,6,.08);font-size:13px;line-height:1.5"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos deletes the repository after 30 days or when you click Unpublish, but GitHub may keep copies in caches, and anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
+  const GH_WARN = `<div class="callout warn" style="margin-top:10px;display:block"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos deletes the repository after 30 days or when you click Unpublish, but GitHub may keep copies in caches, and anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
   const pubForm = (P) => {
     const hs = avail(P), host = (pu.host = hs.some((h) => h[0] === pu.host) ? pu.host : hs.some((h) => h[0] === 'b2') ? 'b2' : 'github'), can = hs.find((h) => h[0] === host)[2];
     const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--mute)">${host === 'github' ? 'Simplest. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Needs the Backblaze and Cloudflare setup.'}</p>` : '';
@@ -490,9 +530,9 @@ async function openShare() {
       : `I understand Kairos will upload a copy of <b>${esc(vm.title)}</b> to Backblaze and Cloudflare servers for up to 30 days. The Privacy Guard blurs what it recognises, but it cannot catch everything, and it does not blur faces.`;
     return `${picker}${host === 'github' ? GH_WARN : `<div class="rowf" style="flex-wrap:wrap;gap:8px">${modes.map((k) => `<button class="btn sm ${mode === k ? 'pri' : ''}" data-pm="${k}">${PMODES[k]}</button>`).join('')}</div>`}
       ${host !== 'github' && mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="pub-pw" autocomplete="new-password" placeholder="Choose a password (8 or more characters). You must tell people yourself." value="${esc(pu.pw)}"></div>` : ''}
-      ${(can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:#b45309">${esc(w)}</p>`).join('')}
+      ${(can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:var(--warn-ink)">${esc(w)}</p>`).join('')}
       <label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;line-height:1.45"><input type="checkbox" id="pub-ok" ${pu.ok ? 'checked' : ''} style="margin-top:3px"><span>I have watched this video on this Mac. ${what}</span></label>
-      ${pu.err ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#d33">${esc(pu.err)}</p>` : ''}
+      ${pu.err ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--danger)">${esc(pu.err)}</p>` : ''}
       <div class="rowf" style="margin-top:12px;gap:8px"><button class="btn pri" id="pub-go" ${pu.ok && !pu.busy && (host === 'github' || mode !== 'password' || pu.pw.length >= 8) ? '' : 'disabled'}>${pu.busy ? 'Starting…' : P.state === 'live' ? 'Republish' : host === 'github' ? 'Publish to GitHub' : 'Publish'}</button>${pu.form && P.state === 'live' ? '<button class="btn sm" id="pub-cancel-form">Never mind</button>' : ''}</div>`;
   };
   function drawPub() {
@@ -509,12 +549,12 @@ async function openShare() {
         h = `<div class="rowf" style="gap:8px"><input class="field" readonly id="pub-url" value="${esc(P.url)}" style="flex:1;min-width:0"><button class="btn sm" id="pub-copy">Copy</button><a class="btn sm" target="_blank" rel="noopener" href="${esc(P.url)}">Open</a></div>
           <p class="note" style="margin:8px 0 0;font-size:13px;color:var(--mute)">${P.host === 'github' ? 'GitHub · no password, anyone with the link can watch and save it' : esc(PMODES[P.mode] || P.mode)} · available until ${pday(P.expiresAt)} · ${pmb(P.bytes || 0)}${P.allowDownload ? '' : ' · downloads off'}</p>
           ${P.host === 'github' && P.repoUrl ? `<p class="note" style="margin:6px 0 0;font-size:13px;color:var(--mute)"><a target="_blank" rel="noopener" href="${esc(P.repoUrl)}">View the repository on GitHub</a></p>` : ''}
-          ${P.stale ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#b45309"><b>Out of date:</b> ${esc(P.staleWhy)}. The public link still shows the old version. Republish to update it.</p>` : ''}
-          ${P.notice ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:#b45309">${esc(P.notice)}</p>` : ''}
+          ${P.stale ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--warn-ink)"><b>Out of date:</b> ${esc(P.staleWhy)}. The public link still shows the old version. Republish to update it.</p>` : ''}
+          ${P.notice ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--warn-ink)">${esc(P.notice)}</p>` : ''}
           ${pu.form ? `<div style="margin-top:12px">${pubForm(P)}</div>` : `<div class="rowf" style="margin-top:12px;gap:8px"><button class="btn sm" id="pub-re">Republish…</button><button class="btn sm danger" id="pub-un">Unpublish</button></div>`}`;
       } else {
         const why = P.state === 'failed' ? `Publishing failed: ${P.error || 'unknown problem'}` : P.state === 'removed' ? P.reason : P.state === 'expired' ? 'The earlier public link expired and its copy was deleted.' : '';
-        h = `${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? '#d33' : 'var(--mute)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
+        h = `${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? 'var(--danger)' : 'var(--mute)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
       }
     }
     el.innerHTML = `<h5>Public link <small style="font-weight:400;color:var(--mute)">opens on any phone or computer, even when this Mac is off</small></h5><div class="more" style="margin-top:6px">${h}</div>`;

@@ -59,7 +59,8 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Watch later, recently watched, unfinished, Home feed (trending, recommended, following) | ✅ |
 | Loomify: upload any video up to 4 GB | ✅ |
 | Link, email, embed (iframe + oEmbed + Open Graph) | ✅ |
-| Comments, @mentions, emoji + super reactions, notifications with transcript snippet | ✅ |
+| Comments, @mentions, typed reaction markers at a timestamp (Looks good, Question, Problem, Idea, Key moment; line icons, no emoji), notifications with transcript snippet | ✅ |
+| One emerald palette across the web UI and the overlays; a unit test (`ui-rules`) fails on emoji, purple hues, unmarked gradients and any third-party request (fonts, CDNs) | ✅ |
 | Captions + translation to 50+ languages (local model) | ✅ |
 | Analytics: who watched, engagement heatmap, CSV export, admin insights | ✅ |
 | Password, ask-for-email, private, link expiry, download control, default privacy, activity log | ✅ |
@@ -79,12 +80,13 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Timeline with waveform, zoom to 50×, trim, split, delete range | ✅ | Non-destructive draft; Apply renders once, one level of undo. Checked in headless Chrome and with real ffmpeg |
 | Edit by transcript | ✅ | Word timestamps from Whisper; 3 words cut = their length within ±50 ms (measured 0.480 of 0.500 s) |
 | Remove filler words, silences > 0.8 s, rambles | ✅ / 🟡 | Reviewable proposals. Fillers and silences measured; the rambles list needs the local model and was not run here |
+| **Describe an edit**: type what to cut ("remove the first 10 seconds", "cut the part where I talk about pricing") | ✅ | Editing only; anything else is refused with examples. Times, silences and filler words are parsed on this computer without a model; content requests use the local model, and every answer is checked (clamped, merged, snapped to word edges, never more than 90% of the video). You review each proposal (jump to it, tick it) and only the ticked ones join the draft; nothing changes until Apply |
 | Stitch / insert another video or a new recording | 🟡 | Insert and render are tested; "record a new clip" opens the launcher and the clip appears in the list when processed |
 | Overlays: text, arrow, box, blur, with start/end and `{{name}}` | ✅ | Placed by dragging on the picture |
 | Caption style, background, CTA button, custom thumbnail, 3 s GIF | ✅ | CTA shown in the last 8 s and when paused |
 | Undo after Apply | ✅ | Restores the file and all time-keyed data |
 | Burn cursor effects / zoom into the file | ⏳ | Player only |
-| Custom player controls + hover thumbnails (U13) | ⏳ | Not started |
+| Custom player controls: scrubber, volume, captions, speed, picture-in-picture, fullscreen | ✅ | Checked in the browser pane. Hover thumbnails on the scrubber are still ⏳ |
 
 ## Privacy hardening (Phase 4, from the security review)
 | Feature | Status | Notes |

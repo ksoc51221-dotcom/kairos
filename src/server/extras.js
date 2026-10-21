@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const store = require('../store');
 const llm = require('../agents/llm');
+const { reactionCounts } = require('./viewmodel');
 
 const dirSize = (d) => { let n = 0; try { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, f.name); n += f.isDirectory() ? dirSize(p) : fs.statSync(p).size; } } catch {} return n; };
 const storageUsed = () => dirSize(path.join(store.videoDir('').replace(/\/$/, '')));
@@ -13,7 +14,7 @@ const jaccard = (a, b) => { let i = 0; for (const x of a) if (b.has(x)) i++; ret
 function feed(model) {
   const all = store.list().filter((v) => v.status === 'ready'), s = store.getSettings(), week = Date.now() - 7 * 86400000;
   const card = model;
-  const score = (v) => v.viewers.filter((x) => x.at > week && !x.owner).length * 2 + Object.values(v.reactions).reduce((a, b) => a + b, 0) + v.comments.length * 3;
+  const score = (v) => v.viewers.filter((x) => x.at > week && !x.owner).length * 2 + Object.values(reactionCounts(v.reactions)).reduce((a, b) => a + b, 0) + v.comments.length * 3;
   const recent = all.filter((v) => v.lastWatchedAt).sort((a, b) => b.lastWatchedAt - a.lastWatchedAt).slice(0, 8);
   const seeds = recent.slice(0, 3).map(words);
   const rec = seeds.length ? all.filter((v) => !recent.slice(0, 3).includes(v)).map((v) => [v, Math.max(...seeds.map((w) => jaccard(words(v), w)))]).filter(([, j]) => j > 0.03).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([v]) => v) : [];

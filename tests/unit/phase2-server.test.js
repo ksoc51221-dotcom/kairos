@@ -76,9 +76,9 @@ test('B6: "password" is not accepted as the workspace default', async () => {
 });
 
 test('B22: a viewer address is limited to a burst of 20 writes; the owner is not', async () => {
-  const hits = []; for (let i = 0; i < 26; i++) hits.push((await call('POST', `/api/v/${ready.id}/reactions`, { headers: asViewer, body: { emoji: '👍' } })).status);
+  const hits = []; for (let i = 0; i < 26; i++) hits.push((await call('POST', `/api/v/${ready.id}/reactions`, { headers: asViewer, body: { kind: 'good', at: 1 } })).status);
   assert.equal(hits.filter((s) => s === 200).length, 20); assert.equal(hits.filter((s) => s === 429).length, 6);
-  const t = await token(); const owner = []; for (let i = 0; i < 26; i++) owner.push((await call('POST', `/api/v/${ready.id}/reactions`, { headers: { 'x-spool-csrf': t }, body: { emoji: '👍' } })).status);
+  const t = await token(); const owner = []; for (let i = 0; i < 26; i++) owner.push((await call('POST', `/api/v/${ready.id}/reactions`, { headers: { 'x-spool-csrf': t }, body: { kind: 'good', at: 1 } })).status);
   assert.ok(owner.every((s) => s === 200));
 });
 
@@ -87,6 +87,57 @@ test('B22: the limiter refills over time (fake clock)', () => {
   const hit = () => { let out = 'ok'; lim(req, { setHeader() {}, status() { return { json() { out = 429; } }; } }, () => {}); return out; };
   assert.deepEqual([hit(), hit(), hit(), hit()], ['ok', 'ok', 'ok', 429]);
   now = 2000; assert.deepEqual([hit(), hit(), hit()], ['ok', 'ok', 429], 'two seconds later, two more writes are allowed');
+});
+
+// These come after B22 on purpose: viewer writes share one limiter bucket per address, and B22 needs it full. Most use the owner (who is not limited); the one
+// that needs a real viewer waits for the bucket to refill first.
+const ownerReact = async (id, body) => call('POST', `/api/v/${id}/reactions`, { headers: { 'x-spool-csrf': await token() }, body });
+
+test('reactions: typed markers only; unknown kinds, emoji and prototype keys are refused and change nothing', async () => {
+  const r = store.create({ title: 'Reacts', status: 'ready', shareable: true, duration: 10 });
+  for (const body of [{ emoji: '\u{1F44D}' }, { kind: '\u{1F44D}' }, { kind: '__proto__' }, { kind: 'constructor' }, { kind: 'toString' }, { kind: 'GOOD' }, { kind: ['good'] }, { kind: 7 }, {}]) {
+    const res = await ownerReact(r.id, body);
+    assert.equal(res.status, 400, JSON.stringify(body)); assert.match(res.json.error, /good, question, issue, idea, key/);
+  }
+  const after = store.get(r.id); assert.deepEqual(after.reactions, {}); assert.deepEqual(after.reactionEvents, []);
+});
+
+test('reactions: counts and timeline events; the time is clamped to the video; the owner is not notified of their own', async () => {
+  const r = store.create({ title: 'Reacts 2', status: 'ready', shareable: true, duration: 10 });
+  const n0 = (await call('GET', '/api/notifications')).json.length;
+  const a = await ownerReact(r.id, { kind: 'question', at: 3.14159, name: 'Sam' }); assert.equal(a.status, 200);
+  await ownerReact(r.id, { kind: 'question', at: -5 }); await ownerReact(r.id, { kind: 'idea', at: 99 }); await ownerReact(r.id, { kind: 'key' });
+  const m = (await call('GET', `/api/v/${r.id}`, { headers: asViewer })).json;
+  assert.deepEqual(m.reactions, { question: 2, idea: 1, key: 1 });
+  assert.deepEqual(m.reactionEvents.map((e) => [e.kind, e.at]), [['question', 3.142], ['question', 0], ['idea', 10], ['key', 0]]);
+  assert.equal(m.reactionEvents[0].by, undefined, 'a viewer sees when and what, never who');
+  const mo = (await call('GET', `/api/v/${r.id}`)).json;
+  assert.equal(mo.reactionEvents[0].by, 'Sam', 'the owner sees who');
+  assert.equal(a.json.reactions.question, 1, 'the reply is the updated view model');
+  assert.equal((await call('GET', '/api/notifications')).json.length, n0, 'the owner reacting to their own video makes no notification');
+});
+
+test('reactions: a viewer\'s notification names the kind in words, with no emoji, and an unknown kind from a viewer is refused', async () => {
+  const r = store.create({ title: 'Reacts 3', status: 'ready', shareable: true, duration: 120 });
+  await wait(1300); // refill the viewer bucket after B22
+  assert.equal((await call('POST', `/api/v/${r.id}/reactions`, { headers: asViewer, body: { emoji: '\u{1F44D}' } })).status, 400);
+  const ok = await call('POST', `/api/v/${r.id}/reactions`, { headers: asViewer, body: { kind: 'issue', at: 65, name: 'Pat' } }); assert.equal(ok.status, 200);
+  const n = (await call('GET', '/api/notifications')).json.find((x) => x.videoId === r.id && x.type === 'reaction');
+  assert.ok(n, 'a notification exists'); assert.equal(n.by, 'Pat'); assert.equal(n.t, 65);
+  assert.match(n.text, /^marked this as Problem at 1:05$/);
+  assert.doesNotMatch(JSON.stringify(n), /\p{Extended_Pictographic}/u);
+});
+
+test('reactions: old emoji reactions in a recording are hidden from viewers and the owner, and never counted', async () => {
+  const r = store.create({ title: 'Legacy', status: 'ready', shareable: true, duration: 10 });
+  store.update(r.id, { reactions: { '\u{1F44D}': 4, good: 2, bogus: 9 }, reactionEvents: [{ emoji: '\u{1F44D}', at: 1 }, { kind: 'good', at: 2, by: 'A' }, { kind: 'bogus', at: 3 }, null] });
+  for (const headers of [asViewer, {}]) {
+    const m = (await call('GET', `/api/v/${r.id}`, { headers })).json;
+    assert.deepEqual(m.reactions, { good: 2 }); assert.deepEqual(m.reactionEvents.map((e) => [e.kind, e.at]), [['good', 2]]);
+    assert.doesNotMatch(JSON.stringify(m), /\p{Extended_Pictographic}/u);
+  }
+  assert.equal((await ownerReact(r.id, { kind: 'good', at: 4 })).json.reactions.good, 3);
+  assert.equal(store.get(r.id).reactions['\u{1F44D}'], 4, 'the old data stays in the file; it is just not shown');
 });
 
 function events(url, headers = {}) {

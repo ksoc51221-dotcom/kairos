@@ -136,7 +136,7 @@ function cutsFromWords(words, picked, kind = 'transcript') {
 }
 
 // The edit list as the editor sends it -> what is allowed to be stored. `lookup(videoId)` returns { duration, ready } for a library video or null.
-const KINDS = new Set(['manual', 'transcript', 'filler', 'silence', 'ramble', 'split']);
+const KINDS = new Set(['manual', 'transcript', 'filler', 'silence', 'ramble', 'split', 'prompt']); // 'prompt' = a part found from a described edit ("remove the first 10 seconds")
 function sanitizeEdits(body, { id, duration, lookup }) {
   const num = (x) => (Number.isFinite(+x) ? +x : null), cuts = [], inserts = [];
   for (const c of (Array.isArray(body?.cuts) ? body.cuts : []).slice(0, 600)) {

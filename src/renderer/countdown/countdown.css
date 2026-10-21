@@ -1,4 +1,4 @@
-/* 3-2-1 over a dimmed screen: a blue disc with the number, ✕ to cancel on its left, ⏭ to start now on its right, a tip line under it (as in the reference).
+/* 3-2-1 over a dimmed screen: an emerald disc with the number, an X icon to cancel on its left, a skip icon to start now on its right, a tip line under it.
    The thin ring around the disc drains once per second; the whole overlay fades out over 120 ms. */
 html, body { height: 100%; overflow: hidden; }
 body { display: grid; place-items: center; align-content: center; gap: 22px; background: var(--scrim); visibility: hidden; }
@@ -11,7 +11,7 @@ body.out { opacity: 0; transition: opacity 120ms var(--ease); }
 #ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 #ring circle { fill: none; stroke-width: 1.4; }
 #ring .track { stroke: var(--countdown-ring); }
-#ring .arc { stroke: var(--ink-strong); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 0; animation: drain 1s linear forwards; }
+#ring .arc { stroke: var(--accent-lt); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 0; animation: drain 1s linear forwards; }
 @keyframes drain { to { stroke-dashoffset: 100; } }
 #disc { width: 264px; height: 264px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); box-shadow: var(--text-shadow); }
 #n { font: 700 168px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--ink-strong); }

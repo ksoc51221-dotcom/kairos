@@ -12,6 +12,7 @@ const editJob = require('../../agents/edit-job');
 const { waveform, detectSilences, silenceCuts, findFillers } = require('../../pipeline/analyze');
 const { sanitizeEdits } = require('../../pipeline/edits');
 const { proposeRambles } = require('../../agents/rambles');
+const { interpretEdit, EditIntentError } = require('../../agents/edit-intent');
 const { runFfmpeg } = require('../../pipeline/encode');
 const { frameAt } = require('../../agents/media');
 
@@ -60,6 +61,28 @@ function mount(app, ctx) {
   app.post('/api/videos/:id/rambles', own, async (q, res) => {
     const v = video(q, res); if (!v) return;
     try { res.json({ rambles: await cached(v.id, 'rambles', () => proposeRambles({ segments: v.segments || [], duration: v.duration })) }); } catch (e) { res.status(502).json({ error: e.message }); }
+  });
+
+  // "Describe an edit": one sentence in, reviewable cut proposals out. It never touches the video or the draft; the editor saves the ones the owner
+  // accepts through PUT /edits below. Explicit times, silences and filler words work without the model; only "the part about X" needs it.
+  const describing = new Set();
+  app.post('/api/videos/:id/edits/describe', own, async (q, res) => {
+    const v = video(q, res); if (!v) return;
+    const text = q.body && typeof q.body.text === 'string' ? q.body.text.trim() : '';
+    if (!text || text.length > 500) return res.status(400).json({ error: 'Describe the change in 1 to 500 characters.' });
+    if (busy(v)) return res.status(409).json({ error: 'This video is still being processed. Try again in a moment.' });
+    if (describing.has(v.id)) return res.status(409).json({ error: 'Still working on your last request for this video.' });
+    describing.add(v.id);
+    try {
+      const file = path.join(store.videoDir(v.id), 'video.mp4');
+      res.json(await interpretEdit({
+        text, duration: v.duration, segments: v.segments || [], words: v.words || null,
+        silence: () => cached(v.id, 'silence', async () => silenceCuts(await detectSilences(file, v.duration))),
+      }));
+    } catch (e) {
+      if (e instanceof EditIntentError) res.status(502).json({ error: e.message });
+      else res.status(500).json({ error: 'Could not work out that edit. Try again.' });
+    } finally { describing.delete(v.id); }
   });
 
   // the edit list (a draft until Apply)

@@ -138,7 +138,7 @@ function remove(id) {
 
 const DEFAULT_SETTINGS = {
   privacyGuard: true, ownerName: 'You', defaultPrivacy: 'link', linkExpiryDays: 0, lan: false, disableDownloads: false, retentionDays: 0,
-  brand: { name: 'Kairos', accent: '#3267d4', logo: false, hideBranding: false }, follows: [], integrations: {}, model: 'qwen3:8b', keepOriginal: false,
+  brand: { name: 'Kairos', accent: '#047857', logo: false, hideBranding: false }, follows: [], integrations: {}, model: 'qwen3:8b', keepOriginal: false,
 };
 const getSettings = () => { const s = load().settings || {}; return { ...DEFAULT_SETTINGS, ...s, brand: { ...DEFAULT_SETTINGS.brand, ...(s.brand || {}) } }; };
 const setSettings = (patch) => { const s = mutate((d) => { d.settings = { ...d.settings, ...patch }; return d.settings; }); events.emit('settings'); return s; };

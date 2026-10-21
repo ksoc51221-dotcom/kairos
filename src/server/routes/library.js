@@ -5,7 +5,7 @@ const store = require('../../store');
 const { requireOwner: own, previewingAsViewer, access } = require('../auth');
 const { processVideo } = require('../../agents/orchestrator');
 const extras = require('../extras');
-const { viewModel } = require('../viewmodel');
+const { viewModel, reactionCounts } = require('../viewmodel');
 const { page } = require('../util');
 
 // B14: while the owner previews as a viewer, "/" used to answer with a raw JSON 403 and they were stuck. Now it explains and offers the way back.
@@ -50,7 +50,7 @@ function mount(app, ctx = {}) {
     const views = vids.flatMap((v) => v.viewers.filter((x) => !x.owner).map((x) => ({ ...x, vid: v.id })));
     const byDay = Array.from({ length: 14 }, (_, i) => { const d0 = new Date(now - (13 - i) * day); d0.setHours(0, 0, 0, 0); return { day: d0.toISOString().slice(5, 10), n: views.filter((x) => x.at >= d0.getTime() && x.at < d0.getTime() + day).length }; });
     const people = {}; views.forEach((x) => { const k = x.email || x.name; (people[k] = people[k] || { name: x.name, email: x.email, views: 0, watched: 0 }); people[k].views++; people[k].watched += x.watched; });
-    res.json({ videos: vids.length, views: views.length, comments: vids.reduce((a, v) => a + v.comments.length, 0), reactions: vids.reduce((a, v) => a + Object.values(v.reactions).reduce((x, y) => x + y, 0), 0),
+    res.json({ videos: vids.length, views: views.length, comments: vids.reduce((a, v) => a + v.comments.length, 0), reactions: vids.reduce((a, v) => a + Object.values(reactionCounts(v.reactions)).reduce((x, y) => x + y, 0), 0),
       storage: extras.storageUsed(), byDay, people: Object.values(people).sort((a, b) => b.views - a.views).slice(0, 20),
       top: vids.map((v) => ({ id: v.id, title: v.title, views: v.viewers.filter((x) => !x.owner).length })).sort((a, b) => b.views - a.views).slice(0, 8),
       blurred: vids.reduce((a, v) => a + (v.redactions || []).length, 0), activity: ids().activity.slice(0, 40).map((a) => ({ ...a, title: store.get(a.videoId)?.title })) });

@@ -1,0 +1,37 @@
+/* "Describe an edit" composer (edit-prompt.js). Uses the tokens and components of app.css only: .btn .card .field .tag .meta .tstamp .badge .callout. */
+.ep { display: flex; flex-direction: column; gap: 8px; }
+.ep-open { width: 100%; min-height: 36px; }
+.ep-hint { margin: 0; font: 400 12px/18px var(--font); color: var(--mute); }
+.ep-card { display: flex; flex-direction: column; gap: 10px; }
+.ep-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ep-head .iconbtn { width: 26px; height: 26px; }
+.ep-head .iconbtn svg.i { width: 16px; height: 16px; }
+.ep-ta { min-height: 72px; resize: vertical; }
+.ep-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ep-chip { border: 1px solid var(--line); background: var(--surface-1); color: var(--ink-2); border-radius: var(--r); padding: 2px 8px; font: 400 12px/18px var(--font); cursor: pointer; transition: background 150ms var(--ease), border-color 150ms var(--ease), color 150ms var(--ease); }
+.ep-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.ep-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ep-spin { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ep-rot .8s linear infinite; flex: none; }
+@keyframes ep-rot { to { transform: rotate(360deg); } }
+.ep-res { display: flex; flex-direction: column; gap: 10px; }
+.ep-res:empty { display: none; }
+.ep-status { display: flex; align-items: center; gap: 8px; }
+.ep-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font: 500 12px/18px var(--mono); letter-spacing: .02em; color: var(--ink); }
+.ep-sum b { font-weight: 600; color: var(--accent); }
+.ep-sum .sl { color: var(--line-strong); }
+.ep-says { margin: 0; font: 400 12px/18px var(--font); color: var(--ink-2); }
+.ep-notes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.ep-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); max-height: 320px; overflow-y: auto; }
+.ep-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; }
+.ep-item + .ep-item { border-top: 1px solid var(--line-soft); }
+.ep-item.on { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.ep-item.off .ep-body { opacity: .5; }
+.ep-ck { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.ep-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+.ep-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ep-name { font: 500 13px/20px var(--font); }
+.ep-why { font: 400 12px/18px var(--font); color: var(--mute); overflow-wrap: anywhere; }
+.ep-item .btn { flex: none; }
+.ep-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.ep-act > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ep-foot { margin: 0; font: 400 12px/18px var(--font); color: var(--mute); }

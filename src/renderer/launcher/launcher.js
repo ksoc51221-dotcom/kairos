@@ -1,4 +1,4 @@
-// Recorder bar: ✕ · source · camera · mic · privacy lock · … · Record for agent · Record. Everything else opens as a popover above the button that asked for it.
+// Recorder bar: close · source · camera · mic · privacy lock · … · Record for agent · Record. Everything else opens as a popover above the button that asked for it.
 const C = window.SPOOL, I = window.KairosIcons, $ = (id) => document.getElementById(id);
 const WIN_W = 640, WRAP_PAD = 16; // keep in step with windows.js (LAUNCHER_W) and launcher.css (#wrap)
 
@@ -100,13 +100,13 @@ function toggle(label, key, onchange) {
 function link(label, fn) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.onclick = fn; return b; }
 
 // ---------- hand signs: the defaults, and the person's own ----------
-// Each command shows its sign (the default emoji, or a stick-figure sketch of the pose the person taught) and how long it is held. "Change" opens the camera
+// Each command shows its sign (a stick-figure sketch of the default pose, or of the pose the person taught) and how long it is held. "Change" opens the camera
 // and learns a new sign (two takes); "Reset" goes back to the default. Only the hand-shape numbers and the sketch are stored, never a picture.
 const SIGN_ROWS = [
-  { id: 'pause', name: 'Pause', emoji: '✋', plain: 'Open palm', hold: '1 s' },
-  { id: 'stop', name: 'Stop', emoji: '✊', plain: 'Closed fist', hold: '2 s' },
-  { id: 'zoom', name: 'Zoom in', emoji: '✌️', plain: 'Two fingers crossed', how: 'keep holding: the longer, the deeper' },
-  { id: 'zoomout', name: 'Zoom out', emoji: '✕', plain: 'Both index fingers crossed in an X', how: 'keep holding until it is wide again' },
+  { id: 'pause', name: 'Pause', plain: 'Open palm', hold: '1 s' },
+  { id: 'stop', name: 'Stop', plain: 'Closed fist', hold: '2 s' },
+  { id: 'zoom', name: 'Zoom in', plain: 'Two fingers crossed', how: 'keep holding: the longer, the deeper' },
+  { id: 'zoomout', name: 'Zoom out', plain: 'Both index fingers crossed in an X', how: 'keep holding until it is wide again' },
 ];
 const HAND_LINES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
 function sketchSvg(sk) { // a hand drawn from 21 points, wrist at (0, 0), middle knuckle at (0, -1)
@@ -114,6 +114,14 @@ function sketchSvg(sk) { // a hand drawn from 21 points, wrist at (0, 0), middle
   const lines = HAND_LINES.map(([a, b]) => `<line x1="${sk[a][0]}" y1="${sk[a][1]}" x2="${sk[b][0]}" y2="${sk[b][1]}"/>`).join('');
   return `<svg viewBox="${x0 - (m - w) / 2} ${y0 - (m - h) / 2} ${m} ${m}" aria-hidden="true"><g stroke="currentColor" stroke-width="${(m * 0.07).toFixed(3)}" stroke-linecap="round" fill="none">${lines}</g><g fill="currentColor">${sk.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="${(m * 0.05).toFixed(3)}"/>`).join('')}</g></svg>`;
 }
+// The default signs, drawn the same way as a taught one (21 hand points, wrist at (0, 0), middle knuckle at (0, -1)); zoom out is two crossed index fingers, a plain X.
+const DEFAULT_SK = {
+  pause: [[0, 0], [-0.4, -0.22], [-0.7, -0.5], [-0.92, -0.76], [-1.1, -1], [-0.42, -0.95], [-0.5, -1.42], [-0.54, -1.76], [-0.56, -2.05], [0, -1], [0, -1.55], [0, -1.95], [0, -2.3], [0.4, -0.95], [0.47, -1.42], [0.5, -1.76], [0.52, -2.02], [0.74, -0.78], [0.88, -1.15], [0.96, -1.42], [1.02, -1.64]],
+  stop: [[0, 0], [-0.38, -0.22], [-0.62, -0.45], [-0.5, -0.72], [-0.18, -0.78], [-0.42, -0.95], [-0.46, -1.28], [-0.3, -1.2], [-0.22, -0.95], [0, -1], [0, -1.34], [0.06, -1.18], [0.06, -0.95], [0.4, -0.95], [0.44, -1.26], [0.34, -1.14], [0.28, -0.92], [0.74, -0.78], [0.78, -1.04], [0.66, -0.96], [0.56, -0.76]],
+  zoom: [[0, 0], [-0.38, -0.22], [-0.55, -0.45], [-0.4, -0.68], [-0.12, -0.72], [-0.42, -0.95], [-0.3, -1.42], [-0.12, -1.8], [0.1, -2.1], [0, -1], [0, -1.48], [-0.14, -1.86], [-0.32, -2.14], [0.4, -0.95], [0.44, -1.24], [0.34, -1.12], [0.28, -0.92], [0.74, -0.78], [0.78, -1.04], [0.66, -0.96], [0.56, -0.76]],
+};
+const X_SIGN = '<svg viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"><line x1="6" y1="5" x2="18" y2="19"/><line x1="18" y1="5" x2="6" y2="19"/></g></svg>';
+const defaultSign = (id) => (DEFAULT_SK[id] ? sketchSvg(DEFAULT_SK[id]) : X_SIGN);
 let teachingSign = null, signMsg = '';
 const SIGN_FAIL = { timeout: 'Didn’t catch a steady sign. Try again: hold it still for a second.', recording: 'Stop recording first.', unavailable: 'Hand recognition didn’t load.', failed: 'That didn’t work. Try again.' };
 async function teachSign(cmd) {
@@ -130,7 +138,7 @@ function paintSigns() {
   for (const r of SIGN_ROWS) {
     const own = st.signs[r.id], row = document.createElement('div'); row.className = 'sign';
     const busy = teachingSign === r.id;
-    row.innerHTML = `<div class="vis">${own && own.sk ? sketchSvg(own.sk) : r.emoji}</div><div class="tx"><b>${r.name}</b><span>${busy ? 'Show your sign to the camera bubble: hold it still, lower your hand, show it again' : `${own ? 'Your sign' : esc(r.plain)} · ${r.how || 'hold ' + r.hold}`}</span></div>`;
+    row.innerHTML = `<div class="vis">${own && own.sk ? sketchSvg(own.sk) : defaultSign(r.id)}</div><div class="tx"><b>${r.name}</b><span>${busy ? 'Show your sign to the camera bubble: hold it still, lower your hand, show it again' : `${own ? 'Your sign' : esc(r.plain)} · ${r.how || 'hold ' + r.hold}`}</span></div>`;
     if (busy) row.appendChild(chip('Cancel', false, () => spool.send('signs:cancel')));
     else {
       row.appendChild(chip(own ? 'Change' : 'Teach', false, () => teachSign(r.id)));
@@ -155,7 +163,7 @@ function paintSettings(body) {
   t.appendChild(toggle('Cursor ring while I present (only I see it)', 'cursorFx'));
   t.appendChild(toggle('Record clicks for effects in the player', 'clickFx'));
   t.appendChild(toggle('Privacy Guard: cover secrets automatically', 'pg'));
-  const gt = toggle('Hand signs (beta): pause, stop and zoom with your hand', 'gestures'); gt.title = 'Camera on, while recording: hold your open palm ✋ for 1 s to pause or resume, a closed fist ✊ for 2 s to stop, cross two fingers ✌️ and keep holding to zoom in slowly (the longer, the deeper), or make an X with both index fingers and keep holding to zoom back out. Zoom signs are ignored while paused. Teach it your own signs below. On by default.'; t.appendChild(gt);
+  const gt = toggle('Hand signs (beta): pause, stop and zoom with your hand', 'gestures'); gt.title = 'Camera on, while recording: hold your open palm for 1 s to pause or resume, a closed fist for 2 s to stop, cross two fingers and keep holding to zoom in slowly (the longer, the deeper), or make an X with both index fingers and keep holding to zoom back out. Zoom signs are ignored while paused. Teach it your own signs below. On by default.'; t.appendChild(gt);
   pad.appendChild(t);
   pad.appendChild(paintSigns());
   const k = document.createElement('div'); k.className = 'keys';

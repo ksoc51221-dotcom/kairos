@@ -1,4 +1,4 @@
-/* In-recording control bar: a vertical pill like Loom's (57 pt wide, stop key on top, time under it). Panels open to its right. */
+/* In-recording control bar: a vertical pill (57 pt wide, stop key on top, time under it). Panels open to its right. Palette: slate + emerald, red for the stop key. */
 html, body { height: 100%; overflow: hidden; }
 #bar { position: absolute; left: 8px; top: 8px; width: 56px; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: var(--bar); border-radius: var(--r-bar); box-shadow: var(--shadow-bar); -webkit-app-region: drag; }
@@ -6,19 +6,19 @@ html, body { height: 100%; overflow: hidden; }
 #bar button { position: relative; }
 #bar hr { width: 28px; height: 1px; margin: 5px 0; border: 0; background: var(--line); }
 
-.key { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-row); background: var(--key); color: var(--key-ink); transition: background var(--t-hover) var(--ease), transform var(--t-hover) var(--ease); }
+.key { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-card); background: var(--key); color: var(--key-ink); transition: background var(--t-hover) var(--ease), transform var(--t-hover) var(--ease); }
 .key .i { width: 22px; height: 22px; }
 .key:hover { background: color-mix(in srgb, var(--key), white 8%); }
 .key:active { transform: scale(.95); }
-.rec .key { background: var(--rec); color: var(--ink-strong); }  /* recording: orange-red key, white square (reference); paused: grey */
+.rec .key { background: var(--rec); color: var(--ink-strong); }  /* recording: red key, white square; paused: grey */
 .rec .key:hover { background: color-mix(in srgb, var(--rec), white 8%); }
 .paused .key { color: var(--key-ink); }
 
-#time { margin: 5px 0 6px; font: 600 13px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--ink-strong); }
+#time { margin: 5px 0 6px; font: 600 12px/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-strong); }
 
 #bar .icon-btn { color: var(--ink-2); }
 #bar .icon-btn:hover { color: var(--ink); }
-#bar .icon-btn.on { color: var(--blue); background: var(--raised); }
+#bar .icon-btn.on { color: var(--accent-lt); background: var(--raised); }
 #bar .icon-btn.off { color: var(--red); }
 #pause.is-paused { color: var(--ink); }
 
@@ -26,12 +26,12 @@ html, body { height: 100%; overflow: hidden; }
 #panel { position: absolute; left: 72px; top: 8px; width: 244px; padding: 14px; opacity: 0; transform: translateX(-8px); pointer-events: none;
   transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease); }
 #panel.show { opacity: 1; transform: none; pointer-events: auto; }
-#panel h4 { margin: 0 0 8px; font: 600 11px/1 var(--font); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+#panel h4 { margin: 0 0 8px; font: 600 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
 #panel p { margin: 0 0 10px; }
 #swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .sw { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background-clip: padding-box; box-shadow: 0 0 0 1px var(--line); transition: transform var(--t-hover) var(--ease); }
 .sw:hover { transform: scale(1.12); }
 .sw.on { border-color: var(--surface); box-shadow: 0 0 0 2px var(--ink); }
-#slider { width: 100%; accent-color: var(--blue); margin: 4px 0 10px; }
+#slider { width: 100%; accent-color: var(--accent-lt); margin: 4px 0 10px; }
 #rew .r { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-#rew b { color: var(--ink-strong); font-variant-numeric: tabular-nums; }
+#rew b { color: var(--ink-strong); font: 600 12px/1 var(--mono); font-variant-numeric: tabular-nums; }

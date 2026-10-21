@@ -4,8 +4,8 @@
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const LANGS = ['Arabic', 'Bengali', 'Bulgarian', 'Chinese', 'Croatian', 'Czech', 'Danish', 'Dutch', 'Estonian', 'Filipino', 'Finnish', 'French', 'German', 'Greek', 'Hebrew', 'Hindi', 'Hungarian', 'Indonesian', 'Italian', 'Japanese', 'Korean', 'Latvian', 'Lithuanian', 'Malay', 'Norwegian', 'Persian', 'Polish', 'Portuguese', 'Romanian', 'Russian', 'Serbian', 'Slovak', 'Slovenian', 'Spanish', 'Swahili', 'Swedish', 'Tamil', 'Thai', 'Turkish', 'Ukrainian', 'Urdu', 'Vietnamese', 'Afrikaans', 'Catalan', 'Icelandic', 'Irish', 'Maltese', 'Welsh', 'Albanian', 'Armenian', 'Basque', 'Georgian'];
-  const CAPTION_STYLES = { classic: 'background:rgba(0,0,0,.72);color:#fff;padding:6px 14px;border-radius:8px;font-weight:500', bold: 'color:#fff;font-weight:800;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);font-size:1.25em;letter-spacing:.2px', yellow: 'color:#ffe14d;font-weight:800;text-shadow:0 2px 0 #000,0 0 6px #000;font-size:1.2em', minimal: 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:500', mint: 'background:#22c08a;color:#06281d;padding:6px 14px;border-radius:99px;font-weight:700', blue: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700', purple: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700' }; // `purple` is the old name of `blue`
-  const BACKGROUNDS = { none: '', blue: 'linear-gradient(135deg,#3267d4,#9bb8f2)', purple: 'linear-gradient(135deg,#3267d4,#9bb8f2)', mint: 'linear-gradient(135deg,#22c08a,#8ff0c9)', sunset: 'linear-gradient(135deg,#ff8a5c,#3267d4)', night: 'linear-gradient(135deg,#14161a,#2a3a6a)', aurora: 'linear-gradient(135deg,#3267d4,#22c08a)' }; // `purple` is the old name of `blue`
+  const CAPTION_STYLES = { classic: 'background:rgba(0,0,0,.72);color:#fff;padding:6px 14px;border-radius:8px;font-weight:500', bold: 'color:#fff;font-weight:800;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);font-size:1.25em;letter-spacing:.2px', yellow: 'color:#ffe14d;font-weight:800;text-shadow:0 2px 0 #000,0 0 6px #000;font-size:1.2em', minimal: 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:500', mint: 'background:#22c08a;color:#06281d;padding:6px 14px;border-radius:99px;font-weight:700', blue: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700', purple: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700' }; // `purple` is the old name of `blue` ui-rules: allow (owner-chosen caption styles)
+  const BACKGROUNDS = { none: '', blue: 'linear-gradient(135deg,#3267d4,#9bb8f2)', purple: 'linear-gradient(135deg,#3267d4,#9bb8f2)', mint: 'linear-gradient(135deg,#22c08a,#8ff0c9)', sunset: 'linear-gradient(135deg,#ff8a5c,#3267d4)', night: 'linear-gradient(135deg,#14161a,#2a3a6a)', aurora: 'linear-gradient(135deg,#3267d4,#22c08a)' }; // `purple` is the old name of `blue` ui-rules: allow (owner-chosen video backgrounds)
 
   const viewer = () => { try { return JSON.parse(localStorage.getItem('spool_viewer') || '{}'); } catch { return {}; } };
   const setViewer = (v) => { try { localStorage.setItem('spool_viewer', JSON.stringify(v)); } catch {} };
@@ -39,7 +39,7 @@
   }
 
   // attaches overlays, captions, CTA, zoom, heartbeat and floating reactions to a <video>
-  function attach({ stage, video, vm, embed, noStats }) { // noStats: the editor's preview counts no views and sends no heartbeats
+  function attach({ stage, video, vm, embed, noStats, controls }) { // noStats: the editor's preview counts no views and sends no heartbeats
     const st = { vm, caps: null, capLang: null, track: null, sid: null };
     const wrap = $('zoomwrap'), ov = $('ov'), cap = $('cap'), cta = $('cta');
     const rect = () => wrap.getBoundingClientRect();
@@ -66,7 +66,8 @@
     // ---- cursor effects, drawn at playback time from the recorded cursor feed (Phase 2). The OS cursor is already in the video; this adds the
     // highlight ring, click ripples and auto-zoom on top, so they cost nothing while recording and can be switched off per video. ----
     const fx = makeFx({ wrap, video, st });
-    function tick() { const t = video.currentTime; renderOverlays(t); renderCaption(t); fx.frame(t); requestAnimationFrame(tick); }
+    const pc = controls ? wireControls({ host: controls, stage, video, st }) : null; // custom controls (watch page); the embed keeps the native ones
+    function tick() { const t = video.currentTime; renderOverlays(t); renderCaption(t); fx.frame(t); if (pc) pc.update(); requestAnimationFrame(tick); }
     requestAnimationFrame(tick);
     // CTA button: visible in the last 8 seconds, on pause and at the end
     function ctaUpdate() {
@@ -81,41 +82,72 @@
       if (!counted && !noStats) { counted = true; try { st.sid = (await api(`/api/v/${vm.id}/view`, { body: {} })).sid; } catch {} }
     });
     setInterval(() => { if (!noStats && !video.paused && st.sid) api(`/api/v/${vm.id}/heartbeat`, { body: { sid: st.sid, t: video.currentTime } }).catch(() => {}); }, 1000);
-    // floating reactions
-    // U15: a normal reaction floats up as one DOM node; a super reaction is a confetti burst on ONE canvas (it used to be nine DOM nodes)
-    function floatReaction(emoji, big) {
-      if (big) return burst(stage, emoji);
-      const e = document.createElement('div'); e.className = 'fl'; e.textContent = emoji; e.style.left = 10 + Math.random() * 80 + '%'; stage.appendChild(e); setTimeout(() => e.remove(), 1800);
+    // floating reactions: a small icon + label chip rises over the video. Unknown (legacy) keys are ignored.
+    function floatReaction(kind) {
+      const k = KINDS[kind]; if (!k) return;
+      const e = document.createElement('div'); e.className = 'fl';
+      e.style.cssText = `left:${10 + Math.random() * 70}%;display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;font:600 11px/14px var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap`;
+      e.innerHTML = `<span style="color:var(--accent);display:grid">${window.UI ? UI.i(k[0]) : ''}</span>${esc(k[1])}`; stage.appendChild(e); setTimeout(() => e.remove(), 1800);
     }
-    let lastT = 0; video.addEventListener('timeupdate', () => { const t = video.currentTime; if (t > lastT && t - lastT < 1) (st.vm.reactionEvents || []).filter((r) => r.at > lastT && r.at <= t).forEach((r) => floatReaction(r.emoji, r.super)); lastT = t; });
+    let lastT = 0; video.addEventListener('timeupdate', () => { const t = video.currentTime; if (t > lastT && t - lastT < 1) (st.vm.reactionEvents || []).filter((r) => r.at > lastT && r.at <= t).forEach((r) => floatReaction(r.kind)); lastT = t; });
     video.addEventListener('seeked', () => { lastT = video.currentTime; });
     async function setCaptions(lang) {
       st.capLang = lang; if (!lang) { st.caps = null; cap.innerHTML = ''; return; }
       st.caps = await api(`/api/v/${vm.id}/captions.json?lang=${encodeURIComponent(lang)}`);
     }
     if (vm.type !== 'image') api(`/api/v/${vm.id}/track`).then((t) => { st.track = t; fx.setTrack(t); }).catch(() => {});
-    return { setVM(v) { st.vm = v; ctaUpdate(); fx.invalidate(); }, floatReaction, setCaptions, get caps() { return st.caps; } };
+    return { setVM(v) { st.vm = v; ctaUpdate(); fx.invalidate(); if (pc) pc.marks(); }, floatReaction, setCaptions, get caps() { return st.caps; } };
   }
 
-  // ---- U15 confetti: particles of the emoji plus colour squares, simulated on one canvas that removes itself when the last one has fallen ----
-  function burst(stage, emoji) {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const c = document.createElement('canvas'), r = stage.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
-    c.width = r.width * dpr; c.height = r.height * dpr; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4'; stage.appendChild(c);
-    const g = c.getContext('2d'); g.scale(dpr, dpr);
-    const colors = ['#ff5a7a', '#ffd23f', '#34e0a1', '#4ea8ff', '#b39dff'], W = r.width, H = r.height;
-    const ps = Array.from({ length: 70 }, (_, i) => ({ x: W / 2, y: H * 0.78, vx: (Math.random() - 0.5) * 520, vy: -260 - Math.random() * 460, a: Math.random() * 6, va: (Math.random() - 0.5) * 12, s: 7 + Math.random() * 8, e: i % 4 === 0, c: colors[i % colors.length] }));
-    let last = performance.now();
-    (function step(now) {
-      const dt = Math.min(0.033, (now - last) / 1000); last = now; g.clearRect(0, 0, W, H); let alive = 0;
-      for (const p of ps) {
-        p.vy += 900 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt; if (p.y > H + 20) continue; alive++;
-        g.save(); g.translate(p.x, p.y); g.rotate(p.a);
-        if (p.e) { g.font = `${p.s * 2.2}px sans-serif`; g.textAlign = 'center'; g.fillText(emoji, 0, 0); } else { g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); }
-        g.restore();
-      }
-      if (alive) requestAnimationFrame(step); else c.remove();
-    })(last);
+  const KINDS = { good: ['check-circle', 'Looks good'], question: ['help-circle', 'Question'], issue: ['alert-triangle', 'Problem'], idea: ['lightbulb', 'Idea'], key: ['flag', 'Key moment'] };
+
+  // ---- custom controls: scrubber (buffered + played + playhead + comment/marker ticks), play, time, volume, picture-in-picture, fullscreen of the whole frame ----
+  // The markup lives in the page (data-pc attributes, plus its own CC and speed selects); this only wires it.
+  function wireControls({ host, stage, video, st }) {
+    const q = (n) => host.querySelector(`[data-pc="${n}"]`), ico = (n) => (window.UI ? UI.i(n) : '');
+    const play = q('play'), scrub = q('scrub'), buf = scrub.querySelector('.buf'), fil = scrub.querySelector('.fil'), thumb = scrub.querySelector('.thumb'), marksEl = scrub.querySelector('.pc-marks');
+    const time = q('time'), mute = q('mute'), vol = q('vol'), pip = q('pip'), fs = q('fs'), frame = host.parentElement;
+    video.controls = false; video.removeAttribute('controls');
+    const dur = () => (isFinite(video.duration) && video.duration > 0 ? video.duration : st.vm.duration || 0);
+    const toggle = () => { if (video.paused || video.ended) { const p = video.play(); if (p && p.catch) p.catch(() => {}); } else video.pause(); };
+    const toggleMute = () => { video.muted = !video.muted; if (!video.muted && video.volume === 0) video.volume = 0.5; };
+    const fullscreen = () => { const el = document.fullscreenElement || document.webkitFullscreenElement; if (el) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else { const f = frame.requestFullscreen || frame.webkitRequestFullscreen; if (f) f.call(frame); } };
+    let last = '', marksKey = '';
+    function update() {
+      const d = dur(), t = video.currentTime || 0, p = d ? clamp(t / d, 0, 1) * 100 : 0; let b = 0;
+      try { const r = video.buffered; if (r.length && d) b = clamp((r.end(r.length - 1) / d) * 100, 0, 100); } catch {}
+      const key = `${t.toFixed(2)}|${b.toFixed(0)}|${d}|${video.paused}|${video.muted}|${video.volume}`; if (key === last) return; last = key;
+      fil.style.width = p + '%'; thumb.style.left = p + '%'; buf.style.width = b + '%';
+      time.innerHTML = `<b>${fmt(t)}</b> / ${fmt(d)}`;
+      play.innerHTML = ico(video.paused ? 'play' : 'pause'); play.setAttribute('aria-label', video.paused ? 'Play' : 'Pause');
+      const silent = video.muted || video.volume === 0; mute.innerHTML = ico(silent ? 'volume-off' : 'volume'); mute.setAttribute('aria-label', silent ? 'Unmute' : 'Mute'); vol.value = video.muted ? 0 : video.volume;
+      scrub.setAttribute('aria-valuenow', Math.round(t)); scrub.setAttribute('aria-valuemax', Math.round(d)); scrub.setAttribute('aria-valuetext', `${fmt(t)} of ${fmt(d)}`);
+      marks();
+    }
+    function marks() { // comment ticks (ink) and marker ticks (accent), drawn only when they change
+      const d = dur(), cs = st.vm.comments || [], rs = (st.vm.reactionEvents || []).filter((r) => KINDS[r.kind]), key = `${d}|${cs.length}|${rs.length}`; if (key === marksKey) return; marksKey = key;
+      marksEl.innerHTML = d ? [...cs.map((c) => [c.at, 'Comment', '']), ...rs.map((r) => [r.at, KINDS[r.kind][1], 'r'])].filter((x) => x[0] >= 0 && x[0] <= d).map((x) => `<i class="pc-mk ${x[2]}" style="left:${(x[0] / d) * 100}%" title="${esc(x[1])} at ${fmt(x[0])}"></i>`).join('') : '';
+    }
+    play.onclick = toggle; mute.onclick = toggleMute; fs.onclick = fullscreen;
+    vol.oninput = () => { video.muted = false; video.volume = +vol.value; };
+    if (pip) { if (document.pictureInPictureEnabled && video.requestPictureInPicture) pip.onclick = () => (document.pictureInPictureElement ? document.exitPictureInPicture() : video.requestPictureInPicture()).catch(() => {}); else pip.hidden = true; }
+    video.addEventListener('click', toggle);
+    ['loadedmetadata', 'durationchange'].forEach((e) => video.addEventListener(e, () => { last = ''; marksKey = ''; }));
+    let drag = false; const seekTo = (e) => { const d = dur(), r = scrub.getBoundingClientRect(); if (d && r.width) video.currentTime = clamp((e.clientX - r.left) / r.width, 0, 1) * d; };
+    scrub.addEventListener('pointerdown', (e) => { drag = true; try { scrub.setPointerCapture(e.pointerId); } catch {} seekTo(e); });
+    scrub.addEventListener('pointermove', (e) => { if (drag) seekTo(e); });
+    ['pointerup', 'pointercancel'].forEach((e) => scrub.addEventListener(e, () => (drag = false)));
+    const jump = (dt) => { const d = dur(); video.currentTime = clamp((video.currentTime || 0) + dt, 0, d || Infinity); };
+    scrub.addEventListener('keydown', (e) => { const dt = { ArrowLeft: -5, ArrowRight: 5, ArrowDown: -5, ArrowUp: 5 }[e.key]; if (dt) { e.preventDefault(); e.stopPropagation(); jump(dt); } });
+    // keyboard shortcuts: space/k play, arrows ±5 s, j/l ±10 s, m mute, f fullscreen (never while typing, or while a dialog is open)
+    document.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || !document.contains(video) || document.querySelector('.modal:not([hidden])')) return;
+      const t = e.target; if (t.closest && t.closest('input,textarea,select,[contenteditable]')) return;
+      if (e.key === ' ' && t.closest && t.closest('button,a,[role=slider]')) return;
+      const act = { ' ': toggle, k: toggle, ArrowLeft: () => jump(-5), ArrowRight: () => jump(5), j: () => jump(-10), l: () => jump(10), m: toggleMute, f: fullscreen }[e.key]; if (act) { e.preventDefault(); act(); }
+    });
+    update();
+    return { update, marks };
   }
 
   // ---- cursor highlight, click ripples and auto-zoom ----

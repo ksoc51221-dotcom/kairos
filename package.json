@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "doctor": "node scripts/doctor.js",
+    "dev:ui": "node scripts/dev-ui.js",
     "app": "npm run build:mac && open dist/Kairos-darwin-arm64/Kairos.app",
     "build:mac": "node scripts/build-mac.js",
     "test": "node --test tests/unit/*.test.js",

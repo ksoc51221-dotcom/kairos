@@ -1,64 +1,68 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edit · Kairos</title><link rel="stylesheet" href="/static/app.css"><style>
+<title>Edit · Kairos</title><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
 /* The editor (owner only). Non-destructive: everything below changes a draft edit list that is saved as you go; "Apply edits" renders a new
-   video.mp4 once, with one level of undo. Preview skips the cut ranges, so what you hear is what Apply will make. */
-body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+   video.mp4 once, with one level of undo. Preview skips the cut ranges, so what you hear is what Apply will make. Workstation layout: dark slate
+   preview + timeline on the left, 460px inspector (Describe an edit, underline tabs, scrolling body) on the right. */
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--surface-1); }
 .top { position: static; flex: none; gap: 10px; }
-.top .ttl { font: 600 17px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; } .top .st { color: var(--mute); font-size: 14px; white-space: nowrap; }
-.work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 430px; }
-@media (max-width: 980px) { .work { grid-template-columns: 1fr; grid-template-rows: auto 420px; overflow: auto; } }
-.left { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 14px 20px 12px; gap: 10px; overflow: auto; }
+.top .ttl { font: 600 16px/20px var(--font); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
+.top .st { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--side-w, 460px); }
+@media (max-width: 980px) { .work { grid-template-columns: 1fr; grid-template-rows: auto 480px; overflow: auto; } }
+.left { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 16px 20px 12px; gap: 10px; overflow: auto; }
 .stagebox { flex: 1; min-height: 160px; display: grid; place-items: center; }
 .stagebox .stage { max-height: 100%; width: auto; max-width: 100%; height: 100%; aspect-ratio: 16/9; margin: 0 auto; }
 .stagebox .stage { height: auto; max-height: 100%; width: min(100%, calc((100vh - 470px) * 16 / 9)); }
 .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.bar .time { font: 500 15px/1 var(--font); font-variant-numeric: tabular-nums; min-width: 150px; } .bar .res { color: var(--mute); font-size: 14px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.bar .time { font: 500 12px/1 var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; min-width: 150px; }
+.bar .res { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-left: auto; font-variant-numeric: tabular-nums; }
 .bar input[type=range] { accent-color: var(--accent); width: 120px; }
-.tlwrap { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--card); overflow: hidden; flex: none; touch-action: none; }
+.bar .meta kbd { margin: 0 2px; }
+.tlwrap { position: relative; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); overflow: hidden; flex: none; touch-action: none; }
 #tl { display: block; width: 100%; height: 150px; cursor: crosshair; }
-.right { border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-.right .tabs { border-bottom: 1px solid var(--line-soft); padding: 0 20px; gap: 18px; flex: none; } .right .tabs button { font-size: 15px; padding: 14px 0 11px; }
-.panel { flex: 1; overflow: auto; padding: 18px 20px 28px; }
-.sub { font: 600 13px/1 var(--font); letter-spacing: .05em; text-transform: uppercase; color: var(--mute); margin: 22px 0 10px; } .sub:first-child { margin-top: 0; }
-.hint { color: var(--mute); font-size: 14px; line-height: 1.5; margin: 0 0 12px; }
-.words { font-size: 17px; line-height: 2; user-select: none; -webkit-user-select: none; cursor: text; }
-.words span { padding: 2px 1px; border-radius: 4px; cursor: pointer; } .words span:hover { background: var(--wash); }
-.words span.now { background: var(--accent-soft); color: var(--accent); } .words span.sel { background: var(--accent); color: #fff; }
-.words span.cut { text-decoration: line-through; color: var(--danger); background: color-mix(in srgb, var(--danger), transparent 90%); }
-.selbar { position: sticky; top: -18px; z-index: 2; display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 8px 10px 8px 16px; margin: -4px 0 12px; font-size: 14px; } .selbar .btn { min-height: 32px; }
-.prop { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); font-size: 14.5px; cursor: pointer; } .prop:hover { background: var(--wash); }
-.prop input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; } .prop .tm { font-variant-numeric: tabular-nums; color: var(--mute); min-width: 92px; } .prop .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .prop .added { color: var(--good); font-size: 13px; font-weight: 600; }
-.sect { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; } .sect h4 { margin: 0 0 4px; font: 600 16px var(--font); display: flex; align-items: center; gap: 10px; } .sect .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-.lib { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); } .lib .nm { flex: 1; min-width: 0; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lib small { color: var(--mute); }
-.lib img { width: 72px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; background: var(--wash); }
-.ov { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; cursor: pointer; } .ov.on { border-color: var(--accent); background: var(--accent-soft); } .ov .nm { flex: 1; min-width: 0; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ov small { color: var(--mute); }
+.right { border-left: 1px solid var(--line-soft); background: var(--surface); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+#epHost { flex: none; max-height: 52%; overflow: auto; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); background: var(--surface-1); }
+.right .tabs { border-bottom: 1px solid var(--line-soft); padding: 0 16px; gap: 18px; flex: none; position: relative; } .right .tabs button { font-size: 13px; padding: 12px 0 10px; }
+.panel { flex: 1; overflow: auto; padding: 16px 16px 28px; }
+.sub { font: 500 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin: 22px 0 10px; } .sub:first-child { margin-top: 0; }
+.hint { color: var(--mute); font-size: 13px; line-height: 20px; margin: 0 0 12px; }
+.words { font-size: 14px; line-height: 2; user-select: none; -webkit-user-select: none; cursor: text; }
+.words span { padding: 2px 1px; border-radius: var(--r-sm); cursor: pointer; } .words span:hover { background: var(--surface-2); }
+.words span.now { background: var(--accent-soft); color: var(--accent); } .words span.sel { background: var(--accent); color: var(--accent-ink); }
+.words span.cut { text-decoration: line-through; color: var(--danger); background: var(--danger-soft); }
+.selbar { position: sticky; top: -16px; z-index: 2; display: flex; align-items: center; gap: 10px; background: var(--code-bg); color: var(--code-ink); border-radius: var(--r); padding: 6px 8px 6px 12px; margin: -4px 0 12px; font-size: 13px; }
+.prop { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--line-soft); font-size: 13px; cursor: pointer; } .prop:hover { background: var(--surface-2); }
+.prop input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; } .prop .tm { font: 500 11px var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--mute); min-width: 100px; } .prop .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .prop .added { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--good); }
+.sect { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 14px; margin-bottom: 12px; } .sect h4 { margin: 0 0 4px; font: 600 14px/20px var(--font); display: flex; align-items: center; gap: 8px; } .sect .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.lib { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--line-soft); } .lib .nm { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lib small { font: 500 11px var(--mono); letter-spacing: .04em; color: var(--mute); }
+.lib img { width: 72px; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--r-sm); background: var(--surface-2); }
+.ov { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 8px; cursor: pointer; } .ov.on { border: 2px solid var(--accent); padding: 7px; background: var(--accent-soft); } .ov .nm { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ov small { font: 500 11px var(--mono); letter-spacing: .04em; color: var(--mute); }
+.ov .tile { width: 28px; height: 28px; }
 .addrow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.frm { display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; align-items: center; margin-top: 12px; font-size: 14px; } .frm label { color: var(--mute); } .frm .field { padding: 8px 10px; font-size: 14px; }
+.frm { display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; align-items: center; margin-top: 12px; font-size: 13px; } .frm label { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
 .frm .two { display: flex; gap: 6px; align-items: center; } .frm .two .field { min-width: 0; }
-.sw-row { display: flex; gap: 8px; flex-wrap: wrap; } .colorb { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; } .colorb.on { box-shadow: 0 0 0 2px var(--accent); }
-.cap-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .cap-g button { height: 64px; border-radius: 10px; border: 2px solid var(--line); background: #3b3d42; cursor: pointer; display: grid; place-items: center; font-size: 15px; } .cap-g button.on { border-color: var(--accent); }
-.bg-g { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; } .bg-g button { aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--line); cursor: pointer; padding: 0; } .bg-g button.on { border-color: var(--accent); }
-.set { display: flex; align-items: center; gap: 14px; padding: 8px 0; font-size: 15px; } .set .lab { flex: 1; }
-.thumbs { display: flex; gap: 12px; align-items: flex-start; } .thumbs img { width: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: var(--wash); border: 1px solid var(--line); }
-.eb { position: absolute; border: 2px dashed var(--accent); pointer-events: auto; cursor: move; box-sizing: border-box; touch-action: none; }
-.eb i { position: absolute; width: 11px; height: 11px; background: #fff; border: 2px solid var(--accent); border-radius: 3px; } .eb i.nw { left: -7px; top: -7px; cursor: nwse-resize; } .eb i.ne { right: -7px; top: -7px; cursor: nesw-resize; } .eb i.sw { left: -7px; bottom: -7px; cursor: nesw-resize; } .eb i.se { right: -7px; bottom: -7px; cursor: nwse-resize; }
+.sw-row { display: flex; gap: 8px; flex-wrap: wrap; } .colorb { width: 24px; height: 24px; border-radius: var(--r-sm); border: 1px solid var(--line); cursor: pointer; padding: 0; } .colorb.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cap-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .cap-g button { height: 64px; border-radius: var(--r); border: 1px solid var(--line); background: #3b3d42; /* ui-rules: allow (caption preview surface) */ cursor: pointer; display: grid; place-items: center; font-size: 14px; } .cap-g button.on { border: 2px solid var(--accent); }
+.bg-g { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; } .bg-g button { aspect-ratio: 1; border-radius: var(--r); border: 1px solid var(--line); cursor: pointer; padding: 0; } .bg-g button.on { border: 2px solid var(--accent); }
+.set { display: flex; align-items: center; gap: 14px; padding: 8px 0; font-size: 13px; } .set .lab { flex: 1; }
+.thumbs { display: flex; gap: 12px; align-items: flex-start; } .thumbs img { width: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--line); }
+.eb { position: absolute; border: 1px dashed var(--accent); pointer-events: auto; cursor: move; box-sizing: border-box; touch-action: none; }
+.eb i { position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--accent); border-radius: var(--r-sm); } .eb i.nw { left: -6px; top: -6px; cursor: nwse-resize; } .eb i.ne { right: -6px; top: -6px; cursor: nesw-resize; } .eb i.sw { left: -6px; bottom: -6px; cursor: nesw-resize; } .eb i.se { right: -6px; bottom: -6px; cursor: nwse-resize; }
 #eov { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-.prog { height: 4px; background: var(--wash); border-radius: 4px; overflow: hidden; width: 160px; } .prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 300ms; }
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 11px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; z-index: 99; } #toast.on { opacity: 1; }
-kbd { font: 500 12px var(--font); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--wash); }
+.prog { height: 4px; background: var(--surface-3); border-radius: var(--r-sm); overflow: hidden; width: 160px; } .prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 300ms; }
 </style></head><body>
 <header class="top"><a class="iconbtn" id="back" href="/" title="Back to the video" data-i="left"></a><span class="ttl" id="ttl"></span><span class="st" id="st"></span><div class="grow"></div>
   <span id="prog" hidden style="display:flex;gap:10px;align-items:center"><span class="prog"><i id="progbar"></i></span><span class="st" id="progtxt"></span></span>
   <button class="btn" id="undoApply" hidden><span data-i="undo"></span>Undo last apply</button><button class="btn" id="discard" hidden>Discard draft</button><button class="btn pri" id="apply" disabled>Apply edits</button></header>
 <div class="work"><section class="left">
   <div class="stagebox"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" playsinline crossorigin="anonymous"></video><div id="ov"></div><div id="eov"></div></div><div id="cap"></div><a id="cta" hidden></a></div></div>
-  <div class="bar"><button class="btn sm" id="play" data-i="play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (⌫)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
+  <div class="bar"><button class="btn sm" id="play" data-i="play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (Backspace)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
   <div class="tlwrap"><canvas id="tl"></canvas></div>
-  <div class="bar"><span class="chip">Zoom</span><input type="range" id="zoom" min="0" max="100" value="0" aria-label="Zoom"><span class="chip" id="zl">1×</span><span class="chip" style="margin-left:auto">Drag on the waveform to select · <kbd>Space</kbd> play · <kbd>S</kbd> split · <kbd>⌫</kbd> delete · <kbd>⌘Z</kbd> undo</span></div>
+  <div class="bar"><span class="meta">Zoom</span><input type="range" id="zoom" min="0" max="100" value="0" aria-label="Zoom"><span class="meta" id="zl">1×</span><span class="meta nocase" style="margin-left:auto">Drag on the waveform to select · <kbd>Space</kbd> play · <kbd>S</kbd> split · <kbd>Backspace</kbd> delete · <kbd>Cmd</kbd><kbd>Z</kbd> undo</span></div>
 </section>
-<aside class="right"><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></div>
-<div id="toast"></div>
-<script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
+<aside class="right"><div id="epHost"></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></div>
+<div id="toast" class="toast"></div>
+<script src="/static/csrf.js"></script><script src="/static/edit-prompt.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
 <script>
 const { $, fmt, esc, api, attach, CAPTION_STYLES, BACKGROUNDS } = SP, { i: I } = UI;
 const id = location.pathname.split('/').pop(), put = (u, b) => api(u, { method: 'PUT', body: b }), post = (u, b = {}) => api(u, { method: 'POST', body: b });
@@ -100,7 +104,14 @@ async function boot() {
   const v = $('v'); v.src = `/media/${id}/video.mp4?v=${Date.now()}`; v.poster = `/media/${id}/thumb.jpg`;
   ctl = attach({ stage: $('stage'), video: v, vm: { ...vm, autoZoom: false }, noStats: true }); // no zoom in the editor: overlay handles need a still frame
   if (vm.segments?.length) ctl.setCaptions('original').catch(() => {});
-  renderTabs(); refresh(); listen(); requestAnimationFrame(tick);
+  renderTabs(); refresh(); mountPrompt(); listen(); requestAnimationFrame(tick);
+}
+// "Describe an edit": proposals the owner ticks are merged into the editor's own cut list, saved through the same PUT edits path as every other cut
+function mountPrompt() {
+  if (!window.EditPrompt) return;
+  EditPrompt.mount($('epHost'), { videoId: id, api, getDuration: () => dur, getDraft: () => D.cuts.map((c) => ({ ...c })), seek: (t) => { $('v').currentTime = Math.max(0, t); $('v').play().catch(() => {}); }, icon: I, esc, fmt, toast,
+    saveDraft: async (cuts) => { const next = { ...D, cuts: cuts.map((c) => ({ start: round3(c.start), end: round3(c.end), kind: c.kind || 'prompt' })) }; commit(next); clearTimeout(saveT); await put(`/api/videos/${id}/edits`, D); $('st').textContent = 'Draft saved'; },
+    onSaved: () => { prop.silence = null; prop.filler = null; refresh(); } });
 }
 function listen() { // progress and completion of Apply, and word timing finishing
   const es = new EventSource(`/api/events?video=${id}`); es.addEventListener('video', async () => {
@@ -125,7 +136,7 @@ function draw() {
   if (!dur) return;
   const dpr = Math.min(2, devicePixelRatio || 1), w = W(), h = 150; if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = h * dpr; } g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
   const acc = css('--accent'), ink = css('--ink'), mute = css('--mute'), bad = css('--danger'), line = css('--line'), wash = css('--wash');
-  g.font = '11px Inter, system-ui, sans-serif'; g.textBaseline = 'top';
+  g.font = '11px "JetBrains Mono", ui-monospace, Menlo, monospace'; g.textBaseline = 'top';
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600], step = steps.find((s) => (s / spanT()) * w >= 80) || 600;
   g.fillStyle = mute; g.strokeStyle = line; g.lineWidth = 1;
   for (let t = Math.ceil(tlv.t0 / step) * step; t <= tlv.t0 + spanT(); t += step) { const x = Math.round(t2x(t)) + .5; g.beginPath(); g.moveTo(x, 16); g.lineTo(x, 24); g.stroke(); g.fillText(mmss(t, step < 1 ? 2 : step < 1 ? 1 : 0), x + 4, 3); }
@@ -207,7 +218,7 @@ const wordCut = (w) => { const m = merged(); let o = 0; for (const c of m) o += 
 // ----- transcript -----
 function tTranscript(p) {
   if (!vm.words) { p.innerHTML = `<p class="hint">Edit by transcript: select words and delete them, and the video is cut at exactly those words. This needs a timestamp for every word.</p>${vm.segments?.length || true ? `<button class="btn pri" id="tw">Time every word</button>` : ''} ${vm.wordsError ? `<p class="err">${esc(vm.wordsError)}</p>` : ''}`; if ($('tw')) $('tw').onclick = async () => { $('tw').disabled = true; $('tw').textContent = 'Timing…'; try { await post(`/api/videos/${id}/words`); $('st').textContent = 'Timing every word…'; } catch (e) { toast(e.message); } }; return; }
-  p.innerHTML = `<div id="selbar"></div><p class="hint">Click a word to jump there. Drag across words to select them, then press <kbd>⌫</kbd>. Struck-through words are cut.</p><div class="words" id="wd">${vm.words.map((w, k) => `<span data-k="${k}" class="${wordCut(w) ? 'cut' : ''}">${esc(w.w)}</span> `).join('')}</div>`;
+  p.innerHTML = `<div id="selbar"></div><p class="hint">Click a word to jump there. Drag across words to select them, then press <kbd>Backspace</kbd>. Struck-through words are cut.</p><div class="words" id="wd">${vm.words.map((w, k) => `<span data-k="${k}" class="${wordCut(w) ? 'cut' : ''}">${esc(w.w)}</span> `).join('')}</div>`;
   const wd = $('wd'); let a = null, moved = false;
   wd.onpointerdown = (e) => { const s = e.target.closest('span[data-k]'); if (!s) return; a = +s.dataset.k; moved = false; selWords = [a]; paintSel(); };
   wd.onpointerover = (e) => { if (a === null || e.buttons !== 1) return; const s = e.target.closest('span[data-k]'); if (!s) return; const b = +s.dataset.k; if (b !== a) moved = true; selWords = range(a, b); paintSel(); };
@@ -233,7 +244,7 @@ async function analyze() { try { const r = await post(`/api/videos/${id}/analyze
 function tCleanup(p) {
   if (prop.silence === null) { p.innerHTML = '<div class="skeleton" style="height:60px"></div><div class="skeleton" style="height:60px;margin-top:12px"></div>'; analyze(); return; }
   const list = (key, items, empty, label) => items.length ? items.map((c, k) => `<label class="prop" data-k="${k}" data-g="${key}"><input type="checkbox" ${exists(c) ? 'checked disabled' : (c.on !== false ? 'checked' : '')}><span class="tm">${mmss(c.start, 1)}–${mmss(c.end, 1)}</span><span class="tx">${esc(label(c))}</span>${exists(c) ? '<span class="added">added</span>' : ''}</label>`).join('') : `<p class="hint">${empty}</p>`;
-  const sect = (key, icon, title, desc, items, empty, label, extra = '') => { const open = (items || []).filter((c) => !exists(c)); return `<div class="sect"><h4>${I(icon)}${title}${items ? `<span class="pill">${items.length}</span>` : ''}</h4><p class="hint" style="margin:4px 0 8px">${desc}</p>${items ? list(key, items, empty, label) : extra}${items && open.length ? `<div class="actions"><button class="btn pri sm" data-add="${key}">Add selected to cuts</button><span class="chip" style="align-self:center">${open.length} not added yet</span></div>` : ''}</div>`; };
+  const sect = (key, icon, title, desc, items, empty, label, extra = '') => { const open = (items || []).filter((c) => !exists(c)); return `<div class="sect"><h4>${I(icon)}${title}${items ? `<span class="pill">${items.length}</span>` : ''}</h4><p class="hint" style="margin:4px 0 8px">${desc}</p>${items ? list(key, items, empty, label) : extra}${items && open.length ? `<div class="actions"><button class="btn pri sm" data-add="${key}">Add selected to cuts</button><span class="meta" style="align-self:center">${open.length} not added yet</span></div>` : ''}</div>`; };
   p.innerHTML = `<p class="hint">Proposals only: nothing is cut until you add it, and nothing is applied until you press <b>Apply edits</b>.</p>` +
     sect('silence', 'silence', 'Silences', 'Pauses longer than 0.8 s. Each cut leaves a 0.3 s breath so speech does not run together.', prop.silence, 'No long silences.', (c) => `${(c.end - c.start + 0.3).toFixed(1)} s of silence`) +
     sect('filler', 'filler', 'Filler words', 'um, uh, “you know,” and “like” when it is set apart by a comma or a pause.', vm.words ? prop.filler || [] : null, 'No filler words found.', (c) => `“${c.text}”`, `<button class="btn" id="tw">Time every word first</button>`) +
@@ -261,21 +272,22 @@ function tInsert(p) {
 }
 
 // ----- overlays: text, arrow, box, blur, with start and end; {{variables}} -----
+/* ui-rules: allow (overlay colours are user-chosen creative options) */
 const PALETTE = ['#ff3b5c', '#ffb020', '#22c08a', '#3267d4', '#ffffff', '#111111'];
 const OV_NAME = { text: 'Text', arrow: 'Arrow', box: 'Box', blur: 'Blur' };
 function ovList() { return vm.overlays || []; }
 async function saveOverlays() { try { const r = await api(`/api/videos/${id}`, { method: 'PATCH', body: { overlays: ovList() } }); vm = { ...vm, ...r, words: vm.words, library: vm.library }; ctl.setVM({ ...vm, autoZoom: false }); } catch (e) { toast(e.message); } }
 const saveSoon = (() => { let t; return () => { clearTimeout(t); t = setTimeout(saveOverlays, 450); }; })();
 function addOverlay(type) {
-  const t = round3($('v').currentTime), o = { id: rid(), type, start: t, end: round3(Math.min(dur, t + 3)), color: type === 'text' ? '#ffffff' : '#ff3b5c', x: 0.3, y: 0.38, w: type === 'arrow' ? 0.18 : 0.4, h: type === 'text' ? 0.12 : type === 'arrow' ? 0.18 : 0.22 };
-  if (type === 'text') Object.assign(o, { text: 'Your text, {{name}}', size: 4, bg: '#3267d4' });
+  const t = round3($('v').currentTime), o = { id: rid(), type, start: t, end: round3(Math.min(dur, t + 3)), color: type === 'text' ? '#ffffff' : '#ff3b5c', x: 0.3, y: 0.38, w: type === 'arrow' ? 0.18 : 0.4, h: type === 'text' ? 0.12 : type === 'arrow' ? 0.18 : 0.22 }; // ui-rules: allow
+  if (type === 'text') Object.assign(o, { text: 'Your text, {{name}}', size: 4, bg: '#3267d4' }); // ui-rules: allow
   vm.overlays = [...ovList(), o]; ovSel = o.id; saveSoon(); ctl.setVM({ ...vm, autoZoom: false }); renderPanel();
 }
 function tOverlays(p) {
   const list = ovList(), o = list.find((x) => x.id === ovSel), vars = [...new Set([...list.map((x) => x.text || ''), vm.cta?.text || '', vm.cta?.url || ''].join(' ').matchAll(/\{\{\s*(\w+)\s*\}\}/g).map((m) => m[1]))];
   p.innerHTML = `<div class="addrow"><button class="btn sm" data-add="text">${I('text')}Text</button><button class="btn sm" data-add="arrow">${I('arrow')}Arrow</button><button class="btn sm" data-add="box">${I('box')}Box</button><button class="btn sm" data-add="blur">${I('blur')}Blur box</button></div>
-    ${list.map((x) => `<div class="ov ${x.id === ovSel ? 'on' : ''}" data-id="${x.id}"><span class="tile" style="width:34px;height:34px;border-radius:9px">${I({ text: 'text', arrow: 'arrow', box: 'box', blur: 'blur' }[x.type])}</span><div class="nm">${esc(x.type === 'text' ? x.text : OV_NAME[x.type])}<br><small>${mmss(x.start)}–${mmss(x.end)}</small></div></div>`).join('') || '<p class="hint">Add text, an arrow, a box or a blur over part of the video, from a start time to an end time. Drag it on the picture to place it.</p>'}
-    ${o ? `<div class="frm">${o.type === 'text' ? `<label>Text</label><input class="field" id="o-text" value="${esc(o.text)}"><label>Size</label><input class="field" id="o-size" type="number" min="1" max="12" step="0.5" value="${o.size || 4}"><label>Background</label><div class="sw-row" id="o-bg"><button class="colorb ${!o.bg ? 'on' : ''}" data-c="" title="None" style="background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 50%/10px 10px"></button>${PALETTE.map((c) => `<button class="colorb ${o.bg === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
+    ${list.map((x) => `<div class="ov ${x.id === ovSel ? 'on' : ''}" data-id="${x.id}"><span class="tile sm">${I({ text: 'text', arrow: 'arrow', box: 'box', blur: 'blur' }[x.type])}</span><div class="nm">${esc(x.type === 'text' ? x.text : OV_NAME[x.type])}<br><small>${mmss(x.start)}–${mmss(x.end)}</small></div></div>`).join('') || '<p class="hint">Add text, an arrow, a box or a blur over part of the video, from a start time to an end time. Drag it on the picture to place it.</p>'}
+    ${o ? `<div class="frm">${o.type === 'text' ? `<label>Text</label><input class="field" id="o-text" value="${esc(o.text)}"><label>Size</label><input class="field" id="o-size" type="number" min="1" max="12" step="0.5" value="${o.size || 4}"><label>Background</label><div class="sw-row" id="o-bg"><button class="colorb ${!o.bg ? 'on' : ''}" data-c="" title="None" style="background:var(--surface-3)"></button>${PALETTE.map((c) => `<button class="colorb ${o.bg === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
       ${o.type !== 'blur' ? `<label>Colour</label><div class="sw-row" id="o-col">${PALETTE.map((c) => `<button class="colorb ${o.color === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
       <label>Shows</label><div class="two"><input class="field" id="o-s" type="number" min="0" max="${dur}" step="0.1" value="${o.start}"><span>to</span><input class="field" id="o-e" type="number" min="0" max="${dur}" step="0.1" value="${o.end}"></div>
       <label></label><div class="two"><button class="btn sm" id="o-sp">Start = playhead</button><button class="btn sm" id="o-ep">End = playhead</button></div></div>
@@ -317,8 +329,9 @@ const patchSoon = (() => { let t; return (b) => { clearTimeout(t); t = setTimeou
 function tStyle(p) {
   const cta = vm.cta || { text: '', url: '' };
   p.innerHTML = `<div class="sub">Captions</div><div class="set"><div class="lab">Show captions from the start<small style="display:block;color:var(--mute)">Viewers can still turn them off</small></div><input type="checkbox" class="sw" id="cp-on" ${vm.captionsDefault ? 'checked' : ''} ${vm.segments?.length ? '' : 'disabled'}></div>
-    <div class="cap-g" id="cap-g">${[['classic', 'Classic'], ['bold', 'Bold'], ['yellow', 'Yellow'], ['minimal', 'Minimal'], ['mint', 'Mint'], ['blue', 'Blue']].map(([k, l]) => `<button data-k="${k}" class="${(vm.captionStyle === 'purple' ? 'blue' : vm.captionStyle || 'classic') === k ? 'on' : ''}"><span style="${CAPTION_STYLES[k]}">${l}</span></button>`).join('')}</div>
-    <div class="sub">Background</div><div class="bg-g" id="bg-g">${[['none', ''], ['blue', ''], ['mint', ''], ['sunset', ''], ['night', ''], ['aurora', '']].map(([k]) => `<button data-k="${k}" class="${(vm.background === 'purple' ? 'blue' : vm.background || 'none') === k ? 'on' : ''}" title="${k}" style="background:${BACKGROUNDS[k] || 'repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 50%/12px 12px'}"></button>`).join('')}</div>
+    <!-- ui-rules: allow (caption styles are user-chosen) --><div class="cap-g" id="cap-g">${[['classic', 'Classic'], ['bold', 'Bold'], ['yellow', 'Yellow'], ['minimal', 'Minimal'], ['mint', 'Mint'], ['blue', 'Blue']].map(([k, l]) => `<button data-k="${k}" class="${(vm.captionStyle === 'purple' ? 'blue' : vm.captionStyle || 'classic') === k ? 'on' : ''}"><span style="${CAPTION_STYLES[k]}">${l}</span></button>`).join('')}</div>
+    <div class="sub">Background</div><!-- ui-rules: allow (video background presets are user-chosen) -->
+    <div class="bg-g" id="bg-g">${[['none', ''], ['blue', ''], ['mint', ''], ['sunset', ''], ['night', ''], ['aurora', '']].map(([k]) => `<button data-k="${k}" class="${(vm.background === 'purple' ? 'blue' : vm.background || 'none') === k ? 'on' : ''}" title="${k}" style="background:${BACKGROUNDS[k] || 'var(--surface-3)'}"></button>`).join('')}</div>
     <div class="sub">Call-to-action button</div><p class="hint">A button on the player, shown in the last 8 seconds and whenever the video is paused.</p>
     <div class="frm"><label>Button text</label><input class="field" id="cta-t" value="${esc(cta.text)}" placeholder="Book a call"><label>Link</label><input class="field" id="cta-u" value="${esc(cta.url)}" placeholder="https://…"></div>
     <div class="actions" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" id="cta-x" ${vm.cta ? '' : 'disabled'}>Remove button</button></div>

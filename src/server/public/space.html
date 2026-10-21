@@ -1,12 +1,23 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Space · Kairos</title><link rel="stylesheet" href="/static/app.css">
-<style>main{max-width:1100px;margin:0 auto;padding:32px 24px}h1{font:700 40px/1.1 var(--font);letter-spacing:-.02em;margin:0}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px;margin-top:28px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:block;transition:box-shadow 150ms var(--ease)}.card:hover{box-shadow:var(--shadow)}.th{aspect-ratio:16/9;background:#25272c center/cover}.meta{padding:14px 16px}.t{font:500 18px/1.35 var(--font)}.s{font-size:14px;color:var(--mute);margin-top:6px}</style></head><body>
-<header class="top"><a class="brand" href="/" id="brand"></a></header><main><div class="chip">Space</div><h1 id="n"></h1><div class="grid" id="g"></div></main>
+<style>
+main{max-width:1100px;margin:0 auto;padding:32px 24px}
+h1{font:600 24px/32px var(--font);letter-spacing:-.02em;margin:4px 0 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:24px}
+a.vc{display:block;overflow:hidden;padding:0}
+a.vc:hover{border-color:var(--line-strong)}
+.th{aspect-ratio:16/9;background:var(--stage) center/cover;border-bottom:1px solid var(--line-soft)}
+.vb{padding:12px 14px}
+.t{font:500 14px/20px var(--font);color:var(--ink);display:flex;gap:6px;align-items:center}
+.t svg{width:14px;height:14px;flex:none;color:var(--mute)}
+.vb .meta{display:block;margin-top:6px}
+.empty{margin-top:24px;padding:24px;text-align:center}
+</style></head><body>
+<header class="top"><a class="brand" href="/" id="brand"></a></header><main><span class="tag pri">Space</span><h1 id="n"></h1><div class="grid" id="g"></div></main>
 <script src="/static/ui.js"></script>
 <script>
 fetch('/api/me').then((r) => r.json()).then((me) => { UI.brand(me.brand); document.getElementById('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${UI.esc(me.brand.name)}</span>`); });
 fetch('/api/space/' + location.pathname.split('/').pop()).then((r) => r.ok ? r.json() : Promise.reject()).then((s) => {
   document.getElementById('n').textContent = s.name; document.title = s.name + ' · Kairos';
-  document.getElementById('g').innerHTML = s.videos.map((v) => `<a class="card" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')"></div><div class="meta"><div class="t">${v.locked ? '🔒 ' : ''}${UI.esc(v.title)}</div><div class="s">${v.locked ? 'Open it to unlock' : `${v.views} view${v.views === 1 ? '' : 's'} · ${UI.ago(v.createdAt)} · ${UI.dur(v.duration)}`}</div></div></a>`).join('') || '<div class="chip" style="margin-top:20px">No videos in this space yet.</div>';
+  document.getElementById('g').innerHTML = s.videos.map((v) => `<a class="card vc" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')"></div><div class="vb"><div class="t">${v.locked ? UI.i('lock') : ''}<span>${UI.esc(v.title)}</span></div><span class="meta">${v.locked ? 'Open it to unlock' : `${v.views} view${v.views === 1 ? '' : 's'} · ${UI.ago(v.createdAt)} · ${UI.dur(v.duration)}`}</span></div></a>`).join('') || '<div class="card empty meta" style="grid-column:1/-1">No videos in this space yet.</div>';
 }).catch(() => (document.getElementById('n').textContent = 'Space not found'));
 </script></body></html>

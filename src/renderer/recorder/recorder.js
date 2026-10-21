@@ -77,7 +77,7 @@ function fakeCamStream(w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); let t = 0;
   const draw = () => {
     t += 0.1; x.setTransform(w / 640, 0, 0, h / 480, 0, 0);
-    x.fillStyle = '#3b2a7a'; x.fillRect(0, 0, 640, 480); x.fillStyle = '#f2c9a0'; x.beginPath(); x.ellipse(320, 250, 120, 150, 0, 0, 7); x.fill();
+    x.fillStyle = '#334155'; x.fillRect(0, 0, 640, 480); x.fillStyle = '#f2c9a0'; x.beginPath(); x.ellipse(320, 250, 120, 150, 0, 0, 7); x.fill();
     x.fillStyle = '#222'; x.beginPath(); x.arc(280, 220, 14, 0, 7); x.arc(360, 220, 14, 0, 7); x.fill();
     x.strokeStyle = '#a33'; x.lineWidth = 8; x.beginPath(); x.arc(320, 290 + Math.sin(t) * 6, 50, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
   };

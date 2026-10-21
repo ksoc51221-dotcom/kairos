@@ -31,7 +31,7 @@ spool.on('bubble:init', async ({ camId, fake }) => {
   const key = fake ? 'fake' : camId || 'default';
   if (key === camKey) return; camKey = key;
   v.srcObject?.getTracks().forEach((t) => t.stop()); v.srcObject = null;
-  if (fake) { cam.style.background = 'linear-gradient(135deg, var(--key), var(--raised))'; return; } // self-test: no real camera, so no permission prompt
+  if (fake) { cam.style.background = 'var(--raised)'; return; } // self-test: no real camera, so no permission prompt
   // a camera that cannot be opened for a moment fails with NotReadable / Abort (busy: another app just let go of it) or Overconstrained / NotFound (the saved camera is not in
   // the system's list right now; the log showed one while an iPhone was also offering itself as a camera): try again twice before giving up. The reason goes to the log by name
   for (let attempt = 1; attempt <= 3 && camKey === key; attempt++) {
@@ -66,9 +66,9 @@ spool.on('bubble:hover', (on) => document.body.classList.toggle('hover', !!on));
 // The recognizer looks for one hand, and for two only while the picture is zoomed in (the zoom-out sign, an X of both index fingers, needs both, and two hands cost
 // about 14 ms more per look). While the recording is paused no zoom sign does anything: nothing is being recorded, so a zoom made then could never be in the video.
 const gs = { rec: null, loading: null, running: false, timer: null, state: G.initial(), canvas: null, ctx: null, frames: 0, sumMs: 0, maxMs: 0, loadMs: 0, error: '', statsT: 0, seen: {}, signs: {}, teach: null, numHands: 1, switching: false, paused: false };
-const EMOJI = { pause: '✋', stop: '✊', zoom: '✌️', zoomout: '✕' }, VERB = { pause: 'pause', stop: 'stop', zoom: 'zoom in', zoomout: 'zoom out' };
+const SIGN = { pause: 'palm', stop: 'fist', zoom: 'crossed fingers', zoomout: 'X sign' }, VERB = { pause: 'pause', stop: 'stop', zoom: 'zoom in', zoomout: 'zoom out' };
 const custom = (id) => !!(gs.signs[id] && gs.signs[id].ex);
-const hintFor = (id) => (custom(id) ? '' : EMOJI[id] + ' ') + 'Hold to ' + VERB[id]; // what the pill says while a sign is being held
+const hintFor = (id) => (custom(id) ? '' : SIGN[id] + ' · ') + 'Hold to ' + VERB[id]; // what the pill says while a sign is being held
 const ROOT = new URL('../../../', location.href).href; // the app folder (src/renderer/bubble/ is three levels down)
 function gLoad() {
   if (gs.rec || gs.loading) return gs.loading;
@@ -82,7 +82,7 @@ function gLoad() {
   return gs.loading;
 }
 function holdRing(p, stop) { hold.dataset.k = stop ? 'stop' : ''; hold.style.setProperty('--p', Math.round(p * 360) + 'deg'); hold.style.opacity = p > 0 ? '1' : '0'; }
-// The pill under the camera does two jobs: a result ("Paused ✋", "Gestures on…") that stays for a moment, and a live hint while a sign is being held.
+// The pill under the camera does two jobs: a result ("Paused", "Gestures on…") that stays for a moment, and a live hint while a sign is being held.
 // A result on screen wins over the hint.
 let toastT, toastUntil = 0, hinting = false;
 function setToast(text) { toast.innerHTML = '<b></b>'; toast.firstChild.textContent = text; toast.classList.add('on'); }
@@ -146,8 +146,8 @@ function zrFrame(now) {
   zrEnd = now;
   document.body.classList.add('holding'); // the picture is already moving evenly: no 450 ms glide on top of it
   if (now - zrMark >= Z.ZOOM.chunkS * 1000) zrKey(now);
-  const label = zr.dir < 0 ? '🔍 ' + zm.z.toFixed(1) + '× · keep holding ✕ to zoom out'
-    : zm.z >= Z.ZOOM.max - 0.005 ? '🔍 ' + Z.ZOOM.max + '× · deepest zoom' : '🔍 ' + zm.z.toFixed(1) + '× · keep holding to zoom more';
+  const label = zr.dir < 0 ? 'Zoom ' + zm.z.toFixed(1) + '× · keep holding the X sign to zoom out'
+    : zm.z >= Z.ZOOM.max - 0.005 ? 'Zoom ' + Z.ZOOM.max + '× · deepest zoom' : 'Zoom ' + zm.z.toFixed(1) + '× · keep holding to zoom more';
   if (label !== zrShown || now - zrShownAt > 500) { zrShown = label; zrShownAt = now; showToast(label, 900); }
   cancelAnimationFrame(zrRaf); zrRaf = requestAnimationFrame(zrFrame); // one chain of frames, however many recognitions call this
 }
@@ -158,7 +158,7 @@ function zrStop(done) { // the sign is gone (done), or the hold is cancelled
   zr = null; zrShown = ''; document.body.classList.remove('holding');
   if (done) {
     zrKey(zrEnd);
-    if (moved) showToast(out ? (Z.isZoomed(zm) ? zm.z.toFixed(1) + '× · hold ✕ again to zoom out more' : 'Back to the whole picture') : 'Zoomed ' + zm.z.toFixed(1) + '× · ✕ or Exit zoom to go back', 2400);
+    if (moved) showToast(out ? (Z.isZoomed(zm) ? zm.z.toFixed(1) + '× · hold the X sign again to zoom out more' : 'Back to the whole picture') : 'Zoomed ' + zm.z.toFixed(1) + '× · the X sign or Exit zoom to go back', 2400);
   }
 }
 // every recognition: good = the zoom sign has been held long enough to count and this sample shows it, at = the fingertips, dir = 1 for zoom in, -1 for zoom out
@@ -177,7 +177,7 @@ function reticle(at) { // a ring on the camera where the zoom sign points, while
 v.addEventListener('loadedmetadata', paintZoom); v.addEventListener('resize', paintZoom);
 
 // ---- the loop ----
-const PAUSED_HINT = 'Paused · nothing is recorded · hold ✋ to resume';
+const PAUSED_HINT = 'Paused · nothing is recorded · hold your palm to resume';
 function commandTick(hands, t0) {
   // the X of both index fingers is only looked for while the picture is zoomed in (and unless a one-hand sign was taught for zoom out): that is when two hands are being looked for
   const x = hands.length > 1 && gs.numHands > 1 && !custom('zoomout') && Z.isZoomed(zm) ? G.crossXScore(hands, gs.canvas.width / gs.canvas.height) : 0;
@@ -198,11 +198,11 @@ function commandTick(hands, t0) {
 }
 // Teaching: the Settings page asks this window (gesture:teach) to learn one sign for one command. The hand is shown twice, held still for a second each time;
 // only the 32 hand-shape numbers of the two takes (and a stick-figure sketch) go back to main, never the picture.
-const TEACH_SAY = { show: (n) => `Show your ${n} sign to the camera`, hold: () => 'Hold it still…', lower: () => 'Good · now lower your hand', again: () => 'Show the same sign once more', done: () => 'Saved ✓' };
+const TEACH_SAY = { show: (n) => `Show your ${n} sign to the camera`, hold: () => 'Hold it still…', lower: () => 'Good · now lower your hand', again: () => 'Show the same sign once more', done: () => 'Saved' };
 function teachEnd(res) {
   const cmd = gs.teach.cmd; gs.teach = null; holdRing(0); showHint(''); if (!gs.running) clearTimeout(gs.timer);
   spool.send('gesture:taught', { cmd, ...res });
-  if (res.ok) showToast('Sign saved ✓', 1800);
+  if (res.ok) showToast('Sign saved', 1800);
 }
 function teachTick(hand, t0) {
   const T = gs.teach, name = G.NAMES[T.cmd].toLowerCase();
@@ -240,7 +240,7 @@ function gTick() {
     const live = v.readyState >= 2 && v.videoWidth > 0, w = Math.min(G.CFG.maxFrame, live ? v.videoWidth : 320), h = live ? Math.round((w * v.videoHeight) / v.videoWidth) : Math.round((w * 9) / 16);
     if (gs.canvas.width !== w || gs.canvas.height !== h) { gs.canvas.width = w; gs.canvas.height = h; }
     if (live) gs.ctx.drawImage(v, 0, 0, w, h); // the raw frame, not the mirrored preview
-    else { gs.ctx.fillStyle = '#556'; gs.ctx.fillRect(0, 0, w, h); } // self-test camera: no picture, the recognizer still does its full work
+    else { gs.ctx.fillStyle = '#475569'; gs.ctx.fillRect(0, 0, w, h); } // self-test camera: no picture, the recognizer still does its full work
     const res = gs.rec.recognizeForVideo(gs.canvas, t0);
     const hands = (res.landmarks || []).map((lm, i) => { const top = res.gestures?.[i]?.[0]; return { label: top?.categoryName, score: top?.score ?? 0, lm, wl: res.worldLandmarks?.[i] }; });
     if (gs.teach) teachTick(hands[0] || null, t0); else commandTick(hands, t0);
@@ -257,7 +257,7 @@ function gRun(on) {
     if (!gs.running) return;
     if (gs.rec) {
       const seeing = camKey === 'fake' || (v.readyState >= 2 && v.videoWidth > 0); // is there a camera picture to look at?
-      const label = (id) => (custom(id) ? 'your ' : EMOJI[id] + ' ') + VERB[id];
+      const label = (id) => (custom(id) ? 'your ' + VERB[id] : SIGN[id] + ': ' + VERB[id]);
       showToast(seeing ? `Gestures on · ${label('pause')} · ${label('stop')} · ${label('zoom')} · ${label('zoomout')}` : 'No camera picture · signs can’t see you', 4000); // the pill tells the user the feature is live, or why it cannot be
       clearTimeout(gs.timer); gs.timer = setTimeout(gTick, 0); // keep looking either way: a camera that is slow to open still works once it is up
     } else showToast('Gestures unavailable', 4000); // the load failed: nothing will happen, and the pill says so instead of leaving a silent camera

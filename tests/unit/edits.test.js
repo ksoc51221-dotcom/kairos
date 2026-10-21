@@ -99,6 +99,11 @@ test('what the server accepts: numbers only, ordered, inside the video, inserts 
   assert.deepEqual(E.sanitizeEdits(null, { id: 'a', duration: 1, lookup }), { cuts: [], inserts: [] });
 });
 
+test('cuts made from a typed description keep the kind "prompt"; unknown kinds still fall back to manual', () => {
+  const r = E.sanitizeEdits({ cuts: [{ start: 1, end: 2, kind: 'prompt' }, { start: 4, end: 5, kind: 'Prompt' }, { start: 7, end: 8, kind: '__proto__' }], inserts: [] }, { id: 'a', duration: 10, lookup: () => null });
+  assert.deepEqual(r.cuts.map((c) => c.kind), ['prompt', 'manual', 'manual']);
+});
+
 // ---- proposals ----
 test('silence: ffmpeg output parsed, long ones become cuts that leave a short pause, short ones are left alone', () => {
   const out = `[silencedetect @ 0x1] silence_start: 1.2\n[silencedetect @ 0x1] silence_end: 3.4 | silence_duration: 2.2\n[silencedetect @ 0x1] silence_start: 5\n[silencedetect @ 0x1] silence_end: 5.9 | silence_duration: 0.9\n[silencedetect @ 0x1] silence_start: 8`;

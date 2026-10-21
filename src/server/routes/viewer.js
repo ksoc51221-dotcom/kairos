@@ -5,7 +5,7 @@ const store = require('../../store');
 const { isOwner, fromOwnerMachine, requireOwner, gated, checkPwAsync, effectivePrivacy, access, unlockCookie, GATE_STATUS } = require('../auth');
 const security = require('../security');
 const extras = require('../extras');
-const { viewModel } = require('../viewmodel');
+const { viewModel, REACTIONS, isReaction } = require('../viewmodel');
 const { pub, page, esc, lanIp } = require('../util');
 
 function mount(app, ctx) {
@@ -94,10 +94,15 @@ function mount(app, ctx) {
     c.mentions.forEach((m) => store.notify({ type: 'mention', videoId: v.id, title: v.title, by: w.name, to: m, text, t: at, snippet: snippet(v, at) }));
     store.log(v.id, 'Commented', w.name); res.json(viewModel(v, q.owner));
   });
+  // A reaction is a typed marker at a moment in the video (good | question | issue | idea | key), never an emoji. Same rate limit and gates as comments.
+  const clock = (t) => { const s = Math.max(0, Math.floor(t)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return `${h ? `${h}:${String(m).padStart(2, '0')}` : m}:${String(s % 60).padStart(2, '0')}`; };
   app.post('/api/v/:id/reactions', limit, gated, (q, res) => {
-    const e = String(q.body.emoji || '').slice(0, 8), sup = !!q.body.super, w = who(q);
-    const v = store.update(q.video.id, (x) => ({ reactions: { ...x.reactions, [e]: (x.reactions[e] || 0) + (sup ? 3 : 1) }, reactionEvents: [...x.reactionEvents, { emoji: e, at: +q.body.at || 0, by: w.name, super: sup }].slice(-500) }));
-    if (!q.owner) store.notify({ type: 'reaction', videoId: v.id, title: v.title, by: w.name, text: `${sup ? 'super-reacted' : 'reacted'} ${e}`, t: +q.body.at || 0, snippet: snippet(v, +q.body.at || 0) });
+    const kind = q.body && q.body.kind;
+    if (!isReaction(kind)) return res.status(400).json({ error: 'Unknown reaction. Use one of: ' + Object.keys(REACTIONS).join(', ') });
+    const w = who(q), sup = !!q.owner && q.body.super === true; // `super` counts triple, owner only; the typed UI does not send it
+    let at = Number(q.body.at); if (!Number.isFinite(at) || at < 0) at = 0; if (q.video.duration > 0) at = Math.min(at, q.video.duration); at = Math.round(at * 1000) / 1000;
+    const v = store.update(q.video.id, (x) => ({ reactions: { ...x.reactions, [kind]: (x.reactions[kind] || 0) + (sup ? 3 : 1) }, reactionEvents: [...x.reactionEvents, { kind, at, by: w.name, super: sup }].slice(-500) }));
+    if (!q.owner) store.notify({ type: 'reaction', videoId: v.id, title: v.title, by: w.name, text: `marked this as ${REACTIONS[kind]} at ${clock(at)}`, t: at, snippet: snippet(v, at) });
     res.json(viewModel(v, q.owner));
   });
 
