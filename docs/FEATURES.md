@@ -109,8 +109,8 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Feature | Status | Notes |
 |---|---|---|
 | Signed Kairos.app without design/, tests, notes or other platforms' binaries | ✅ | 537 MB (was 947 MB); target 400 MB not reachable (Electron is 290 MB). Signed with a local 'Spool Dev' certificate |
-| README with Mermaid diagrams | ✅ | No GIF yet |
-| GitHub repo and Release | ⏳ | Waiting for your go-ahead |
+| README with Mermaid diagrams, file map, screenshots | ✅ | Demo video link to add |
+| GitHub repo and Release | ✅ | Public repo, v1.0.0 release with a downloadable zip, tests on every push (GitHub Actions) |
 
 ## Editing, AI, integrations, later
 Tracked in the next batches: auto-zoom export, AI voice, meeting notes, Confluence export, SDK.
