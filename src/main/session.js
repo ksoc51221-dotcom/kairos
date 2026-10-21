@@ -9,7 +9,9 @@ const store = require('../store');
 const orchestrator = require('../agents/orchestrator');
 const C = require('../shared/constants');
 const GESTURES = require('../shared/gestures');
+const ZOOM = require('../shared/zoom');
 const { writeTimeline } = require('../pipeline/segments');
+const { grabStill } = require('./screen-still');
 const { makeFilter, nextDelay } = require('../shared/cursor');
 const config = require('./config');
 const { log } = require('./log');
@@ -32,7 +34,7 @@ const cycle = (arr, v, d = 1) => arr[(arr.indexOf(v) + d + arr.length) % arr.len
 const epoch = () => performance.timeOrigin + performance.now(); // same clock the recorder window stamps its segments with
 
 // ---------------- events for the timeline ----------------
-// ['c', at, x, y] cursor · ['k', at, x, y, button] click · ['d', at, on] pen on/off · ['b', at, bubble] camera bubble
+// ['c', at, x, y] cursor · ['k', at, x, y, button] click · ['d', at, on] pen on/off · ['b', at, bubble] camera bubble · ['z', at, { cx, cy, z }, span?] camera zoom
 function emit(ev) { if (!S) return; S.events.push(ev); if (!S.flushTimer) S.flushTimer = setTimeout(flushEvents, EVENT_FLUSH_MS); }
 function flushEvents() {
   if (!S) return;
@@ -104,6 +106,7 @@ function createBubble(display, fake) {
     send('bubble', 'bubble:style', bubbleStyle());
     pushBubble();
     if (S?.opts.gestures) send('bubble', 'gesture:load');
+    pushSigns();
   });
   // The camera is a drag region, and macOS delivers no mouse events (so no :hover) inside one. Main watches the cursor instead and tells the page
   // when it is over the camera or the panel under it. The panel stays up 250 ms after the cursor leaves, long enough to cross the gap to it.
@@ -130,7 +133,7 @@ function previewSet(p = {}) {
   Object.assign(PB, { size: p.size ?? PB.size, shape: p.shape ?? PB.shape, filter: p.filter ?? PB.filter, frame: p.frame ?? PB.frame });
   const camChanged = p.camId !== undefined && p.camId !== PB.camId; if (p.camId !== undefined) PB.camId = p.camId;
   PB.on = !!p.on;
-  if (!PB.on) return closeBubble();
+  if (!PB.on) { if (!(teaching && teaching.own)) closeBubble(); return; } // (a bubble opened just to learn a sign stays until that is done)
   const fake = !!(config.SELFTEST && config.SELFTEST.fakeCam);
   if (!alive(W.bubble)) { const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()); createBubble(d, fake); return; }
   const st = bubbleStyle(), b = W.bubble.getBounds(), [nw, nh] = bubbleWin(st);
@@ -269,9 +272,9 @@ async function listSources({ screens = false } = {}) {
 }
 
 // ---------------- chunks to disk (B3) ----------------
-const segFile = (kind, n) => (kind === 'screen' ? C.FILES.screen(n, S.ext) : C.FILES.cam(n, S.ext));
+const segFile = (kind, n) => (kind === 'screen' ? C.FILES.screen(n, S.ext) : kind === 'audio' ? C.FILES.audio(n) : C.FILES.cam(n, S.ext));
 function chunk(kind, n, buf) {
-  if (!S || !S.ext) return;
+  if (!S || !S.ext || !['screen', 'cam', 'audio'].includes(kind) || !segNum(n)) return;
   const key = `${kind}_${n}`; let w = S.writers.get(key);
   if (!w) {
     const stream = fs.createWriteStream(path.join(S.dir, segFile(kind, n)), { flags: 'w' });
@@ -288,11 +291,21 @@ async function segmentEnd(kind, n) {
   return { bytes: w.bytes };
 }
 const rmSegment = (dir, name) => fs.rmSync(path.join(dir, name), { force: true });
-async function dropSegments(nums) { if (S) for (const n of nums) for (const k of ['screen', 'cam']) rmSegment(S.dir, segFile(k, n)); }
+const segNum = (n) => Number.isInteger(n) && n >= 0; // the segment number comes from the recorder window and becomes part of a file name
+async function dropSegments(nums) { if (S) for (const n of nums.filter(segNum)) { for (const k of ['screen', 'cam', 'audio']) rmSegment(S.dir, segFile(k, n)); rmSegment(S.dir, C.FILES.still(n)); } }
+// The screen recorder wrote nothing for segment n (a screen that does not change delivers no frames): keep a picture of the screen for the export to hold
+// for that stretch, so the take is not cut (the camera and the voice are still there). → the file name, or null.
+async function screenStill(n) {
+  if (!S || S.opts.mode === 'cam' || !segNum(n)) return null;
+  const s = S, file = C.FILES.still(n);
+  const done = await grabStill({ desktopCapturer, sourceId: s.opts.sourceId, display: s.display, windowSource: !!s.opts.windowSource, file: path.join(s.dir, file) });
+  log('record:screen-still', n, done ? 'ok' : 'none');
+  return done ? file : null;
+}
 async function resetSegments() {
   if (!S) return;
   await Promise.all([...S.writers.values()].map((w) => new Promise((res) => w.stream.end(res)))); S.writers.clear();
-  for (const f of fs.readdirSync(S.dir)) if (/^(screen|cam)_\d+\./.test(f)) rmSegment(S.dir, f);
+  for (const f of fs.readdirSync(S.dir)) if (/^(screen|cam|audio)_\d+\./.test(f)) rmSegment(S.dir, f);
 }
 async function closeWriters(s) { await Promise.all([...s.writers.values()].map((w) => new Promise((res) => w.stream.end(res)))); s.writers.clear(); }
 
@@ -363,6 +376,7 @@ async function start(opts) {
     broadcastTools();
     S.live = true; // capture has begun (the launcher-driven self-test waits for this)
     syncGestures();
+    send('bubble', 'bubble:live', true); // the zoom chips are available from now on
     return true;
   } catch (e) {
     const cancelled = e === CANCELLED || !!S?.cancelled, id = S?.id;
@@ -381,6 +395,7 @@ function reuseBubble() {
   send('bubble', 'bubble:style', st);
   if ((S.opts.camId || '') !== PB.camId) send('bubble', 'bubble:init', { camId: S.opts.camId || '', fake: !!S.opts.fakeCam });
   if (S.opts.gestures) send('bubble', 'gesture:load');
+  pushSigns();
 }
 
 // Closes every overlay and stops the feeds. Returns the cursor sampler's numbers.
@@ -388,7 +403,7 @@ function reuseBubble() {
 function end({ keepBubble = false } = {}) {
   const cursor = stopCursor(); shortcuts.unregisterSession();
   if (S?.opts.gestures && S.gesture) log('gestures', S.gesture); // what the recognizer saw during this recording: with the sign counts, "nothing happened" can be told from "no hand seen"
-  if (keepBubble) send('bubble', 'gesture:run', false); // the preview bubble outlives the session: it must not keep watching for signs
+  if (keepBubble) { send('bubble', 'gesture:run', false); send('bubble', 'bubble:live', false); } // the preview bubble outlives the session: it must not keep watching for signs, and its camera goes back to the whole picture
   for (const n of ['bubble', 'controls', 'countdown', 'outline', 'draw', 'ring', 'notes']) if (alive(W[n]) && !(keepBubble && n === 'bubble')) W[n].close();
   if (S) { clearTimeout(S.flushTimer); clearTimeout(S.bubbleTimer); if (keepBubble) Object.assign(PB, { size: S.bubble.size, shape: S.bubble.shape, filter: S.bubble.filter, frame: S.bubble.frame }); }
   S = null; win.releaseOverlay('session');
@@ -404,7 +419,12 @@ async function finish({ timeline, stats } = {}) {
   await closeWriters(s);
   const tl = { ...timeline, stats: { cursor, chunks: stats?.chunks, bytes: stats?.bytes } };
   writeTimeline(s.dir, tl);
-  log('record:saved', { id: s.id, duration: tl.duration, segments: tl.segments.length, cursor, bytes: stats?.bytes });
+  const noScreen = s.opts.mode === 'cam' ? [] : tl.segments.filter((g) => !g.screen).map((g) => g.n); // segments whose screen recorder wrote nothing (kept anyway, see segmentInputs)
+  const noCam = s.opts.mode === 'screen-cam' ? tl.segments.filter((g) => !g.cam).map((g) => g.n) : []; // ... and the camera recorder (the bubble is hidden for these)
+  // the audio-only backup is the voice of a segment only where the screen file is missing; everywhere else the screen file holds it and the backup is deleted
+  const wanted = new Set(tl.segments.map((g) => g.audio).filter(Boolean));
+  for (const f of fs.readdirSync(s.dir)) if (/^audio_\d+\./.test(f) && !wanted.has(f)) rmSegment(s.dir, f);
+  log('record:saved', { id: s.id, duration: tl.duration, segments: tl.segments.length, cursor, bytes: stats?.bytes, ...(noScreen.length ? { noScreen, stills: tl.segments.filter((g) => g.still).map((g) => g.n), voice: tl.segments.filter((g) => g.audio).map((g) => g.n) } : {}), ...(noCam.length ? { noCam } : {}) });
   store.update(s.id, { status: C.LIBRARY_STATUS.PROCESSING, stage: 'Encoding video', duration: tl.duration, hasTrack: true });
   orchestrator.processVideo(s.id)
     .catch((e) => log('processVideo failed', e))
@@ -431,21 +451,72 @@ const control = (a, arg) => send('recorder', 'rec:control', a, arg);
 // turns a confirmed one into the same message the keyboard shortcuts send. No recording logic lives here, and no window is focused.
 const gesturesWanted = () => !!(S && S.live && S.opts.gestures && S.bubble.camOn !== false); // a live recording, the toggle on, the camera not switched off
 const syncGestures = () => send('bubble', 'gesture:run', gesturesWanted());
-function gesture(label) {
-  const cmd = GESTURES.COMMANDS[label];
-  if (!cmd || !gesturesWanted()) return; // a stray message, or one that arrived as the recording ended
-  log('gesture', label, S.paused ? '(paused)' : '');
+function gesture(id) {
+  const cmd = GESTURES.COMMANDS[id];
+  if (!cmd || cmd.continuous || !gesturesWanted()) return; // a stray message, or one that arrived as the recording ended (zoom in and out are done in the bubble itself)
+  log('gesture', id, S.paused ? '(paused)' : '');
   send('bubble', 'gesture:toast', cmd.control === 'stop' ? 'Stopping ✊' : S.paused ? 'Resumed ✋' : 'Paused ✋');
   control(cmd.control);
 }
+// The bubble zoomed its camera picture ({ zoom: { cx, cy, z }, by: 'select' | 'hold' | 'exit', d? }): it goes into the timeline, so the export zooms the same way.
+// A 'hold' (the zoom sign kept up, the picture growing slowly) comes every second or so, d = the seconds the move to this value took.
+function bubbleZoom(p) {
+  if (!S || !S.live || !p || !p.zoom) return;
+  const zoom = ZOOM.norm(p.zoom), span = p.by === 'hold' && Number.isFinite(+p.d) ? Math.min(Math.max(+p.d, 0), 30) : 0;
+  log('zoom', p.by, zoom, span ? `over ${span.toFixed(1)}s` : '');
+  emit(span ? ['z', epoch(), zoom, span] : ['z', epoch(), zoom]);
+}
 function gestureStats(st) { if (S) S.gesture = st; } // the last numbers the bubble reported (frames, ms per recognition, model load); the self-test prints them
 const recorderError = (msg) => log('recorder error', msg);
+
+// ---------------- teaching a hand sign (Settings → Hand signs) ----------------
+// The person picks a command and shows the camera their own sign twice. The bubble window does the looking (bubble.js), main keeps the result: only 32 numbers
+// per take and a small sketch of the hand, never a picture. The camera comes from the launcher's preview bubble when it is up, otherwise from a bubble opened
+// just for this. Not while recording (the camera is busy and a sign shown then should do its command).
+let teaching = null; // { cmd, own, win, resolve }
+const pushSigns = () => send('bubble', 'gesture:signs', store.getSettings().signs || {});
+function endTeach(result) {
+  const t = teaching; if (!t) return; teaching = null;
+  if (alive(t.win)) {
+    if (!result.ok) send('bubble', 'gesture:teach', null);
+    if (t.own) setTimeout(() => { if (alive(t.win)) t.win.close(); }, result.ok ? 900 : 0);
+  }
+  t.resolve(result);
+}
+function teachSign(cmd) {
+  if (S) return Promise.resolve({ ok: false, reason: 'recording' });
+  if (!GESTURES.COMMANDS[cmd]) return Promise.resolve({ ok: false, reason: 'unknown' });
+  endTeach({ ok: false, reason: 'replaced' });
+  return new Promise((resolve) => {
+    const own = !alive(W.bubble), w = own ? createBubble(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()), !!(config.SELFTEST && config.SELFTEST.fakeCam)) : W.bubble;
+    teaching = { cmd, own, win: w, resolve };
+    w.once('closed', () => { if (teaching && teaching.win === w) endTeach({ ok: false, reason: 'closed' }); }); // the preview bubble went away (the launcher hid): nothing to learn from
+    const go = () => { if (teaching && teaching.win === w) { pushSigns(); send('bubble', 'gesture:teach', { cmd }); } };
+    if (own || w.webContents.isLoading()) w.webContents.once('did-finish-load', go); else go();
+  });
+}
+function cancelTeach() { endTeach({ ok: false, reason: 'cancelled' }); }
+function signTaught(r) {
+  if (!teaching || !r || r.cmd !== teaching.cmd) return;
+  if (r.ok && Array.isArray(r.ex) && r.ex.length) {
+    store.setSettings({ signs: { ...(store.getSettings().signs || {}), [r.cmd]: { ex: r.ex, sk: r.sk || null } } });
+    log('signs taught', r.cmd);
+    endTeach({ ok: true, signs: store.getSettings().signs });
+  } else { log('signs teach failed', r.cmd, r.reason); endTeach({ ok: false, reason: r.reason || 'failed' }); }
+  pushSigns();
+}
+function resetSign(cmd) { // back to the default sign for this command (no command = all of them)
+  const signs = { ...(store.getSettings().signs || {}) };
+  if (cmd) delete signs[cmd]; else for (const k of Object.keys(signs)) delete signs[k];
+  store.setSettings({ signs }); pushSigns(); log('signs reset', cmd || 'all');
+  return signs;
+}
 // The launcher went away. Unless that is because recording is starting, its camera preview goes with it.
 function launcherHidden() { if (!S) { closeBubble(); if (alive(W.countdown)) W.countdown.close(); } }
 const currentBubbleRect = () => (S && alive(W.bubble) ? bubbleRect() : null); // for tests
 
 module.exports = {
   events, isActive, getS, listSources, start, end, finish, discard, control, toggleTool, bubbleAction, previewSet, launcherHidden, controlsLayout, countdownDone, countdownSkip, countdownPainted, cancelStart, openNotes, closeNotes, broadcastTools,
-  chunk, segmentEnd, dropSegments, resetSegments, recorderError, bubbleRect: currentBubbleRect, gesture, gestureStats,
-  tick: (t) => send('controls', 'rec:tick', t), paused: (p, t) => { if (S) S.paused = !!p; send('controls', 'rec:paused', p, t); }, mic: (on) => send('controls', 'rec:mic', on),
+  chunk, segmentEnd, screenStill, dropSegments, resetSegments, recorderError, bubbleRect: currentBubbleRect, gesture, gestureStats, bubbleZoom, teachSign, cancelTeach, signTaught, resetSign,
+  tick: (t) => send('controls', 'rec:tick', t), paused: (p, t) => { if (S) S.paused = !!p; send('controls', 'rec:paused', p, t); send('bubble', 'bubble:paused', !!p); }, mic: (on) => send('controls', 'rec:mic', on),
 };

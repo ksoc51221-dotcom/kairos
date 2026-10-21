@@ -131,9 +131,11 @@ test('cam-only: the camera track is the picture, scaled to cover, audio from the
   assert.doesNotMatch(g, /overlay/);
 });
 
-test('a segment without camera footage disables the bubble instead of misaligning the concat', () => {
+test('a segment without camera footage gets a black camera and no bubble instead of misaligning the concat', () => {
   const r = build(base({ bubble: [[0, 0.1, 0.1, 0.1, 0.17, 'circle', 'none', 'ring', 1]] }), [seg(0, 2), seg(1, 2, { cam: null })]);
-  assert.equal(r.useCam, false); assert.doesNotMatch(graph(r), /overlay/);
+  assert.equal(r.useCam, true); assert.match(graph(r), /overlay/); assert.match(graph(r), /not\(between\(t,2,4\)\)/);
+  const none = build(base({ bubble: [[0, 0.1, 0.1, 0.1, 0.17, 'circle', 'none', 'ring', 1]] }), [seg(0, 2, { cam: null }), seg(1, 2, { cam: null })]);
+  assert.equal(none.useCam, false); assert.doesNotMatch(graph(none), /overlay/);
 });
 
 test('software fallback uses libx264, and bitrates follow the height', () => {
@@ -152,8 +154,9 @@ test('segmentInputs skips segments that are too short or missing, totalDuration 
   fs.writeFileSync(path.join(dir, 'screen_0.mp4'), 'x'); fs.writeFileSync(path.join(dir, 'screen_2.mp4'), 'x'); fs.writeFileSync(path.join(dir, 'screen_3.mp4'), '');
   const tl = { mode: 'screen', segments: [{ n: 0, t0: 0, dur: 2, screen: 'screen_0.mp4' }, { n: 1, t0: 2, dur: 1, screen: 'screen_1.mp4' }, { n: 2, t0: 3, dur: 0.01, screen: 'screen_2.mp4' }, { n: 3, t0: 3, dur: 2, screen: 'screen_3.mp4' }] };
   const inputs = segmentInputs(dir, tl);
-  assert.deepEqual(inputs.map((s) => s.n), [0], 'missing, tiny and empty files are dropped');
-  assert.equal(totalDuration(inputs), 2);
+  assert.deepEqual(inputs.map((s) => s.n), [0, 1, 3], 'a missing or empty screen file no longer drops the stretch (it is held, with its own sound); only a few milliseconds are dropped');
+  assert.deepEqual([inputs[1].screen, inputs[2].screen], [null, null]);
+  assert.equal(totalDuration(inputs), 5);
   writeTimeline(dir, tl); assert.equal(readManifest(dir).kind, 'recording');
   fs.rmSync(dir, { recursive: true, force: true });
 });

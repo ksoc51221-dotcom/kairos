@@ -732,6 +732,90 @@ Tooltips are small and dark, and appear after 300 ms. Every option the old launc
 5. If the ring never starts: the hand is too small or too dark in the frame, or the camera is off. After a recording, `spool.log` has a `gestures` line saying how often the recognizer saw a palm, a fist, another sign, or no hand. Say it out loud on the video: "it runs on the camera preview only while I record, nothing leaves the Mac."
 6. Features are frozen after this phase. Next is Phase 6 (demo, business plan, repo).
 
+### Phase 8 follow-up 2 · 2026-10-20 (four commands, own signs, camera zoom)
+
+**What the owner asked for:** four commands (Pause, Stop, Zoom in, Zoom out). Let people teach Kairos their own pause and stop sign with the camera ("take photos"). Pause recognised after 1 s, stop after 2 s (the message said "pause" twice; read as a typo for stop, ~80% sure), with the open palm and the fist as defaults until changed. Zoom in on the face camera (not the laptop screen): drag a box and press Zoom, or cross the middle and index fingers over the spot. Zoom out: press Exit zoom.
+
+**What was built:**
+
+| | |
+|---|---|
+| Commands | Pause 1 s (score ≥ 0.5), Stop 2 s (score ≥ 0.6), Zoom in 1 s (score ≥ 0.5). Zoom out is a click on "Exit zoom" only (no hand sign) |
+| Own signs | Settings → Hand signs → Teach, per command: hold still 8 frames, lower the hand, show it again; both takes must agree (distance ≤ 0.15), must differ from the other command (≥ 0.25), and must be a hand of a usable size. Stored: two 32-number hand descriptors (rotation, mirror and scale invariant) and a 21-point stick figure, in prefs `signs`. No image is kept. Reset per command |
+| Matching | `classify()` returns the command whose best template is within radius 0.18 (pause) or 0.144 (stop); canned MediaPipe labels still serve the defaults |
+| Zoom UI | Zoom chip (shows on hover while recording) → drag a box; Exit zoom chip when zoomed. The preview animates with CSS, keyframes `['z', at, {cx,cy,z}]` go to `timeline.json` as `zoom: [[t,cx,cy,z]]` |
+| Zoom export | An ffmpeg `scale…eval=frame` + `crop` stage right after the camera concat, before the bubble shape. Without zoom keyframes the filter graph is byte-identical to before |
+| Crossed fingers | Index and middle extended (≥ 1.5 wrist-to-tip over palm size), ring and pinky folded (≤ 1.3), tips crossed (rho ≤ 0.6). Fingertip midpoint = zoom centre, zoom = 2× (or the current zoom if deeper) |
+
+**Verified:** 340 unit tests (gestures 27, zoom 10, zoom export 12, real ffmpeg pixel checks); the real bubble page in headless Electron: drag-select produced the right zoom and picture, Exit zoom returned to 1×, the sign path zoomed at the given point; teach on the owner's recorded hand accepted a held palm for pause, refused it for stop with "Too close to your pause sign", and the taught palm then fired pause after ≈1 s while a thumb up did not. The crossed-fingers rule gave 0 false positives on 101 real hand frames.
+
+**Not verified:** a live camera with a real hand for crossed fingers and for taught signs; a real screen recording through the zoom (no e2e screen run); the launcher "Hand signs" rows seen in the real window; frame pacing of this build.
+
+**Risks and tradeoffs:**
+- **Crossed fingers is a guess.** MediaPipe's landmark model was not trained for crossed fingers and may read them as two fingers side by side (the rule accepts that) or lose the hand. Fallbacks: the Zoom button, or teach your own zoom sign. The log's `gestures` line has `nearZoom` (frames that almost matched) to tune it.
+- A custom stop that looks like a relaxed fist or a thumb up can fire by accident. Guards: 2 s, red ring, score ≥ 0.6, conflict check, two takes.
+- Zoom cannot be edited after recording (no editor), only the live moment is captured. Zoomed exports are slower than the 8 s target. Max 4×.
+- Natural drift matters: in the owner's recording a freshly raised palm and the same palm held for ten seconds differ by 0.18, just above the "same sign" bar of 0.15, so Teach asks to start again if the two takes are very different. Show the same relaxed hand twice.
+
+**Ideas next:** a keyboard shortcut for zoom out, a zoom editor on the Watch page, a "try it" practice mode for taught signs, a short clip of the owner's crossed fingers to tune the rule, a fix for the old e2e noise-patch geometry check (`patchRect.x ≈ wa.x + 560` in `src/main/selftest.js`).
+
+### Phase 8 follow-up 3 · 2026-10-20 (a segment is never cut: "when I move the camera it cuts that")
+
+**Cause (from the owner's own recordings, not a guess).** In screen + camera mode each pause/resume is a segment with two recorders. When the screen does not change, the screen recorder of a fresh segment can write **nothing**, and the export used to drop every segment without a screen file. That removed the camera picture, the microphone (it lived only in the screen file) and shifted all later timeline keyframes. Three recent videos lost 2.8–7.5 s each. Their raw files are deleted, so that footage cannot be recovered.
+
+**Fix.** A segment with a camera file stays in the export. Screen: a screenshot taken when the segment ended (the screen did not change, so it is the right picture) is held for the segment's length, otherwise black. Voice: silence of the right length (the first version also put the microphone on the camera recorder so the voice could come from the camera file; **reverted in follow-up 4**, it broke camera recording). Code: `segmentInputs`, `buildComposite` (stand-in inputs, `fills`), `src/main/screen-still.js`, recorder `endSegment`, `rec:screen-still`. The graph for ordinary recordings is unchanged (snapshots). `record:saved` in `spool.log` lists `noScreen` / `stills` when it happened, and `composite … segments with no screen recording kept` appears in the export log.
+
+**Tested.** 15 new unit tests (segment rules, graph shape, screenshot grabber with a fake capturer, two real-ffmpeg runs that check length, picture colour and sound in the gap, odd-sized timeline, camera file without audio). Extra by hand on VP8/Opus webm files: bubble + zoom keyframes + crop + 720p + the Privacy Guard frame split all export at the recorded length with the voice present in the gap (those voice-in-the-gap checks no longer apply: reverted, see follow-up 4). Found and fixed on the way: an odd-sized screen made scale/pad fail and would have failed the whole export. **Review coverage:** only the privacy/security lens ran as an independent agent (no real finding; segment numbers are now validated in `screenStill`/`dropSegments`; `rec:chunk` and `rec:segment-end` still trust them, an old gap). The other four lenses (ffmpeg graph, recorder/session, regressions, audio sync) hit the usage limit and were checked by hand instead.
+
+**Not verified.** Not tried live: the "static screen gives 0 bytes" cause is an inference, the fix does not depend on it. Not tried against real Electron: the screenshot call. (Two MediaRecorders sharing one audio track was tried by the owner's next recordings and broke camera recording, see follow-up 4.) Screen-only mode still drops a screen-less segment (nothing to show). The stand-in has no cursor and no motion. A segment whose screen file exists but starts late is not handled (the later content shifts by that gap).
+
+### Phase 8 follow-up 4 · 2026-10-21 (the bubble was missing from the video; zoom became "hold to zoom")
+
+**What the owner reported.** (1) "When the camera is recording it couldn't record my face … when the video is complete it didn't show the camera bubble." (2) "Make the zoom in feature a single gesture of finger crossing and make the zoom slowly go in until the gesture is removed. The longer you hold the gesture the bigger the zoom."
+
+**1 · Bubble missing: my regression from follow-up 3.** I had given the camera recorder the microphone track too, so the voice could come from the camera file. In the next recordings about half of the resumed segments had **no camera file at all**, and the export rule "every segment has a camera file, otherwise no bubble" switched the bubble off for the whole video. *Why* those camera recorders wrote nothing was **not reproduced** (two MediaRecorders sharing one audio track is the suspect; nothing was proven). Changes:
+- The camera recorder is **video-only again** (`camAudio` is gone). The voice comes from the screen file only, so during a stretch with no screen recording the voice is silent for now.
+- The export keeps **every** segment that has a screen or a camera file. The bubble is on whenever any segment has a camera file; a segment without one gets a black camera stand-in and the bubble is **hidden over that stretch only** (`noCam` holes: `overlay enable='between(t,s,e)*not(between(t,a,b))'`). `record:saved` in `spool.log` lists `noCam`; the export log says "segments with no screen or camera recording kept".
+- Footage already lost in earlier recordings cannot be recovered.
+
+**2 · Hold to zoom.** Crossed index and middle fingers are now the only zoom gesture, and it is a **hold**, not a command: it never "fires". After 0.4 s of a clear sign the picture zooms in at a constant factor per second (1× to 4× in about 6 s) toward the fingertips and keeps going while the sign is held; it stops where it is when the hand goes away. The Zoom chip / drag-a-box and Exit zoom stay as the fallback and the way back.
+
+| Knob (`ZOOM` in `src/shared/zoom.js`) | Value | Effect |
+|---|---|---|
+| `rampS` | 6 s | Time from 1× to 4× (`max` 4×). Lower is faster |
+| `graceMs` | 300 ms | The sign counts as held until this long after the last good recognition (recognition runs at 8 Hz, so one missed one is a 250 ms gap). Cost: it can overshoot by up to ~0.3 s ≈ 7% after the hand leaves |
+| `followS` | 0.35 s | How fast the centre moves to the fingertips (the sign is not locked to its first position) |
+| `chunkS` | 1.5 s | The live ramp is written to `timeline.json` in pieces this long; the hold's start gesture needs `holdMs` 0.4 s in `COMMANDS.zoom` |
+
+How it is stored: a zoom row is `[t, cx, cy, z]` as before, with an optional 5th column `span` = the seconds the move took, ending at `t`. At export a row with a span moves **evenly** (z by a constant factor per second, the centre in a straight line) over `[t − span, t]`; plain rows (drag-select) keep the 0.45 s smoothstep, and recordings without spans produce exactly the same filter graph as before (snapshots unchanged). More than 40 rows are merged (neighbouring ramp pieces first) so the ffmpeg expression stays small. Code: `rampInit / rampSample / rampFrame` in `shared/zoom.js` (pure), `step()` in `shared/gestures.js` (`continuous: true`, returns `held`), `zr*` in `renderer/bubble/bubble.js` (rAF loop, no CSS transition while `body.holding`, pill "🔍 N.N× · keep holding to zoom more"), `Timeline.setZoom(at, zm, span)`, `bubbleZoom` in `main/session.js` (`by: 'hold'`), `piecewise()` / `zoomFilter` in `pipeline/composite.js`.
+
+**Tested.** 367 unit tests, all green (this follow-up added: the hold logic in gestures, the ramp controller, span rows, a 60-piece hold merged to ≤ 40 rows, the timeline span, the ramp expression and graph, a real-ffmpeg check that the zoom grows evenly while held and is held at 4× afterwards, bubble export with missing camera files).
+
+**Not verified.** None of it on a live camera or a real screen recording; the installed build was not exercised after this change. In particular: whether MediaPipe sees crossed fingers steadily enough for a 6 s hold (in the owner's recorded frames only ~62% of the frames in a held sign passed, which the 0.3 s grace papers over), what 6 s for 1×→4× feels like, and why the camera files went missing in the first place. Screen-only mode still drops a screen-less segment. The held screen has no cursor.
+
+**Ideas next:** a separate per-segment audio-only recorder so the voice survives a stretch with no screen recording (done in follow-up 5); a zoom editor; a "zoom speed" setting; the earlier screenshot request.
+
+### Phase 8 follow-up 5 · 2026-10-21 (nothing is cut, X to zoom out, the voice survives a still screen)
+
+**What the owner asked.** (1) "Just record everything, even the zooming process and don't try to automatically cut anything." (2) "When zooming out the gesture of both hands having index fingers making an X." Then: "Face cam is broken right now, it's not showing the camera bubble."
+
+**1 · Nothing is cut.** Assumption: nothing leaves the export except an explicit pause. There is no hidden auto-cut in the code (no idle or silence trimming). Three things did lose material, all changed:
+- **Voice in a still-screen stretch.** When the screen did not change, the screen recorder of a segment could write an empty file, and the microphone lived only in that file. Each segment now has a **third recorder, audio only** (`audio/webm;codecs=opus`, `audio_N.webm`) on its own audio node, never sharing a track with the camera recorder (sharing is what once made camera files go missing). The export takes a segment's sound from, in order: the screen file, the audio backup, the camera file, silence. The backup is written into `timeline.json` (`segments[].audio`) only when the screen file is empty, and `finish()` deletes unreferenced `audio_N.*`.
+- **Screen-only recordings** dropped a segment with no screen file; they now keep every segment (held on a screenshot or black) like the other modes.
+- **Zoom signs while paused** are ignored, and the pill says "Paused · nothing is recorded · hold ✋ to resume". A pause records nothing, so a zoom started there had no footage to apply to.
+
+**2 · Zoom out = both index fingers crossed in an X.** Hold 0.4 s (`COMMANDS.zoomout`, `continuous`, `twoHands`); it is only looked for while the picture is zoomed in, and the picture goes from 4× back to 1× in `ZOOM.outS` = 2 s (three times faster than zooming in), the centre drifting back to the middle. Stored as the same `[t, cx, cy, z, span]` rows, exported as an even move down. **Exit zoom** stays. Two hands cost more, so the recogniser runs with `numHands` 1 normally and switches to 2 only while zoomed in, not paused and not teaching. The default X is off if the owner taught their own zoom-out sign. `crossXScore(hands, ar)` = the best X of any two hands (tips past each other, aspect-corrected).
+
+**3 · "Face cam is broken": the camera switch was off, not the camera.** After the screen-only attempt the launcher's camera switch was saved as OFF (`settings.prefs.camOn: false`, `source: screen`), so no camera bubble was ever opened and the owner's 4.5 s test was recorded as `mode: screen, cam: null`. Not a recurrence of the earlier NotReadableError episodes (no camera attempt in the log at all). I set `camOn` back to true in the saved settings (backup kept outside the project). Weak spots left as they are: the off state is easy to miss and survives relaunches, and after three failed camera tries the bubble gives up silently. Options if wanted: a louder off state, camera on at every launch, or a visible "camera busy" message.
+
+**Install note.** Before this follow-up the installed app was a mixed snapshot: another session had built from the same folder mid-edit (new gestures and zoom, old bubble, session, launcher and recorder). It was rebuilt from the consistent tree and the installed `src` is identical to the folder (`diff -rq`).
+
+**Tested.** 424 unit tests, all green. New or changed: the X score (tips past each other, a palm in the corner, aspect ratio, replay of an offline-recorded pose), the hold and sign switching, taught-sign conflicts for zoom-out, the zoom-out ramp and its export graph, the voice backup (graph, `segmentInputs`, a screen file with sound makes it unnecessary), screen-only keeping every segment, and a **real-ffmpeg export** whose screen file is empty and whose camera has no sound: the gap's sound comes from a webm/opus backup written to a pipe (no duration in its header, like MediaRecorder files) and is in step with the picture. Headless Electron probe with fake devices and no screen capture, 12 pause/resume cycles of the three recorders: every recorder wrote data every cycle (no camera file missing), each backup is opus 48 kHz stereo, its decoded length is within 0.05 s of the cycle, and its level is far above silence. In that probe the screen recorder never wrote an empty file (a canvas stream delivers a first frame), so "still screen, empty screen file, backup takes over" was checked in pieces, not as one run.
+
+**Not verified.** (1) The X on a live camera: it was only checked offline on one person's one pose, and MediaPipe may not hold two crossed index fingers steadily. (2) The one-to-two-hand switch and the pause gate live in `bubble.js` and have neither a test nor a live run. (3) The third recorder on a real screen capture: the cause of the earlier missing camera files is still unproven, so it could upset something. (4) A screen file that exists but has short or late sound is not covered by the backup. (5) Pixels in the camera bubble (after the install the bubble window did open at relaunch; its picture was not looked at). (6) Footage lost in earlier recordings cannot be recovered.
+
+**Open.** Library video `7c8e648aa2347c6f` (80.5 s, 3 segments) is `failed: "Processing was interrupted twice"`; its raw screen and camera files are intact, but there is no retry control for such a job (only "Re-run AI crew" exists). Next ideas: a zoom editor, a "zoom speed" setting, the louder camera-off state above, and a retry for interrupted jobs.
+
 ---
 
 ## Phase 8: Public links · 2026-10-20

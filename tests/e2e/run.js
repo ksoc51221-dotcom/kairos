@@ -32,7 +32,7 @@ const SCENARIOS = {
   // PLAN.md Phase 8: the acceptance recording with the hand-gesture recognizer running in the bubble the whole time (8 recognitions a second on a 320 px frame).
   // The camera is fake, so there is no hand to see; the pause and the resume are sent as the gesture command the bubble would send once a palm is held
   // for 1 s (session.gesture), which proves the route into the recorder. The numbers to watch are the same as acceptance: >= 55 fps, pts-delta std < 4 ms.
-  gestures: { config: { mode: 'screen-cam', seconds: 10, gestures: true, script: [[3000, 'gesture', 'Open_Palm'], [4000, 'gesture', 'Open_Palm'], [6000, 'rewind', 2]], patch: true, guards: true }, expected: 6.0, screen: true },
+  gestures: { config: { mode: 'screen-cam', seconds: 10, gestures: true, script: [[3000, 'gesture', 'pause'], [4000, 'gesture', 'pause'], [6000, 'rewind', 2]], patch: true, guards: true }, expected: 6.0, screen: true },
   cam: { config: { mode: 'cam', seconds: 3 }, expected: 3.0, screen: false },
   // Records one of the test's own windows as a window source (no screen content at all). Also covers: the default bottom-left bubble for window
   // recordings, the pen overlay being created lazily and logged (B20), the pause shortcut path toggle-pause (B9), and no cursor feed for windows.

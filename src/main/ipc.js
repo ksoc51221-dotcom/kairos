@@ -40,6 +40,7 @@ function register() {
   on('rec:discard', session.discard);
   on('rec:chunk', session.chunk);                       // B3: every recorded chunk is appended to its segment file as it arrives
   handle('rec:segment-end', session.segmentEnd);
+  handle('rec:screen-still', session.screenStill);      // a screenshot to hold in place of a screen track the recorder never got
   handle('rec:drop', session.dropSegments);             // Live Rewind removed these segments
   handle('rec:reset', session.resetSegments);           // Restart
   on('rec:error', session.recorderError);
@@ -48,6 +49,11 @@ function register() {
   on('bubble:action', session.bubbleAction);
   on('gesture:command', session.gesture);       // Phase 8: the bubble confirmed a held hand sign
   on('gesture:stats', session.gestureStats);
+  on('bubble:zoom', session.bubbleZoom);        // the bubble zoomed its camera picture: goes into the timeline
+  handle('signs:teach', (cmd) => session.teachSign(cmd));  // Settings → Hand signs: learn the person's own sign (resolves when done)
+  on('signs:cancel', session.cancelTeach);
+  on('gesture:taught', session.signTaught);     // the bubble finished (or gave up) learning a sign
+  handle('signs:reset', (cmd) => session.resetSign(cmd));
   on('controls:layout', session.controlsLayout);
   on('countdown:done', session.countdownDone);
   on('countdown:skip', session.countdownSkip);

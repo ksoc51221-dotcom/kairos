@@ -56,6 +56,7 @@
   const camSize = (nativeHeight) => (nativeHeight >= 1440 ? { width: 1920, height: 1080 } : { width: 1280, height: 720 });
   const CAM_BITRATE = 8e6;
   const AUDIO_BITRATE = 160e3;
+  const AUDIO_ONLY_MIME = 'audio/webm;codecs=opus'; // the voice-only backup file of each segment (see recorder.js): Opus in WebM, which every Chromium can write
   const SCREEN_FPS = 60;
   const CURSOR_HZ = 60;
 
@@ -73,12 +74,14 @@
   const FILES = {
     timeline: 'timeline.json', original: 'original.mp4', video: 'video.mp4', thumb: 'thumb.jpg', gif: 'preview.gif', image: 'image.png',
     screen: (n, ext) => `screen_${n}.${ext}`, cam: (n, ext) => `cam_${n}.${ext}`,
+    still: (n) => `screen_${n}.png`, // a screenshot standing in for a segment whose screen recorder wrote nothing (the screen did not change)
+    audio: (n) => `audio_${n}.webm`, // the microphone (and system sound) of a segment on its own: the voice of a segment whose screen recorder wrote nothing
   };
 
   const LIBRARY_STATUS = { RECORDING: 'recording', PROCESSING: 'processing', READY: 'ready', FAILED: 'failed' };
 
   return {
     PORT, SHAPES, FILTER_KEYS, FRAME_KEYS, BUBBLE_SIZES, BUBBLE_MIN, BUBBLE_MAX, FILTER_CSS, FRAME_CSS, FILTER_LABELS, SHAPE_LABELS, FRAME_LABELS, PEN_COLORS, ANNOTATE_COLORS, bubbleDims, cornerRadius,
-    QUALITIES, DEFAULT_QUALITY, qualityHeight, screenBitrate, camSize, CAM_BITRATE, AUDIO_BITRATE, SCREEN_FPS, CURSOR_HZ, MIME_PREFERENCE, FILES, LIBRARY_STATUS,
+    QUALITIES, DEFAULT_QUALITY, qualityHeight, screenBitrate, camSize, CAM_BITRATE, AUDIO_BITRATE, AUDIO_ONLY_MIME, SCREEN_FPS, CURSOR_HZ, MIME_PREFERENCE, FILES, LIBRARY_STATUS,
   };
 });

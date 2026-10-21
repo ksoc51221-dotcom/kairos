@@ -4,11 +4,14 @@
 //
 // "t" everywhere is seconds on the *recorded* timeline: pauses do not count, and a Live Rewind removes what came after.
 // timeline.json shape (version 2):
-//   segments [{ n, t0, dur, screen?, cam? }]            one pair of files per pause/resume segment
+//   segments [{ n, t0, dur, screen?, cam?, still?, audio? }]    one set of files per pause/resume segment; still = a screenshot standing in for a screen file the recorder never got; audio = the voice-only backup, listed only when the screen file is empty
+//   (meta: camAudio = the camera files also carry the microphone; only a short-lived experiment wrote it, the export still honours it)
 //   bubble   [[t, x, y, w, h, shape, filter, frame, visible]]   camera bubble keyframes, x/y/w/h as fractions
 //   cursor   [[t, x, y]]  at ~60 Hz, x/y as fractions of the captured display
 //   clicks   [[t, x, y, button]]
 //   drawing  [[t, on]]    pen overlay switched on (1) or off (0)
+//   zoom     [[t, cx, cy, z, span?]]  face-camera zoom keyframes (centre as fractions of the raw camera frame, z = magnification, 1 = whole picture); absent = never zoomed.
+//            span (seconds, only while a zoom sign was held) = the move to this value took that long, made evenly: the zoom grew slowly with the hand
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.KairosTimeline = factory();
@@ -22,7 +25,7 @@
 
     reset() {
       this.segments = []; this.cur = null; this.base = 0; this.nextN = 0;
-      this.bubble = []; this.cursor = []; this.clicks = []; this.drawing = [];
+      this.bubble = []; this.cursor = []; this.clicks = []; this.drawing = []; this.zoom = [];
     }
 
     get recording() { return !!this.cur; }
@@ -69,6 +72,17 @@
       return true;
     }
 
+    // Camera zoom keyframe, written when the person zooms in or out (and at the start of every segment). Same rules as setBubble: duplicates are skipped.
+    // span: seconds the move to this value took, for a zoom that grew while a sign was held (it cannot have begun before the recording did).
+    setZoom(atMs, zm, span = 0) {
+      const t = this.cur ? this.t(atMs) : this.base, sp = Math.min(Math.max(+span || 0, 0), t);
+      const row = [r3(t), r4(zm.cx), r4(zm.cy), r3(zm.z), ...(sp > 0.016 ? [r3(sp)] : [])];
+      const last = this.zoom[this.zoom.length - 1];
+      if (last && sameStyle(last.slice(1), row.slice(1))) return false;
+      if (last && last[0] === row[0]) this.zoom[this.zoom.length - 1] = row; else this.zoom.push(row);
+      return true;
+    }
+
     // Live Rewind: keep only the first `t` seconds, then recording continues from there. Call while paused.
     // Returns the numbers of segments that no longer contribute (their files can be deleted).
     rewind(t) {
@@ -83,6 +97,7 @@
       this.clicks = this.clicks.filter((c) => c[0] <= t);
       this.drawing = this.drawing.filter((d) => d[0] <= t);
       this.bubble = this.bubble.filter((k) => k[0] <= t);
+      this.zoom = this.zoom.filter((k) => k[0] <= t);
       return dropped.map((s) => s.n);
     }
 
@@ -94,7 +109,7 @@
         ...this.meta,
         duration: this.totalDuration(),
         segments: this.segments.map((s) => ({ ...s, ...(files[s.n] || {}) })),
-        bubble: this.bubble, cursor: this.cursor, clicks: this.clicks, drawing: this.drawing,
+        bubble: this.bubble, cursor: this.cursor, clicks: this.clicks, drawing: this.drawing, zoom: this.zoom,
       };
     }
   }

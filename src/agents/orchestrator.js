@@ -101,12 +101,15 @@ async function encodeRecording(id, dir, out, scanDir) {
   if (m.kind === 'upload') { await transcodeUpload(m.file, out, { onProgress: null }); fs.rmSync(m.file, { force: true }); return null; }
   const tl = m.timeline, inputs = segmentInputs(dir, tl);
   if (!inputs.length) throw new Error('the recording is empty');
+  if (tl.audio) for (const s of inputs) if (!s.screen && s.audio && !hasAudioStream(s.audio)) s.audio = null; // a backup file with no sound in it (cut short): silence instead of a failed export
+  if (tl.audio && tl.camAudio) for (const s of inputs) if (!s.screen && s.cam) s.camSound = hasAudioStream(s.cam); // a stand-in's voice comes from the camera file: if that has none, the stretch is silent instead of the export failing
   const masks = path.join(dir, 'masks');
   if (scanDir) { fs.rmSync(scanDir, { recursive: true, force: true }); fs.mkdirSync(scanDir, { recursive: true }); }
   const plan = buildComposite(tl, inputs, { out, scanDir, maskPath: (shape, w, h) => ensureMask(masks, shape, w, h), framePath: (f, shape, w, h) => ensureFrame(masks, f, shape, w, h) });
+  if (Object.values(plan.fills).some(Boolean)) say('composite', id, 'segments with no screen or camera recording kept, filled with', JSON.stringify(plan.fills)); // a recorder wrote nothing for these (see segmentInputs)
   await runFfmpeg(plan.args, { duration: plan.total, onProgress });
   fs.rmSync(masks, { recursive: true, force: true });
-  if (!process.env.SPOOL_KEEP_RAW) for (const s of tl.segments || []) for (const f of [s.screen, s.cam]) if (f) fs.rmSync(path.join(dir, f), { force: true });
+  if (!process.env.SPOOL_KEEP_RAW) for (const s of tl.segments || []) for (const f of [s.screen, s.cam, s.still, s.audio]) if (f) fs.rmSync(path.join(dir, f), { force: true });
   return plan;
 }
 

@@ -2,7 +2,8 @@
 <html data-skin="loom"><head><meta charset="utf-8"><title>Kairos camera</title>
 <link rel="stylesheet" href="../../shared/ui.css"><link rel="stylesheet" href="bubble.css"></head>
 <body>
-<div id="cam"><video id="v" autoplay muted playsinline></video></div><div id="ring"></div><div id="hold"></div><div id="toast"></div>
+<div id="cam"><video id="v" autoplay muted playsinline></video><div id="sel"><div id="selbox"></div></div><div id="ret"></div>
+  <div id="zbar"><button id="zin" class="zb" title="Zoom into part of the camera picture"><i data-icon="zoom-in"></i><span id="zinL">Zoom</span></button><button id="zout" class="zb" title="Back to the whole picture">Exit zoom</button></div></div><div id="ring"></div><div id="hold"></div><div id="toast"></div>
 <div id="panel">
   <div id="main">
     <div id="sizeRow"><input id="size" type="range" min="120" max="420" step="2" value="260" aria-label="Size"></div>
@@ -23,5 +24,6 @@
 <script src="../../shared/constants.js"></script>
 <script src="../../shared/icons.js"></script>
 <script src="../../shared/gestures.js"></script>
+<script src="../../shared/zoom.js"></script>
 <script src="bubble.js"></script>
 </body></html>

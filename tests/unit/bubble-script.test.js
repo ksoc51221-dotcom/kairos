@@ -6,13 +6,13 @@ const C = require('../../src/shared/constants');
 function boot(getUserMedia = async () => ({ getTracks: () => [] }), log = console, wait = (f) => f()) {
   const handlers = {};
   const el =() => new Proxy(function () {}, {
-    get: (t, k) => (k === 'style' ? new Proxy({ setProperty() {} }, { set: () => true }) : k === 'classList' ? { toggle() {}, add() {}, remove() {} } : k === 'dataset' ? {} : k === 'value' ? '260' : t[k] ?? (typeof k === 'string' && /^(querySelectorAll|getTracks)$/.test(k) ? () => [] : undefined)),
+    get: (t, k) => (k === 'style' ? new Proxy({ setProperty() {} }, { set: () => true }) : k === 'classList' ? { toggle() {}, add() {}, remove() {} } : k === 'dataset' ? {} : k === 'value' ? '260' : t[k] ?? (typeof k === 'string' && /^(querySelectorAll|getTracks)$/.test(k) ? () => [] : typeof k === 'string' && /^(addEventListener|setPointerCapture|getBoundingClientRect)$/.test(k) ? () => ({}) : undefined)),
     set: () => true, apply: () => undefined,
   });
   const ctx = {
-    window: { SPOOL: C, KairosIcons: { fill() {} }, KairosGestures: require('../../src/shared/gestures') },
+    window: { SPOOL: C, KairosIcons: { fill() {} }, KairosGestures: require('../../src/shared/gestures'), KairosZoom: require('../../src/shared/zoom') },
     location: { href: 'file:///app/src/renderer/bubble/index.html' }, URL,
-    document: { getElementById: el, querySelectorAll: () => [], createElement: el, body: { classList: { toggle() {} } } },
+    document: { getElementById: el, querySelectorAll: () => [], createElement: el, body: { classList: { toggle() {}, add() {}, remove() {} } } },
     spool: { on: (n, f) => { handlers[n] = f; }, send() {} },
     navigator: { mediaDevices: { getUserMedia } },
     addEventListener() {}, console: log, setTimeout: wait,
@@ -25,6 +25,7 @@ test('bubble.js loads without throwing and registers its handlers', () => {
   const handlers = boot();
   assert.ok(handlers['bubble:init'] && handlers['bubble:style'] && handlers['bubble:hover'], 'handlers registered: ' + Object.keys(handlers));
   assert.ok(handlers['gesture:load'] && handlers['gesture:run'] && handlers['gesture:toast'], 'gesture handlers registered: ' + Object.keys(handlers));
+  assert.ok(handlers['gesture:signs'] && handlers['gesture:teach'] && handlers['bubble:live'], 'sign and zoom handlers registered: ' + Object.keys(handlers));
 });
 
 test('bubble:init tries a camera that is missing for a moment up to three times, names the error, and does not retry a refusal', async () => {
