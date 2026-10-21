@@ -12,7 +12,7 @@ const root = path.join(__dirname, '..');
 // Regular expressions on the path inside the app folder (starts with /). Anything that matches is left out of the package.
 const IGNORE = [
   /^\/(dist|design|tests|scripts|cloud|\.git|\.claude|library)(\/|$)/,                 // build output, the Loom reference screenshots, tests, build scripts
-  /^\/(FEATURES|PLAN|REVIEW|PHASE4-CHECK|README)\.md$/, /^\/package-lock\.json$/, /^\/assets\/kairos-source\.png$/, /^\/PITCH\.md$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
+  /^\/(README|LICENSE)(\.md)?$/, /^\/docs(\/|$)/, /^\/package-lock\.json$/, /^\/assets\/kairos-source\.png$/, /^\/PITCH\.md$/, /^\/\./,   // project notes and dotfiles (the app has its own mcp/README.md)
   /^\/node_modules\/onnxruntime-node\/bin\/napi-v\d+\/(linux|win32|darwin\/x64)(\/|$)/, // speech engine: darwin/arm64 only (linux and win32 are ~200 MB)
   /^\/node_modules\/onnxruntime-web(\/|$)/,                                      // browser build of the same engine; the Node build above is what runs
   /^\/node_modules\/uiohook-napi\/prebuilds\/(linux|win32|darwin-x64)[^/]*(\/|$)/,        // mouse hook: this Mac only
@@ -59,7 +59,7 @@ function dry() {
   for (const [rel, size] of files) { const k = rel.split('/').slice(1, rel.startsWith('/node_modules/') ? 3 : 2).join('/'); top[k] = (top[k] || 0) + size; }
   console.log(`app folder: ${files.length} files, ${(total / 1048576).toFixed(0)} MB (Electron itself adds about 290 MB)`);
   for (const [k, n] of Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 12)) console.log(`  ${(n / 1048576).toFixed(1).padStart(7)} MB  ${k}`);
-  const leaked = files.filter(([rel]) => /^\/(design|tests|PLAN\.md|REVIEW\.md|PHASE4-CHECK\.md)/.test(rel));
+  const leaked = files.filter(([rel]) => /^\/(design|tests|docs|PITCH\.md)/.test(rel));
   if (leaked.length) { console.error('LEAK:', leaked.slice(0, 5)); process.exit(1); }
   const other = files.filter(([rel]) => /onnxruntime-node\/bin\/napi-v\d+\/(linux|win32)/.test(rel));
   if (other.length) { console.error('non-darwin binaries would ship:', other.slice(0, 3)); process.exit(1); }

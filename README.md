@@ -4,7 +4,17 @@
 
 **Record your screen once. Hand the recording to an AI agent. Keep your secrets off the internet.**
 
-![The Kairos recorder bar](design/phase7-compare/kairos-bar.jpg)
+[![Tests](https://github.com/ksoc51221-dotcom/kairos/actions/workflows/test.yml/badge.svg)](https://github.com/ksoc51221-dotcom/kairos/actions/workflows/test.yml)
+[![Latest release](https://img.shields.io/github/v/release/ksoc51221-dotcom/kairos)](https://github.com/ksoc51221-dotcom/kairos/releases/latest)
+[![MIT licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
+
+**[⬇ Download Kairos for Mac (Apple silicon)](https://github.com/ksoc51221-dotcom/kairos/releases/latest)** · [Run from source](#run-it-about-5-minutes) · [How it works](#how-it-works) · [Feature checklist](docs/FEATURES.md)
+
+![The Kairos recorder bar](docs/images/kairos-bar.jpg)
+
+| Camera bubble controls | The More menu | Recording settings |
+|---|---|---|
+| ![Camera bubble with size, shape and filter controls](docs/images/kairos-bubble-panel.jpg) | ![More menu: speaker notes, backgrounds, recording settings](docs/images/kairos-more-menu.jpg) | ![Recording settings panel](docs/images/kairos-recording-settings.jpg) |
 
 ## The problem
 
@@ -23,7 +33,7 @@ Kairos records your screen and camera, publishes the video to a link you control
 2. **It is built for agents.** Press **Record for agent** and Kairos writes an *Action Plan*: a markdown brief with what you said, the steps you showed, where you clicked and the screenshots. An MCP server hands it to Claude Code, Cursor or any MCP client: *"List my Kairos videos and turn the latest one into a fix."*
 3. **A crew of local agents** (Planner, Insights, Guide Writer, Guide Critic, AI Actions) writes the title, summary, chapters and a fact-checked step-by-step guide, then turns the recording into a PR description, bug report or SOP.
 
-The full checklist, with what is tested and what is not, is in [FEATURES.md](FEATURES.md).
+The full checklist, with what is tested and what is not, is in [FEATURES.md](docs/FEATURES.md).
 
 ## Public links (optional, free, no card)
 
@@ -43,15 +53,37 @@ Private, "Ask for email", unscanned and failed recordings are refused on this ro
 
 ## Run it (about 5 minutes)
 
-Apple silicon Mac, Node 20 or newer (tested on Node 24). There is no packaged release yet, so you build from source:
+### Option A: download the app (about 1 minute)
+
+1. Download `Kairos-mac-arm64.zip` from the [latest release](https://github.com/ksoc51221-dotcom/kairos/releases/latest) and unzip it.
+2. Move `Kairos.app` to Applications.
+3. The app is not notarised by Apple (that needs a paid developer account), so the first time, **right-click Kairos.app → Open → Open**. On macOS 15 or later, if it is still blocked: System Settings → Privacy & Security → **Open Anyway**.
+4. Kairos lives in the **menu bar** (● Kairos). Click it, or press **⌥⇧R**, to open the recorder.
+
+### Option B: run from source
+
+**Prerequisites**
+
+| Need | Version | Check |
+|---|---|---|
+| Mac with Apple silicon | macOS 13 Ventura or newer | Apple menu → About This Mac |
+| Node.js | 20 or newer (tested on 24) | `node -v` |
+| Xcode Command Line Tools | optional: faster screen reading with Apple Vision; without them Kairos falls back to Tesseract | `xcode-select -p` |
+| [Ollama](https://ollama.com) + `qwen3:8b` | optional: titles, summaries, guides and AI Actions | `ollama list` |
+
+**Steps**
 
 ```bash
-git clone <this repo> && cd spool
-npm install
-npm run doctor     # checks Node, ffmpeg, Ollama and the models, and prints the fix for anything missing
-npm start          # launch Kairos in development mode
-# or: npm run build:mac   -> dist/Kairos-darwin-arm64/Kairos.app (signed with a local certificate, not notarised)
+git clone https://github.com/ksoc51221-dotcom/kairos.git
+cd kairos
+npm install        # also downloads ffmpeg; Electron downloads itself on first start
+npm run doctor     # checks Node, ffmpeg, Electron, the speech model and Ollama; prints the fix for anything missing
+npm start          # opens Kairos in development mode
 ```
+
+Optional: `ollama pull qwen3:8b` for the AI notes, and `npm run build:mac` to build your own `dist/Kairos-darwin-arm64/Kairos.app`.
+
+These steps were checked from a fresh clone on 2026-10-21: `npm ci` then `npm test` (all unit tests pass), and `npm run doctor` reports every check green. The same tests run on every push in [GitHub Actions](https://github.com/ksoc51221-dotcom/kairos/actions/workflows/test.yml).
 
 **Optional, for the AI notes:** install [Ollama](https://ollama.com) and run `ollama pull qwen3:8b`. Any model you have pulled works: pick it in Settings > AI. Without Ollama you still get the recording, the transcript and the Privacy Guard; titles, summaries, guides and AI Actions are skipped, and the launcher tells you so.
 
@@ -139,7 +171,7 @@ Planner, Insights, Guide Writer, Guide Critic and the AI Actions use the local m
 | Sharing | Local library with spaces, folders and search; comments, reactions, analytics; link, embed, LAN sharing, optional public links that open on any phone (Backblaze + Cloudflare, or a quick GitHub route with no password); Slack / GitHub / Linear / Jira with a preview before anything is sent |
 | For agents | MCP server and Action Plan brief |
 
-The full checklist, with what is tested and what is not, is in [FEATURES.md](FEATURES.md).
+The full checklist, with what is tested and what is not, is in [FEATURES.md](docs/FEATURES.md).
 
 ### Use it from Claude Code
 
@@ -190,8 +222,32 @@ npm run build:mac   # package, trim and sign dist/Kairos-darwin-arm64/Kairos.app
 npm run build:mac:dry   # list what would ship and its size, without building
 ```
 
-Plain CommonJS and Node's built-in test runner; no bundler, no framework. `PLAN.md` has the build history and the measured numbers; `REVIEW.md` is the security review and what was done about it.
+Plain CommonJS and Node's built-in test runner; no bundler, no framework.
+
+### Project structure
+
+```
+src/
+  main/        Electron main process: windows, recording session, shortcuts, permissions, menu bar
+  renderer/    one folder per window: launcher (recorder bar), bubble (camera + hand gestures),
+               controls, countdown, recorder (hidden capture window), draw, notes, area, annotate, splash
+  pipeline/    ffmpeg work: segments, composite (one hardware encode), filters, masks, edits, share copy
+  agents/      the AI crew: orchestrator + queue, privacy (screen OCR), speech-guard (bleeps),
+               transcribe (local Whisper), insights, guide (writer/critic), actions, action-plan, llm (Ollama)
+  server/      local web app: library, watch page, editor, sharing gates (auth, security), routes
+  publish/     optional public links: Backblaze B2 and GitHub
+  shared/      code used by both processes: timeline, gestures, zoom, cursor, icons, design tokens (ui.css)
+  store.js     the library database (atomic writes, backup)
+mcp/           MCP server: hands recordings to Claude Code, Cursor or any MCP client
+cloud/         optional Cloudflare Worker for public links
+tests/unit/    unit tests (node --test), no windows, no network
+tests/e2e/     self-tests that record the real screen and check the published pixels
+scripts/       build, signing, doctor (setup check), icons
+docs/          feature checklist, screenshots, and docs/development (build log, security review)
+```
+
+How it was built: [docs/development/PLAN.md](docs/development/PLAN.md) is the phase-by-phase build log with measured numbers, and [docs/development/SECURITY-REVIEW.md](docs/development/SECURITY-REVIEW.md) is the security review and what was fixed.
 
 ## License
 
-MIT, as declared in `package.json`.
+[MIT](LICENSE) © 2026 Nguyen Canh Kien.
