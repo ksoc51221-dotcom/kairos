@@ -35,7 +35,7 @@ Recordings marked **Private** (or "Ask for email") can never be published. Allow
 1. Go to **cloudflare.com → Sign up** (free). Verify your email.
 2. Open the Terminal and go to this folder:
    ```bash
-   cd "/Users/Kien/Claude Code Projects/spool/cloud"
+   cd kairos/cloud
    ```
 3. Open `wrangler.toml` in any editor. Replace `B2_KEY_ID` with the **kairos-read keyID** and `B2_BUCKET` with your bucket name. Save.
 4. Log in (a browser tab opens; click **Allow**):

@@ -4,7 +4,7 @@ Lets Claude Code, Cursor or any MCP client read your Kairos recordings: what you
 
 ```bash
 # from a checkout (needs `npm install` once)
-claude mcp add kairos -- node /absolute/path/to/spool/mcp/server.js
+claude mcp add kairos -- node /absolute/path/to/kairos/mcp/server.js
 
 # from the packaged app
 claude mcp add kairos -- node /Applications/Kairos.app/Contents/Resources/app/mcp/server.js

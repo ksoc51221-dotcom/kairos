@@ -176,7 +176,7 @@ The full checklist, with what is tested and what is not, is in [FEATURES.md](doc
 ### Use it from Claude Code
 
 ```bash
-claude mcp add kairos -- node /absolute/path/to/spool/mcp/server.js
+claude mcp add kairos -- node /absolute/path/to/kairos/mcp/server.js
 ```
 
 Then: *"List my Kairos videos and turn the latest one into a fix."* The tools are `list_videos`, `search_videos`, `get_transcript`, `get_guide` and `get_action_plan`. See [mcp/README.md](mcp/README.md).
