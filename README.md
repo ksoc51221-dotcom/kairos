@@ -10,11 +10,13 @@
 
 **[⬇ Download Kairos for Mac (Apple silicon)](https://github.com/ksoc51221-dotcom/kairos/releases/latest)** · [Run from source](#run-it-about-5-minutes) · [How it works](#how-it-works) · [Feature checklist](docs/FEATURES.md)
 
-![The Kairos recorder bar](docs/images/kairos-bar.jpg)
+![A shared recording: Privacy Guard cleared it, and the AI Actions tab turned it into an action plan an agent can run](docs/images/watch-action-plan.jpg)
 
-| Camera bubble controls | The More menu | Recording settings |
+| Your library | The editor | What a viewer sees while the guard checks |
 |---|---|---|
-| ![Camera bubble with size, shape and filter controls](docs/images/kairos-bubble-panel.jpg) | ![More menu: speaker notes, backgrounds, recording settings](docs/images/kairos-more-menu.jpg) | ![Recording settings panel](docs/images/kairos-recording-settings.jpg) |
+| ![Library of recordings with guard status](docs/images/library.jpg) | ![Editor with "Describe an edit", Bleep speech and cuts on the timeline](docs/images/editor.jpg) | ![Viewer page: "Almost ready, the Privacy Guard is checking"](docs/images/viewer-guard-checking.jpg) |
+
+*Screenshots use made-up demo data.*
 
 ## The problem
 
