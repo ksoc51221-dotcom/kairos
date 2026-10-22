@@ -95,3 +95,27 @@ test('the status endpoint counts GitHub links separately and lists repositories 
   const st = (await call('GET', '/api/publish/status')).json;
   assert.equal(st.github.configured, true); assert.equal(st.github.live, 0); assert.deepEqual(st.github.errors, []);
 });
+
+test('one-click setup: the status says whether gh is signed in (never the token) and ticking the box makes the route usable', async () => {
+  const before = store.getSettings().integrations, v = mk();
+  try {
+    store.setSettings({ integrations: { github: {} } });
+    publisher.deps.ghToken = () => '';
+    let st = (await call('GET', '/api/publish/status')).json;
+    assert.equal(st.github.cli, false); assert.equal(st.github.configured, false);
+    assert.equal((await call('GET', `/api/videos/${v.id}/publish`)).json.github.configured, false);
+    publisher.deps.ghToken = () => fake.cfg.token;
+    st = (await call('GET', '/api/publish/status')).json;
+    assert.equal(st.github.cli, true); assert.equal(st.github.configured, false, 'signed in is not the same as allowed: the owner has to opt in');
+    assert.ok(!JSON.stringify(st).includes(fake.cfg.token));
+    assert.equal((await call('GET', '/api/publish/status', { headers: outsider })).status, 403);
+    publisher.deps.ghToken = () => { throw new Error('gh blew up'); };
+    assert.equal((await call('GET', '/api/publish/status')).json.github.cli, false, 'a broken gh is just "not signed in"');
+    publisher.deps.ghToken = () => fake.cfg.token;
+    // what the dialog's button does: one partial save (nothing else in the GitHub settings is touched), then the same test the Settings page runs
+    assert.equal((await call('PUT', '/api/settings', { body: { integrations: { github: { useGh: true } } } })).status, 200);
+    const t = (await call('POST', '/api/publish/test', { body: { host: 'github' } })).json;
+    assert.equal(t.ok, true); assert.equal(t.steps[0].name, 'Token'); assert.match(t.steps[0].detail, /GitHub CLI/);
+    assert.equal((await call('GET', `/api/videos/${v.id}/publish`)).json.github.configured, true);
+  } finally { publisher.deps.ghToken = () => ''; store.setSettings({ integrations: before }); }
+});

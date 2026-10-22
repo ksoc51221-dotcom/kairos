@@ -77,12 +77,13 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padd
 .sm .to { margin-top: 14px; position: relative; }
 .sm .sug, .sm .got { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 4px 10px; font: 500 12px/18px var(--font); cursor: pointer; }
 .sm .got span { cursor: default; background: var(--accent-soft); border-color: transparent; padding: 3px 4px 3px 10px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 2px; color: var(--mute); }
-.sm h5 { margin: 20px 0 8px; font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); } .sm h5 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sm h5 { margin: 20px 0 8px; font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); } .sm h5 small { display: block; margin-top: 4px; font: 400 12px/16px var(--font); letter-spacing: 0; text-transform: none; color: var(--mute); }
 .sm .acc { display: flex; align-items: center; gap: 12px; } .sm .acc b { display: inline-flex; align-items: center; gap: 4px; font: 600 13px/20px var(--font); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
 .sm .ft { display: flex; align-items: center; gap: 16px; margin: 20px -24px -20px; padding: 12px 24px; border-top: 1px solid var(--line-soft); background: var(--surface-1); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
 .sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font: 500 12px/16px var(--font); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
 .sm .more { margin-top: 12px; padding: 12px; background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: var(--r); } .sm .pwrow { margin-top: 10px; }
 .sm .note { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--mute); } .sm .note.w { color: var(--warn-ink); } .sm .note.e { color: var(--danger); }
+.sm .more a:not(.btn) { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; } .sm .more a:not(.btn):hover { color: var(--accent-d); } /* links in the public-link block read as links (the global reset makes them plain text) */
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
 <header class="top"><a class="brand" href="/" id="brand"></a>
@@ -487,7 +488,8 @@ async function previewSend(action, target) {
 // ---- share (reference: share-modal.webp): people, general access, then Copy link · Share at time · Set password · Share ----
 const ACCESS = { link: ['Public', 'Anyone can find and view', 'globe'], email: ['Ask for email', 'Viewers enter their email to watch', 'mail'], password: ['Password', 'Viewers need the password', 'lock'], private: ['Only me', 'Nobody else can open it', 'lock'] };
 async function openShare() {
-  const [spaces, s, pub0] = await Promise.all([api('/api/spaces'), api('/api/settings'), api(`/api/videos/${id}/publish`).catch(() => vm.publish || null)]);
+  const pubP = api(`/api/videos/${id}/publish`).catch(() => vm.publish || null);
+  const [spaces, s, pub0, cli0] = await Promise.all([api('/api/spaces'), api('/api/settings'), pubP, pubP.then((P) => (P && !P.configured && !P.github?.configured ? api('/api/publish/status').then((x) => !!x.github?.cli) : false)).catch(() => false)]); // is gh signed in on this Mac? only asked while nothing is set up
   const base = s.lan && s.lanIp ? `http://${s.lanIp}:${s.port}` : location.origin, p0 = vm.privacy || {}, t0 = Math.floor(now());
   const st = { mode: p0.mode || 'link', pw: '', people: [], spaces: new Set(vm.spaces || []), startedSpaces: new Set(vm.spaces || []), withTime: false, panel: null };
   const link = () => `${base}/v/${id}${st.withTime && t0 ? `?t=${t0}` : ''}`;
@@ -524,17 +526,46 @@ async function openShare() {
   };
   // ---- public link (Backblaze + Cloudflare, or GitHub): a separate block with its own state, so the local sharing controls above keep working untouched ----
   let pub = pub0, pubTimer = null;
-  const pu = { mode: null, pw: '', ok: false, form: false, busy: false, err: '', host: null };
+  const pu = { mode: null, pw: '', ok: false, form: false, busy: false, err: '', host: null, connected: null };
   const HOSTS = { b2: 'Backblaze + Cloudflare', github: 'GitHub' };
   const avail = (P) => [['github', P.github?.configured, P.github?.can], ['b2', P.configured, P.can]].filter((x) => x[1]); // the routes that are set up, GitHub first: it is the fast one and the default
   const PMODES = { link: 'Anyone with the link', password: 'Password' };
+  // first-time setup, right in this dialog: one click when the gh tool is signed in on this Mac, else paste a token. It uploads nothing: it only lets Publish work.
+  const gs = { cli: cli0, busy: false, err: '', tok: '', tokOpen: false };
+  const TOKEN_URL = 'https://github.com/settings/tokens/new?scopes=repo,delete_repo&description=Kairos', tokOk = () => gs.tok.trim().length >= 20;
+  const ghSetup = () => {
+    const viaCli = gs.cli && !gs.tokOpen;
+    return `<b style="font-size:14px">Connect GitHub to get a link anyone can open</b>
+      <p class="note" style="margin:4px 0 0;font-size:13px">${viaCli ? 'It is free. GitHub is already signed in on this Mac, so this is one click. Nothing is uploaded until you press Publish.' : 'It is free and takes about a minute, once.'}</p>
+      ${viaCli
+        ? `<div class="rowf" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gh-cli" ${gs.busy ? 'disabled' : ''}>${gs.busy ? 'Connecting…' : 'Use my GitHub login'}</button><button class="btn sm" id="gh-tok-open" ${gs.busy ? 'disabled' : ''}>Use a token instead</button></div>`
+        : `<div class="rowf" style="margin-top:12px;gap:8px"><input class="field" type="password" id="gh-tok" autocomplete="off" spellcheck="false" placeholder="Paste a GitHub token" value="${esc(gs.tok)}" style="flex:1;min-width:0"><button class="btn pri" id="gh-save" ${gs.busy || !tokOk() ? 'disabled' : ''}>${gs.busy ? 'Checking…' : 'Save and test'}</button></div>
+          <p class="note" style="margin:8px 0 0;font-size:13px"><a target="_blank" rel="noopener" href="${TOKEN_URL}">Make a token on GitHub</a>. It opens with the right boxes ticked: press Generate token at the bottom, copy it and paste it here. It stays on this Mac.${gs.cli ? ' <a href="#" id="gh-cli-back">Use my GitHub login instead</a>' : ''}</p>`}
+      ${gs.err ? `<p class="note e" style="margin:8px 0 0;font-size:13px">${esc(gs.err)}</p>` : ''}
+      <p class="note" style="margin:12px 0 0;font-size:13px">Need a password on the link? <a href="/settings">Set up Backblaze + Cloudflare in Settings</a> instead.</p>`;
+  };
+  const connNote = () => { const c = pu.connected; return c ? `<p class="note" style="margin:0 0 10px;font-size:13px">GitHub is connected${c.who ? ` as <b>${esc(c.who)}</b>` : ''}.${c.noDel ? ` One catch: ${c.cli ? 'this login' : 'this token'} cannot delete repositories, so Kairos cannot remove the copy after 30 days or when you click Unpublish. You would delete it on GitHub yourself${c.cli ? ', or run <code>gh auth refresh -s delete_repo</code> in Terminal to allow it' : ', or make a new token with “delete_repo” ticked'}.` : ''}</p>` : ''; };
+  const ghConnect = async (body) => {
+    gs.busy = true; gs.err = ''; drawPub();
+    try {
+      await api('/api/settings', { method: 'PUT', body: { integrations: { github: body } } });
+      const steps = (await api('/api/publish/test', { body: { host: 'github' } })).steps || [], bad = steps.find((x) => !x.ok && x.name !== 'Can delete repositories'); // a login that cannot delete still publishes; it just cannot clean up after itself
+      if (bad || !steps.length) {
+        await api('/api/settings', { method: 'PUT', body: { integrations: { github: { token: '', useGh: false } } } }).catch(() => {}); // back to how it was: nothing half-saved
+        throw new Error(bad ? bad.detail : 'GitHub did not answer. Try again.');
+      }
+      pu.connected = { who: String((steps.find((x) => x.name === 'Sign-in') || {}).detail || '').replace(/^Signed in as /, '').replace(/\.$/, ''), noDel: steps.some((x) => x.name === 'Can delete repositories' && !x.ok), cli: !!body.useGh };
+      gs.tok = ''; pub = await api(`/api/videos/${id}/publish`); vm.publish = pub;
+    } catch (e) { gs.err = e.message; }
+    gs.busy = false; drawPub();
+  };
   const pday = (t) => new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   const pmb = (b) => `${(b / 1048576).toFixed(b > 1e8 ? 0 : 1)} MB`;
   const pollPub = () => {
     clearInterval(pubTimer); if (pub?.state !== 'working') return;
     pubTimer = setInterval(async () => { try { pub = await api(`/api/videos/${id}/publish`); vm.publish = pub; if (pub.state !== 'working') clearInterval(pubTimer); drawPub(); } catch { /* keep polling */ } }, 1200);
   };
-  const GH_WARN = `<div class="callout warn" style="margin-top:10px;display:block"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos deletes the repository after 30 days or when you click Unpublish, but GitHub may keep copies in caches, and anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
+  const GH_WARN = `<div class="callout warn" style="margin-top:10px;display:block"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos tries to delete the repository after 30 days or when you click Unpublish (it needs the delete permission on your GitHub login), and GitHub may keep copies in caches. Anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
   const pubForm = (P) => {
     const hs = avail(P), host = (pu.host = hs.some((h) => h[0] === pu.host) ? pu.host : hs[0][0]), can = hs.find((h) => h[0] === host)[2];
     const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--mute)">${host === 'github' ? 'Fastest and free. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Slower to set up: two accounts.'}</p>` : '';
@@ -553,7 +584,7 @@ async function openShare() {
     const el = m.querySelector('#m-pub'); if (!el) return;
     const P = pub; if (!P) { el.innerHTML = ''; return; }
     let h = '';
-    if (!avail(P).length) h = `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">Not set up yet. <a href="/settings">Set up public links in Settings</a>: GitHub takes about two minutes (no password on links), Backblaze + Cloudflare about 15 (password links, really deleted). Both are free.</p>`;
+    if (!avail(P).length) h = ghSetup();
     else if (P.state === 'working') {
       const pct = Math.round((P.progress || 0) * 100);
       h = `<div style="font-size:14px">${P.stage === 'uploading' ? 'Uploading' : P.stage === 'finishing' && P.host === 'github' ? 'GitHub is building the page (this can take a minute or two)' : P.stage === 'finishing' ? 'Finishing' : 'Making a small copy'}… ${pct}%</div><progress max="1" value="${P.progress || 0}" style="width:100%;margin:8px 0"></progress>
@@ -568,11 +599,16 @@ async function openShare() {
           ${pu.form ? `<div style="margin-top:12px">${pubForm(P)}</div>` : `<div class="rowf" style="margin-top:12px;gap:8px"><button class="btn sm" id="pub-re">Republish…</button><button class="btn sm danger" id="pub-un">Unpublish</button></div>`}`;
       } else {
         const why = P.state === 'failed' ? `Publishing failed: ${P.error || 'unknown problem'}` : P.state === 'removed' ? P.reason : P.state === 'expired' ? 'The earlier public link expired and its copy was deleted.' : '';
-        h = `${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? 'var(--danger)' : 'var(--mute)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
+        h = `${connNote()}${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? 'var(--danger)' : 'var(--mute)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
       }
     }
-    el.innerHTML = `<h5>Public link <small style="font-weight:400;color:var(--mute)">opens on any phone or computer, even when this Mac is off</small></h5><div class="more" style="margin-top:6px">${h}</div>`;
+    el.innerHTML = `<h5>Public link<small>Opens on any phone or computer, even when this Mac is off</small></h5><div class="more" style="margin-top:6px">${h}</div>`;
     const q = (x) => el.querySelector(x);
+    const gtok = q('#gh-tok'); if (gtok) { gtok.oninput = () => { gs.tok = gtok.value; const b = q('#gh-save'); if (b) b.disabled = gs.busy || !tokOk(); }; gtok.onkeydown = (e) => { if (e.key === 'Enter' && tokOk() && !gs.busy) ghConnect({ token: gs.tok.trim(), useGh: false }); }; }
+    if (q('#gh-cli')) q('#gh-cli').onclick = () => ghConnect({ useGh: true });
+    if (q('#gh-save')) q('#gh-save').onclick = () => ghConnect({ token: gs.tok.trim(), useGh: false });
+    if (q('#gh-tok-open')) q('#gh-tok-open').onclick = () => { gs.tokOpen = true; gs.err = ''; drawPub(); q('#gh-tok')?.focus(); };
+    if (q('#gh-cli-back')) q('#gh-cli-back').onclick = (e) => { e.preventDefault(); gs.tokOpen = false; gs.err = ''; drawPub(); };
     el.querySelectorAll('[data-pm]').forEach((b) => (b.onclick = () => { pu.mode = b.dataset.pm; drawPub(); }));
     el.querySelectorAll('[data-ph]').forEach((b) => (b.onclick = () => { pu.host = b.dataset.ph; pu.mode = null; pu.ok = false; pu.err = ''; drawPub(); }));
     const pw = q('#pub-pw'); if (pw) pw.oninput = () => { pu.pw = pw.value; const g = q('#pub-go'); if (g) g.disabled = !(pu.ok && !pu.busy && pu.pw.length >= 8); };
@@ -587,7 +623,7 @@ async function openShare() {
     };
     if (q('#pub-cancel')) q('#pub-cancel').onclick = async () => { try { pub = await api(`/api/videos/${id}/publish`, { method: 'DELETE' }); vm.publish = pub; } catch (e) { toast(e.message); } clearInterval(pubTimer); drawPub(); };
     if (q('#pub-go')) q('#pub-go').onclick = async () => {
-      pu.busy = true; pu.err = ''; drawPub();
+      pu.busy = true; pu.err = ''; pu.connected = null; drawPub();
       try { pub = await api(`/api/videos/${id}/publish`, { body: { host: pu.host, mode: pu.host === 'github' ? 'link' : pu.mode, password: pu.host !== 'github' && pu.mode === 'password' ? pu.pw : undefined, confirm: true } }); vm.publish = pub; pu.form = false; pu.pw = ''; pu.ok = false; pollPub(); }
       catch (e) { pu.err = e.message; }
       pu.busy = false; drawPub();

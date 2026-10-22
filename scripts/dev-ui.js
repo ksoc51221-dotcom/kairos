@@ -8,6 +8,8 @@
 //   UI_KEEP=1 node scripts/dev-ui.js                         keep the temp library folder on exit
 //   UI_QUEUE=1 node scripts/dev-ui.js                         also run the real job queue (ffmpeg, and the local model if Ollama is running), so Apply edits and
 //                                                             Bleep speech really run instead of waiting for a queue that is not there
+//   UI_FAKE_GH=1 node scripts/dev-ui.js                       pretend the gh tool is signed in and GitHub says "demo-user" (try the Share dialog's one-click setup);
+//                                                             UI_FAKE_GH=nogh: no gh on this "Mac", any pasted token passes (one starting with "bad" fails). Never touches the real GitHub.
 //
 // Owner sign-in: the real one-time link (security.ownerLoginPath) lives 2 minutes and works once, so the harness adds three dev-only routes to its
 // own copy of the app (never to src/server): GET /dev (index of every page), /dev/go/<key> (mints a fresh one-time code and redirects through the real
@@ -251,6 +253,11 @@ const portFree = (port) => new Promise((resolve) => { const t = require('net').c
   if (!(await portFree(PORT))) throw new Error(`port ${PORT} is already in use: set UI_PORT to another port (UI_PORT=4900 npm run dev:ui)`);
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kairos-devui-lib-'));
   store.init(dir, { log: () => {} });
+  if (process.env.UI_FAKE_GH) { // the publisher is a singleton: faking its two doors here is enough, nothing else knows
+    const publisher = require('../src/publish/publisher');
+    publisher.deps.ghToken = () => (process.env.UI_FAKE_GH === 'nogh' ? '' : 'gho_harness_fake_token');
+    publisher.deps.makeGitHub = (cfg) => ({ check: async () => { if (/^bad/i.test(cfg.token)) throw new Error('GitHub did not accept that token. Make a new one and paste it again.'); return { login: 'demo-user', canCreate: true, canDelete: false }; } }); // a token that starts with "bad" fails, to see the error
+  }
   const { sEng, sDesign } = await seed(log);
   if (process.env.UI_QUEUE) require('../src/agents/orchestrator').init(dir, { log: () => {} });
   addPage('library', 'Library (home)', 'Owner pages', '/'); addPage('settings', 'Settings', 'Owner pages', '/settings');

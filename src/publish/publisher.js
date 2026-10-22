@@ -66,7 +66,7 @@ const configured = () => { try { return !!config(); } catch { return false; } };
 // GitHub: a token pasted in Settings, or (only if the owner ticked "Use my GitHub CLI login") the token of the `gh` tool already signed in on this Mac.
 let ghCache = null;
 function ghCliToken() {
-  if (ghCache && Date.now() - ghCache.at < 300000) return ghCache.t;
+  if (ghCache && Date.now() - ghCache.at < (ghCache.t ? 300000 : 10000)) return ghCache.t; // a miss is only remembered briefly: the owner may be signing in to gh right now
   let t = '';
   for (const bin of ['/opt/homebrew/bin/gh', '/usr/local/bin/gh', '/usr/bin/gh']) {
     if (!fs.existsSync(bin)) continue;
@@ -84,6 +84,8 @@ function githubConfig() {
   return null;
 }
 const githubConfigured = () => { try { return !!githubConfig(); } catch { return false; } };
+// Is the gh tool signed in on this Mac? A yes or no for the Share dialog's one-click setup: the token itself never leaves this process.
+const ghCliAvailable = () => { try { return !!deps.ghToken(); } catch { return false; } };
 
 // ---- the rules --------------------------------------------------------------------------------------------------------------
 // { ok:true, modes:[...public modes allowed], warnings:[...] } or { ok:false, code, message }
@@ -230,7 +232,7 @@ function usedBytes() {
 function status() {
   const list = store.list().filter((v) => v.publish?.state === 'live'), gl = list.filter((v) => v.publish.host === 'github').length;
   return { configured: configured(), used: usedBytes(), cap: CAP_BYTES, live: list.length - gl, working: !!current, queued: queue().filter((q) => !q.repo).length, lifetimeDays: LIFETIME_MS / 86400000,
-    github: { configured: githubConfigured(), live: gl, queued: queue().filter((q) => q.repo).length, errors: queue().filter((q) => q.repo && q.error).map((q) => ({ repo: q.repo, owner: q.owner, error: q.error })) } };
+    github: { configured: githubConfigured(), cli: ghCliAvailable(), live: gl, queued: queue().filter((q) => q.repo).length, errors: queue().filter((q) => q.repo && q.error).map((q) => ({ repo: q.repo, owner: q.owner, error: q.error })) } };
 }
 
 // ---- publish ----------------------------------------------------------------------------------------------------------------

@@ -41,7 +41,7 @@ A normal link only opens on your Mac. For judges, customers or friends, turn on 
 
 ### Recommended: Publish to GitHub (about 2 minutes)
 
-Settings → **Publish to GitHub**: paste a GitHub token (classic, "repo" and "delete_repo" permissions) or tick "Use my GitHub CLI login". In a video's Share dialog choose **GitHub** and Kairos makes a smaller copy (720p, about 16 MB a minute, 3 minutes at most), creates one repository on your account for that video, fills it while it is still **private**, and only then makes it public and turns on GitHub Pages. The link looks like `https://<you>.github.io/kairos-share-<random>/` and shows a plain page with the video.
+First-time setup happens right in a video's **Share** dialog: if the GitHub CLI (`gh`) is already signed in on your Mac it is one click on **Use my GitHub login**, otherwise paste a GitHub token (classic, "repo" and "delete_repo" permissions) and press **Save and test**. The same settings live under Settings → **Publish to GitHub**. Then press **Publish to GitHub** and Kairos makes a smaller copy (720p, about 16 MB a minute, 3 minutes at most), creates one repository on your account for that video, fills it while it is still **private**, and only then makes it public and turns on GitHub Pages. The link looks like `https://<you>.github.io/kairos-share-<random>/` and shows a plain page with the video.
 
 What you give up compared with the Backblaze route, and the dialog says so before you publish:
 
