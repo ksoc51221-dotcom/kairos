@@ -1,10 +1,13 @@
 name: Tests
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 jobs:
   unit:
-    runs-on: macos-14
+    # Intel macOS: the Apple-silicon runner pool was out of capacity on 2026-10-22 and jobs were cancelled before they started.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
