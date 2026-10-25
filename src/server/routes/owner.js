@@ -4,7 +4,7 @@ const path = require('path');
 const express = require('express');
 const store = require('../../store');
 const { requireOwner: own, hashPw } = require('../auth');
-const { rerunAI } = require('../../agents/orchestrator');
+const { rerunAI, processVideo } = require('../../agents/orchestrator');
 const { viewModel } = require('../viewmodel');
 const publisher = require('../../publish/publisher');
 
@@ -38,6 +38,13 @@ function mount(app) {
     res.json(viewModel(out, true));
   });
   app.delete('/api/videos/:id', own, (q, res) => { store.remove(q.params.id); res.sendStatus(204); });
+  // Retry a recording that failed to process. The raw tracks are kept on failure, so the pipeline can start again from the beginning.
+  app.post('/api/videos/:id/retry', own, (q, res) => {
+    const v = store.get(q.params.id); if (!v) return res.sendStatus(404);
+    if (v.status !== 'failed') return res.status(409).json({ error: 'Only a failed recording can be retried' });
+    store.update(v.id, { status: 'processing', stage: 'Queued', pipe: 'queued', shareable: false });
+    res.sendStatus(202); processVideo(v.id);
+  });
   app.post('/api/videos/:id/rerun', own, (q, res) => {
     const v = store.get(q.params.id);
     if (!v || !fs.existsSync(path.join(store.videoDir(v.id), 'video.mp4'))) return res.sendStatus(404);

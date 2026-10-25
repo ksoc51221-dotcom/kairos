@@ -1,11 +1,11 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Edit · Kairos</title><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
 /* The editor (owner only). Non-destructive: everything below changes a draft edit list that is saved as you go; "Apply edits" renders a new
    video.mp4 once, with one level of undo. Preview skips the cut ranges, so what you hear is what Apply will make. Workstation layout: dark slate
    preview + timeline on the left, 460px inspector (Describe an edit, underline tabs, scrolling body) on the right. */
 body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--surface-1); }
 .top { position: static; flex: none; gap: 10px; }
-.top .ttl { font: 600 16px/20px var(--font); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
+.top .ttl { margin: 0; font: 600 16px/20px var(--font); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
 .top .st { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
 .work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--side-w, 460px); }
 @media (max-width: 980px) { .work { grid-template-columns: 1fr; grid-template-rows: auto 480px; overflow: auto; } }
@@ -16,7 +16,7 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; b
 .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .bar .time { font: 500 12px/1 var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; min-width: 150px; }
 .bar .res { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-left: auto; font-variant-numeric: tabular-nums; }
-.bar input[type=range] { accent-color: var(--accent); width: 120px; }
+.bar input[type=range] { accent-color: var(--accent); width: 120px; height: 24px; }
 .bar .meta kbd { margin: 0 2px; }
 .tlwrap { position: relative; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); overflow: hidden; flex: none; touch-action: none; }
 #tl { display: block; width: 100%; height: 150px; cursor: crosshair; }
@@ -52,17 +52,17 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; b
 #eov { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .prog { height: 4px; background: var(--surface-3); border-radius: var(--r-sm); overflow: hidden; width: 160px; } .prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 300ms; }
 </style></head><body>
-<header class="top"><a class="iconbtn" id="back" href="/" title="Back to the video" data-i="left"></a><span class="ttl" id="ttl"></span><span class="st" id="st"></span><div class="grow"></div>
+<header class="top"><a class="brand" id="brand" href="/"></a><a class="iconbtn" id="back" href="/" title="Back to the video" data-i="left"></a><h1 class="ttl" id="ttl"></h1><span class="st" id="st"></span><div class="grow"></div>
   <span id="prog" hidden style="display:flex;gap:10px;align-items:center"><span class="prog"><i id="progbar"></i></span><span class="st" id="progtxt"></span></span>
   <button class="btn" id="undoApply" hidden><span data-i="undo"></span>Undo last apply</button><button class="btn" id="discard" hidden>Discard draft</button><button class="btn pri" id="apply" disabled>Apply edits</button></header>
-<div class="work"><section class="left">
+<main class="work"><section class="left">
   <div class="stagebox"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" playsinline crossorigin="anonymous"></video><div id="ov"></div><div id="eov"></div></div><div id="cap"></div><a id="cta" hidden></a></div></div>
-  <div class="bar"><button class="btn sm" id="play" data-i="play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (Backspace)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="bleep" title="Bleep the sound in the selection" disabled><span data-i="volume-off"></span>Bleep selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
+  <div class="bar"><button class="btn sm" id="play" data-i="play" aria-label="Play">Play</button><span class="time" id="time">0:00.0 / 0:00.0</span><button class="btn sm" id="split" title="Split here (S)"><span data-i="split"></span>Split</button><button class="btn sm" id="del" title="Delete the selection (Backspace)" disabled><span data-i="scissors"></span>Delete selection</button><button class="btn sm" id="bleep" title="Bleep the sound in the selection" disabled><span data-i="volume-off"></span>Bleep selection</button><button class="btn sm" id="restore" hidden>Restore</button><span class="res" id="res"></span></div>
   <div class="tlwrap"><canvas id="tl"></canvas></div>
   <div class="bar"><span class="meta">Zoom</span><input type="range" id="zoom" min="0" max="100" value="0" aria-label="Zoom"><span class="meta" id="zl">1×</span><span class="meta nocase" style="margin-left:auto">Drag on the waveform to select · <kbd>Space</kbd> play · <kbd>S</kbd> split · <kbd>Backspace</kbd> delete · <kbd>Cmd</kbd><kbd>Z</kbd> undo</span></div>
 </section>
-<aside class="right"><div id="dock"><div id="epHost"></div><div id="rpHost"></div></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></div>
-<div id="toast" class="toast"></div>
+<aside class="right"><div id="dock"><div id="epHost"></div><div id="rpHost"></div></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></aside></main>
+<div id="toast" class="toast" role="status"></div>
 <script src="/static/csrf.js"></script><script src="/static/edit-prompt.js"></script><script src="/static/redact-prompt.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script>
 <script>
 const { $, fmt, esc, api, attach, CAPTION_STYLES, BACKGROUNDS } = SP, { i: I } = UI;
@@ -100,7 +100,7 @@ async function load(keepTab) {
   peaks = null; api(`/api/videos/${id}/peaks`).then((p) => { peaks = p; draw(); }).catch(() => {});
 }
 async function boot() {
-  const me = await api('/api/me'); UI.brand(me.brand);
+  const me = await api('/api/me'); UI.brand(me.brand); $('brand').innerHTML = UI.logo(me.brand);
   try { await load(); } catch (e) { document.body.innerHTML = `<div class="gate"><h2>Can't edit this</h2><p>${esc(e.message)}</p><a class="btn pri" href="/">Back to the library</a></div>`; return; }
   const v = $('v'); v.src = `/media/${id}/video.mp4?v=${Date.now()}`; v.poster = `/media/${id}/thumb.jpg`;
   ctl = attach({ stage: $('stage'), video: v, vm: { ...vm, autoZoom: false }, noStats: true }); // no zoom in the editor: overlay handles need a still frame
@@ -147,7 +147,7 @@ function draw() {
   g.font = '11px "JetBrains Mono", ui-monospace, Menlo, monospace'; g.textBaseline = 'top';
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600], step = steps.find((s) => (s / spanT()) * w >= 80) || 600;
   g.fillStyle = mute; g.strokeStyle = line; g.lineWidth = 1;
-  for (let t = Math.ceil(tlv.t0 / step) * step; t <= tlv.t0 + spanT(); t += step) { const x = Math.round(t2x(t)) + .5; g.beginPath(); g.moveTo(x, 16); g.lineTo(x, 24); g.stroke(); g.fillText(mmss(t, step < 1 ? 2 : step < 1 ? 1 : 0), x + 4, 3); }
+  for (let t = Math.ceil(tlv.t0 / step) * step; t <= tlv.t0 + spanT(); t += step) { const x = Math.round(t2x(t)) + .5; g.beginPath(); g.moveTo(x, 16); g.lineTo(x, 24); g.stroke(); const lb = mmss(t, step < 1 ? 2 : step < 1 ? 1 : 0), tw = g.measureText(lb).width, flip = x + 4 + tw > w - 2; g.textAlign = flip ? 'right' : 'left'; g.fillText(lb, flip ? x - 4 : x + 4, 3); g.textAlign = 'left'; }
   const top = 28, mid = (top + h - 8) / 2, amp = (h - 8 - top) / 2;
   if (peaks) { const r = peaks.rate; g.fillStyle = ink; g.globalAlpha = .55; for (let x = 0; x < w; x++) { const a = Math.floor(x2t(x) * r), b = Math.max(a + 1, Math.ceil(x2t(x + 1) * r)); let m = 0; for (let k = a; k < b && k < peaks.peaks.length; k++) if (peaks.peaks[k] > m) m = peaks.peaks[k]; const hh = Math.max(1, (m / 127) * amp); g.fillRect(x, mid - hh, 1, hh * 2); } g.globalAlpha = 1; }
   else { g.fillStyle = mute; g.fillText('Reading the sound…', 10, mid); }
@@ -201,7 +201,7 @@ function tick() {
   requestAnimationFrame(tick);
 }
 $('play').onclick = () => { const v = $('v'); v.paused ? v.play() : v.pause(); };
-$('v').addEventListener('play', () => { $('play').innerHTML = `${I('pause') || ''}Pause`; }); $('v').addEventListener('pause', () => { $('play').innerHTML = `${I('play')}Play`; });
+$('v').addEventListener('play', () => { $('play').innerHTML = `${I('pause') || ''}Pause`; $('play').setAttribute('aria-label', 'Pause'); }); $('v').addEventListener('pause', () => { $('play').innerHTML = `${I('play')}Play`; $('play').setAttribute('aria-label', 'Play'); });
 $('split').onclick = () => { const t = round3($('v').currentTime); if (t > 0.05 && t < dur - 0.05 && !splits.includes(t)) { splits.push(t); draw(); } };
 $('del').onclick = () => { if (sel) { addCuts([{ start: sel.a, end: sel.b }], 'manual'); sel = null; refresh(); } };
 $('restore').onclick = () => { if (sel) { removeCutsIn(sel.a, sel.b); sel = null; } };

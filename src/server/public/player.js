@@ -26,6 +26,9 @@
       checking: ['Almost ready', 'The Privacy Guard is checking this video for sensitive information. It opens by itself when it is done.'],
       failed: ['This video is not available', 'Processing this recording did not finish. Ask the owner to record it again.'] }[g];
     if (g === 'checking') setTimeout(onOk, 3000);
+    if (g === 'checking') { // the thumbnail is never sent to a viewer before the guard clears the video, so the frame here is a placeholder, not a blurred still
+      root.innerHTML = `<div class="wait"><div class="wframe" aria-hidden="true"><i></i><i></i><i></i></div><div class="wcard" role="status"><h2>${msg[0]}</h2><p>${msg[1]}</p>
+        <ol><li class="done">Recorded</li><li class="on"><span class="spin"></span>Privacy Guard is checking</li><li>Ready to watch</li></ol></div></div>`; return; }
     if (msg) { root.innerHTML = `<div class="gate"><h2>${msg[0]}</h2><p>${msg[1]}</p></div>`; return; }
     const pw = g === 'password', v = viewer();
     root.innerHTML = `<form class="gate"><h2>Protected video</h2><p>${pw ? 'Enter the password to watch.' : 'Enter your name and email to watch.'}</p>

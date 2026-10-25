@@ -1,30 +1,47 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kairos</title><!--OG--><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
 /* Watch page: workstation layout (media canvas left, 460px inspector right). Tokens and components come from app.css; this block holds the page-only rules. */
 :root { --vb: 0px; }
 .wk { height: calc(100vh - var(--topbar-h) - var(--vb)); }
 .viewas { background: var(--accent-soft); color: var(--accent-d); text-align: center; font: 500 11px/16px var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--line-soft); } .viewas a { text-decoration: underline; margin-left: 8px; }
+/* Privacy Guard hero: the product's one differentiator, so it is the only solid emerald block on the page body */
+.guard { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--accent); color: var(--accent-ink); border-radius: var(--r); }
+.guard > svg.i { width: 24px; height: 24px; stroke-width: 1.75; }
+.guard .gt { display: flex; flex-direction: column; min-width: 0; flex: 1; } .guard .gt b { font: 600 16px/24px var(--font); letter-spacing: -.01em; } .guard .gt span { font: 400 12px/16px var(--font); color: rgba(255,255,255,.88); }
+.guard .gstats { display: flex; gap: 20px; align-items: baseline; flex: none; }
+.guard .gs { font: 500 12px/16px var(--font); color: rgba(255,255,255,.88); } .guard .gs b { font: 600 20px/24px var(--mono); color: #fff; margin-right: 6px; } .guard .gs.none { font-size: 12px; }
+@media (max-width: 640px) { .guard { flex-wrap: wrap; } .guard .gstats { flex-basis: 100%; } }
 /* top bar */
 #title { font: 600 16px/24px var(--font); letter-spacing: -.01em; border: 1px solid transparent; background: transparent; color: var(--ink); width: min(340px, 28vw); min-width: 100px; padding: 2px 6px; border-radius: var(--r); text-overflow: ellipsis; }
 #title:not([readonly]):hover { background: var(--surface-1); border-color: var(--line-soft); } #title:focus { outline: 1px solid var(--accent); background: var(--surface); }
 #by { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; }
+.by2 { display: none; }
+@media (max-width: 1040px) { #by { display: none; } .by2 { display: inline; } #title { flex: 1; width: auto; } }
 .top .acts .avatar { text-decoration: none; }
-@media (max-width: 640px) { .top { gap: 8px; padding: 0 8px; } .top .brand { padding-right: 0; border-right: 0; } .top .brand > span:not(.logo) { display: none; } #by, .lbl, .top .vsep { display: none; } #title { flex: 1; width: auto; min-width: 0; } }
+@media (max-width: 640px) { .top { gap: 8px; padding: 0 8px; } .top .brand { padding-right: 0; border-right: 0; } .top .brand > span:not(.logo) { display: none; } #by, .lbl, .top .vsep, #who, #planBtn { display: none; } #title { flex: 1; width: auto; min-width: 0; } }
 /* canvas */
 .strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 22px; }
 .strip .sep { color: var(--off); }
-#proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: var(--stage); text-align: center; z-index: 6; font-size: 13px; }
+@media (max-width: 640px) { .strip .sep { display: none; } }
+#proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: var(--stage); z-index: 6; font-size: 13px; padding: 16px; }
+.psteps, .pfail { width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px; } .psteps h3, .pfail h3 { margin: 0; font: 600 16px/24px var(--font); letter-spacing: -.01em; }
+.psteps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; } .psteps li { display: flex; gap: 12px; align-items: flex-start; color: #94a3b8; } .psteps li.on { color: #fff; } .psteps li.done { color: #cbd5e1; }
+.psteps small { display: flex; align-items: center; gap: 8px; margin-top: 2px; font: 400 12px/16px var(--font); color: #94a3b8; } .psteps b { font-weight: 500; }
+.pn { width: 20px; height: 20px; flex: none; border: 1px solid #475569; border-radius: var(--r-sm); display: grid; place-items: center; } .psteps li.on .pn { border-color: var(--code-accent); } .psteps li.done .pn { background: var(--code-accent); border-color: var(--code-accent); color: #022c22; } .pn svg.i { width: 14px; height: 14px; } .pn .spin { width: 10px; height: 10px; border-width: 2px; border-color: #475569; border-top-color: var(--code-accent); }
+.pbar { flex: 1; max-width: 160px; height: 4px; background: #334155; border-radius: 2px; overflow: hidden; } .pbar i { display: block; height: 100%; background: var(--code-accent); }
+.pfail { text-align: left; } .pfail > svg.i { width: 24px; height: 24px; color: #fca5a5; } .pfail p { margin: 0; color: #cbd5e1; line-height: 20px; } .pfail .axbar { margin-top: 0; } .btn.dark.danger { color: #fca5a5; }
+.pfail details { color: #94a3b8; font-size: 12px; } .pfail summary { cursor: pointer; } .pfail code { display: block; margin-top: 6px; font: 400 12px/18px var(--mono); word-break: break-word; }
 .spin { width: 14px; height: 14px; border: 2px solid var(--surface-4); border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; flex: none; } .spin.lg { width: 28px; height: 28px; border-width: 3px; margin: 0 auto 12px; border-color: #475569; border-top-color: var(--code-accent); }
 @keyframes s { to { transform: rotate(360deg); } }
 .pframe { display: flex; flex-direction: column; gap: 8px; }
 .pframe:fullscreen { background: #000; gap: 0; } .pframe:fullscreen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:fullscreen .pc { border-radius: 0; border-width: 1px 0 0; }
 .pframe:-webkit-full-screen { background: #000; gap: 0; } .pframe:-webkit-full-screen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:-webkit-full-screen .pc { border-radius: 0; border-width: 1px 0 0; }
 .pc { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
-.pc .scrub { height: 20px; touch-action: none; } .pc .scrub:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.pc .scrub { height: 24px; touch-action: none; } .pc .scrub:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pc .scrub .thumb { top: 3px; }
 .pc-marks { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; } .pc-mk { position: absolute; top: 2px; width: 2px; height: 5px; margin-left: -1px; background: var(--ink-2); } .pc-mk.r { background: var(--accent); }
 .pc-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .pc-time { white-space: nowrap; } .pc-time b { color: var(--ink); }
-.pc-vol { width: 72px; accent-color: var(--accent); }
+.pc-vol { width: 72px; height: 24px; accent-color: var(--accent); }
 .markers { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rbar { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
 .rb { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); font: 500 12px/16px var(--font); cursor: pointer; transition: background 150ms var(--ease), border-color 150ms var(--ease); }
@@ -65,6 +82,10 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padd
 .set { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); } .set .lab { flex: 1; min-width: 0; } .set small { display: block; color: var(--mute); font-size: 12px; line-height: 18px; }
 .set .field { width: auto; max-width: 200px; }
 .md { white-space: pre-wrap; word-break: break-word; font: 400 12px/18px var(--mono); background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 10px 12px; margin: 8px 0; max-height: 320px; overflow: auto; }
+.stepper.docs::before, .stepper.docs .node { display: none; } .stepper.docs .stp { padding-left: 0; }
+.stepper.docs { gap: 0; border-top: 1px solid var(--line-soft); } .stepper.docs .stp > .card { border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; box-shadow: none; background: none; padding: 10px 0; } .stepper.docs .stp.on > .card { border-color: var(--line-soft); box-shadow: none; }
+details.mcp > summary { cursor: pointer; list-style: none; color: var(--mute); font: 500 12px/16px var(--font); padding: 6px 0 0; } details.mcp > summary::-webkit-details-marker { display: none; } details.mcp > summary::before { content: '+'; display: inline-block; width: 14px; font-family: var(--mono); } details.mcp[open] > summary::before { content: '–'; } details.mcp > summary:hover { color: var(--ink); } details.mcp .code { margin-top: 8px; }
+.code.row > span { min-width: 0; word-break: normal; overflow-wrap: anywhere; }
 .axrow { display: flex; align-items: center; gap: 10px; } .axrow .lab { flex: 1; min-width: 0; font-weight: 500; } .axrow small { display: block; color: var(--mute); font-weight: 400; font-size: 12px; line-height: 16px; margin-top: 2px; }
 .axbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; } .prev dt { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin-top: 12px; } .prev dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 .pop { position: absolute; z-index: 60; padding: 4px; min-width: 180px; }
@@ -88,11 +109,12 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padd
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
 <header class="top"><a class="brand" href="/" id="brand"></a>
   <nav class="topnav" id="nav" hidden><a href="/">Library</a><a href="/#/settings">Settings</a></nav><span class="vsep"></span>
-  <input id="title" spellcheck="false" aria-label="Title"><span class="meta" id="by"></span><div class="grow"></div>
-  <div class="acts"><span id="ownerBtns" hidden style="display:contents"><button class="btn" id="planBtn" hidden><span data-i="list"></span><span class="lbl">Action plan</span></button><span class="split"><button class="btn pri" id="share"><span data-i="share"></span><span class="lbl">Share</span></button><button class="btn pri" id="copy" title="Copy link" aria-label="Copy link" data-i="link"></button></span>
+  <h1 class="sr" id="h1"></h1><input id="title" spellcheck="false" aria-label="Title"><span class="meta" id="by"></span><div class="grow"></div>
+  <div class="acts"><span id="ownerBtns" hidden style="display:contents"><button class="btn" id="planBtn" hidden><span data-i="list"></span><span class="lbl">Action plan</span></button><span class="split"><button class="btn pri" id="share"><span data-i="share"></span><span class="lbl">Share</span></button><button class="btn" id="copy" title="Copy link" aria-label="Copy link" data-i="link"></button></span>
     <button class="iconbtn" id="moreBtn" title="More" aria-label="More" data-i="more"></button><a class="avatar" id="who" href="/#/settings" title="Settings"></a></span>
-  <button class="btn pri" id="vcopy" hidden><span data-i="link"></span>Copy link</button></div></header>
+  <button class="btn pri" id="vcopy" hidden aria-label="Copy link"><span data-i="link"></span><span class="lbl">Copy link</span></button></div></header>
 <div id="root"><div class="wk"><main class="wk-canvas"><div class="in">
+  <div id="guard"></div>
   <div class="strip" id="strip"></div>
   <div class="pframe" id="pframe"><div class="stage framed" id="stage"><div id="zoomwrap"><video id="v" playsinline crossorigin="anonymous"></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><div id="proc"><div><div class="spin lg"></div>Processing…</div></div></div>
     <div class="pc" id="pc"><div class="scrub" data-pc="scrub" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuenow="0"><div class="trk"><i class="buf"></i><i class="fil"></i></div><span class="pc-marks"></span><i class="thumb"></i></div>
@@ -129,10 +151,10 @@ async function boot() {
   $('ownerBtns').hidden = !me.owner; $('nav').hidden = !me.owner; $('vcopy').hidden = me.owner; $('later').hidden = !me.owner; $('who').textContent = UI.initials(me.name || me.brand.name);
   $('title').readOnly = !me.owner;
   try { vm = await api(`/api/v/${id}`); }
-  catch (e) { if (e.data?.gate || e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
+  catch (e) { $('vcopy').hidden = true; document.querySelector('.top .vsep').style.display = 'none'; if (e.data?.gate || e.status === 401 || e.status === 403) return gateUI($('root'), id, e, () => location.reload()); if (e.status === 404) { $('root').innerHTML = '<div class="gate"><h2>Video not found</h2></div>'; return; } throw e; }
   tab = me.owner ? (vm.forAgent && vm.type !== 'image' ? 'actions' : 'edit') : 'activity'; // "Record for agent" opens on the Action Plan
   $('planBtn').hidden = !(me.owner && vm.type !== 'image');
-  if (vm.type === 'image') { $('stage').className = 'stage framed imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" style="max-width:100%">`; $('pc').hidden = true; }
+  if (vm.type === 'image') { $('stage').className = 'stage framed imgview'; $('stage').style.aspectRatio = 'auto'; $('stage').innerHTML = `<img src="/media/${id}/image.png" alt="${esc(vm.title || 'Screenshot')}" style="max-width:100%">`; $('pc').hidden = true; }
   else { ctl = attach({ stage: $('stage'), video: $('v'), vm, controls: $('pc') }); }
   setupCC(); render(); listen();
 }
@@ -189,18 +211,27 @@ function renderSub() {
   const h = `<span class="meta">${esc(left)}</span><span>${right}</span>`; if ($('sub').dataset.h !== h) { $('sub').dataset.h = h; $('sub').innerHTML = h; }
 }
 
+// Processing / failed overlay on the player. Steps follow the real pipeline; the percentage only appears when the encoder reports one.
+function procHTML() {
+  if (vm.status === 'failed') return `<div class="pfail">${I('alert-triangle')}<h3>This recording couldn't be processed</h3><p>Your original recording is still on this computer, so nothing is lost. Try again, or delete it.</p>
+    <div class="axbar"><button class="btn dark" data-p="retry">${I('undo')}Try again</button><button class="btn dark danger" data-p="del">Delete recording</button></div>
+    ${vm.stage ? `<details><summary>Details</summary><code>${esc(vm.stage)}</code></details>` : ''}</div>`;
+  const pct = /(\d+)%/.exec(vm.stage || '')?.[1], step = (st, label, sub) => `<li class="${st}"><span class="pn">${st === 'done' ? I('check') : st === 'on' ? '<span class="spin"></span>' : ''}</span><div><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</div></li>`;
+  return `<div class="psteps"><h3>Getting your recording ready</h3><ol>${step('on', 'Encoding the video', pct ? `<span class="pbar"><i style="width:${pct}%"></i></span>${pct}%` : esc(vm.stage || 'Queued'))}${step('', 'Privacy Guard scan', 'Blurs and bleeps secrets before anyone can watch')}${step('', 'Ready to watch')}</ol></div>`;
+}
 function render() {
-  document.title = vm.title + ' · ' + (me.brand?.name || 'Kairos');
+  $('h1').textContent = vm.title; document.title = vm.title + ' · ' + (me.brand?.name || 'Kairos');
   if (document.activeElement !== $('title')) $('title').value = vm.title;
   $('by').textContent = [vm.by || me.brand.name, UI.ago(vm.createdAt), vm.type === 'image' ? '' : fmt(vm.duration), plural(vm.views, 'view')].filter(Boolean).join(' · ');
   $('later').innerHTML = I(vm.watchLater ? 'bookmark-on' : 'bookmark'); $('later').title = vm.watchLater ? 'Saved to Watch later' : 'Watch later'; $('later').setAttribute('aria-label', $('later').title);
   drawReactions();
   const ready = vm.status === 'ready' || vm.status === undefined;
-  $('proc').hidden = ready;
-  if (!ready) $('proc').innerHTML = vm.status === 'failed' ? `<div style="padding:0 24px"><b>This video can't be shown.</b><br><span style="opacity:.7">${esc(vm.stage || 'Processing failed')}</span></div>` : `<div><div class="spin lg"></div>${esc(vm.stage || 'Processing')}…<br><span style="opacity:.6;font-size:12px">The Privacy Guard checks every video before it can be watched.</span></div>`;
+  if ($('proc')) $('proc').hidden = ready; // a screenshot replaces the stage, so there is no #proc
+  if (!ready && $('proc')) { const h = procHTML(); if ($('proc').dataset.h !== h) { $('proc').dataset.h = h; $('proc').innerHTML = h; } }
+  $('share').disabled = $('copy').disabled = !ready; $('share').title = ready ? '' : vm.status === 'failed' ? 'This recording failed to process, so there is nothing to share' : 'Available once processing finishes';
   if (ready && !loaded && vm.type !== 'image') { loaded = true; $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const t0 = +SP.vars().t; if (t0) $('v').addEventListener('loadedmetadata', () => ($('v').currentTime = t0), { once: true }); if (vm.captionsDefault) { $('cc').value = 'original'; ctl?.setCaptions('original').catch(() => {}); } }
   if (loaded && ctl && vm.captionsDefault !== undefined && $('cc').dataset.d !== String(!!vm.captionsDefault)) { $('cc').dataset.d = String(!!vm.captionsDefault); if (vm.captionsDefault && !$('cc').value) { $('cc').value = 'original'; ctl.setCaptions('original').catch(() => {}); } else if (!vm.captionsDefault && $('cc').value === 'original') { $('cc').value = ''; ctl.setCaptions(null); } }
-  renderStrip(); renderNotes(); renderMetrics(); renderTabs(); renderSub();
+  renderStrip(); renderGuard(); renderNotes(); renderMetrics(); renderTabs(); renderSub();
   const key = JSON.stringify([tab, vm.comments, vm.segments?.length, vm.guide, vm.crew, vm.stage, vm.viewers?.length, vm.activity?.length, vm.privacy, vm.edits, vm.captionsDefault, vm.cursorFx, vm.autoZoom, vm.folder, vm.tags, vm.spaces, vm.summary, vm.words, vm.duration, vm.undoKind, vm.canUndo, vm.redactResult?.at, vm.editError, vm.hasOriginal]);
   if (key !== lastKey) { lastKey = key; renderPanel(); }
 }
@@ -211,11 +242,21 @@ function renderStrip() {
   if (vm.status === 'failed') parts.push(`<span class="badge err">${I('alert-triangle')}Failed</span>`);
   else if (!ready) parts.push('<span class="badge"><span class="dot warn pulse"></span>Processing</span>');
   else if (me.owner && vm.shareable === false) parts.push('<span class="badge warn"><span class="dot warn pulse"></span>Guard checking</span>');
-  else parts.push(`<span class="badge ok">${I('shield-check')}Guard cleared</span>`);
   if (vm.type !== 'image' && vm.duration) parts.push(`<span class="meta">${fmt(vm.duration)}</span>`);
   if (vm.width && vm.height) parts.push(`<span class="meta">${vm.width}×${vm.height}</span>`);
   if (me.owner) parts.push('<span class="meta">On this device</span>');
-  const h = parts.join('<span class="sep">·</span>'); if ($('strip').dataset.h !== h) { $('strip').dataset.h = h; $('strip').innerHTML = h; }
+  const by2 = `<span class="sep by2">·</span><span class="meta by2">${esc([vm.by || me.brand?.name, UI.ago(vm.createdAt), plural(vm.views, 'view')].filter(Boolean).join(' · '))}</span>`; // shown here instead of the top bar when that is too narrow
+  const h = parts.join('<span class="sep">·</span>') + (parts.length ? by2 : by2.replace(/^<span class="sep by2">·<\/span>/, '')); if ($('strip').dataset.h !== h) { $('strip').dataset.h = h; $('strip').innerHTML = h; }
+}
+function renderGuard() {
+  const ready = isReady(), el = $('guard');
+  let h = '';
+  if (ready && vm.status !== 'failed' && !(me.owner && vm.shareable === false)) {
+    const b = vm.redactionCount || 0, a = me.owner ? vm.speechRedactions || 0 : 0;
+    const stat = (n, w) => `<span class="gs"><b class="num">${n}</b>${w}</span>`;
+    h = `<div class="guard" role="status">${I('shield-check')}<div class="gt"><b>Privacy Guard cleared</b><span>${me.owner ? 'Checked on this computer before anyone could watch.' : 'Checked before you could watch.'}</span></div><div class="gstats">${b || a ? (b ? stat(b, 'blurred') : '') + (a ? stat(a, 'bleeped') : '') : '<span class="gs none">Nothing needed hiding</span>'}</div></div>`;
+  }
+  if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
 }
 function renderMetrics() {
   const kv = (k, v) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`, c = [];
@@ -233,13 +274,8 @@ function renderMetrics() {
 function renderNotes() {
   const n = [], ready = isReady(), busy = ready && vm.stage && vm.stage !== 'done';
   const box = (cls, icon, tag, txt) => `<div class="callout ${cls}">${icon}<div><span class="tag">${tag}</span>${txt}</div></div>`;
-  if (vm.status === 'failed') n.push(box('bad', I('alert-triangle'), 'Privacy Guard · failed', esc(vm.stage || 'Processing did not finish.')));
+  if (vm.status === 'failed') { /* the player overlay explains it, with the technical detail under "Details" */ }
   else if (ready && me.owner && vm.shareable === false) n.push(box('warn', '<span class="spin"></span>', 'Privacy Guard · checking', 'You can watch now. Viewers can watch when it is done.'));
-  else if (ready) {
-    const t = []; if (vm.redactionCount) t.push(`${plural(vm.redactionCount, 'sensitive item')} blurred before anyone could watch`);
-    if (me.owner && vm.speechRedactions) t.push(`${plural(vm.speechRedactions, 'part')} of the audio bleeped and removed from the transcript and captions`);
-    n.push(box('ok', I('shield-check'), 'Privacy Guard · cleared', t.length ? t.map(esc).join('<br>') : 'No items were blurred or bleeped.'));
-  }
   if (busy && me.owner && vm.shareable !== false) n.push(`<div class="callout"><span class="spin"></span><div>${esc(vm.stage)}…</div></div>`);
   if (me.owner && vm.guard && ready && vm.shareable) {
     const w = []; if (!vm.guard.model) w.push('Rules-only check: the local model was not loaded, so names and addresses were not judged.'); if (vm.guard.speech === 'off') w.push('Speech was not checked (turned off in Settings).');
@@ -420,6 +456,8 @@ $('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
 $('speed').onchange = () => { if ($('v')) $('v').playbackRate = +$('speed').value; };
 $('later').onclick = () => patch({ watchLater: !vm.watchLater });
 const copyLink = async () => { await navigator.clipboard.writeText(location.href.split('?')[0]); toast('Link copied'); };
+$('proc').addEventListener('click', async (e) => { const b = e.target.closest('[data-p]'); if (!b) return; if (b.dataset.p === 'del') return deleteVideo();
+  b.disabled = true; try { await api(`/api/videos/${id}/retry`, { body: {} }); toast('Trying again'); } catch (er) { b.disabled = false; toast(er.message); } });
 $('vcopy').onclick = copyLink; $('copy').onclick = copyLink;
 $('share').onclick = () => openShare();
 $('planBtn').onclick = () => go('actions');
@@ -452,15 +490,15 @@ function renderActions(p) {
   const rows = ax.list.map((a) => {
     const r = ax.results[a.id], busy = ax.busy[a.id], open = ax.open === a.id;
     return `<div class="stp ${open ? 'on' : ''}"><span class="node"></span><div class="card pad"><div class="axrow"><span class="tile sm">${I(AXICON[a.id] || 'doc')}</span><div class="lab">${esc(a.label)}<small>${esc(a.blurb)}${a.cached ? (a.cached.stale ? ' · <b>transcript changed since</b>' : ` · made ${UI.ago(a.cached.at)}`) : ''}</small></div>
-      <button class="btn sm ${a.cached ? '' : 'pri'}" data-ax="${a.id}" ${busy || !ax.ready ? 'disabled' : ''}>${busy ? 'Writing…' : a.cached ? (open ? 'Hide' : 'Open') : 'Generate'}</button></div>` +
+      <button class="btn sm" data-ax="${a.id}" ${busy || !ax.ready ? 'disabled' : ''}>${busy ? 'Writing…' : a.cached ? (open ? 'Hide' : 'Open') : 'Generate'}</button></div>` +
       (open && r ? `<div class="md" id="axmd">${esc(r.markdown)}</div><div class="axbar"><button class="btn sm" data-axcopy="${a.id}">${I('copy')}Copy</button><button class="btn sm" data-axre="${a.id}">${a.cached?.stale ? 'Regenerate (transcript changed)' : 'Regenerate'}</button>
         <span class="meta" style="margin-left:4px">Send to</span>${t.map((x) => `<button class="btn sm" data-axsend="${a.id}|${x.id}" ${x.ready ? '' : 'disabled'} title="${x.ready ? 'Shows exactly what will be sent first' : 'Add ' + esc(x.needs) + ' in Settings → Workspace → Integrations'}">${esc(x.label)}</button>`).join('')}</div>` : '') + '</div></div>';
   }).join('');
   p.innerHTML = `${ax.ready ? '' : `<div class="callout warn">${I('alert-triangle')}<div>Available once the Privacy Guard has cleared the video and it has a transcript.</div></div>`}${ax.err ? `<div class="err">${esc(ax.err)}</div>` : ''}
     <section class="sec"><div class="sl">Record for agents</div><div class="card pad"><p>Turn this recording into a brief for Claude Code, Cursor or any coding agent: what you said, the steps shown with screenshot files, where you clicked.</p>
       <div class="axbar"><button class="btn pri sm" id="planCopy" ${ax.ready ? '' : 'disabled'}>${I('copy')}Copy action plan</button><a class="btn sm" href="/api/videos/${id}/action-plan?download=1">${I('download')}Download .md</a></div>
-      <div class="sl" style="margin:14px 0 6px">Or let an agent read it itself</div><div class="code row"><span><span class="pr">$</span>${esc(MCP_CMD)}</span><button class="btn dark sm" id="mcpCopy">${I('copy')}Copy</button></div></div></section>
-    <section class="sec"><div class="sl">Documents from this recording</div><div class="stepper">${rows}</div></section>`;
+      <details class="mcp"><summary>Or let an agent read it itself</summary><div class="code row"><span><span class="pr">$</span>${esc(MCP_CMD)}</span><button class="btn dark sm" id="mcpCopy">${I('copy')}Copy</button></div></details></div></section>
+    <section class="sec"><div class="sl">Documents from this recording</div><div class="stepper docs">${rows}</div></section>`;
   p.querySelectorAll('[data-ax]').forEach((b) => (b.onclick = () => (ax.list.find((x) => x.id === b.dataset.ax).cached ? openAction(b.dataset.ax) : runAction(b.dataset.ax))));
   p.querySelectorAll('[data-axre]').forEach((b) => (b.onclick = () => runAction(b.dataset.axre, true)));
   p.querySelectorAll('[data-axcopy]').forEach((b) => (b.onclick = async () => { await navigator.clipboard.writeText(ax.results[b.dataset.axcopy].markdown); copied(b); }));
