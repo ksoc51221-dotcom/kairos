@@ -28,15 +28,23 @@ function feed(model) {
   };
 }
 
+// K-6: the languages a viewer may ask captions in (the names the watch page offers, plus their ISO codes). Anything else is refused, so nobody can start
+// endless model runs or fill the disk with captions_<anything>.json, and the prompt only ever sees one of these names.
+const LANG_LIST = 'Arabic ar,Bengali bn,Bulgarian bg,Chinese zh,Croatian hr,Czech cs,Danish da,Dutch nl,Estonian et,Filipino fil,Finnish fi,French fr,German de,Greek el,Hebrew he,Hindi hi,Hungarian hu,Indonesian id,Italian it,Japanese ja,Korean ko,Latvian lv,Lithuanian lt,Malay ms,Norwegian no,Persian fa,Polish pl,Portuguese pt,Romanian ro,Russian ru,Serbian sr,Slovak sk,Slovenian sl,Spanish es,Swahili sw,Swedish sv,Tamil ta,Thai th,Turkish tr,Ukrainian uk,Urdu ur,Vietnamese vi,Afrikaans af,Catalan ca,Icelandic is,Irish ga,Maltese mt,Welsh cy,Albanian sq,Armenian hy,Basque eu,Georgian ka'.split(',').map((s) => s.split(' '));
+const LANGS = new Map(LANG_LIST.flatMap(([name, code]) => [[name.toLowerCase(), name], [code, name]]));
+// normalizeLang('fr') / ('FRENCH') -> 'French'; null for anything not in the list
+const normalizeLang = (raw) => LANGS.get(String(raw == null ? '' : raw).trim().toLowerCase()) || null;
+
 // B18: two viewers asking for the same language at once share one model run.
 const inflight = new Map();
-function translateSegments(v, lang) {
-  const key = `${v.id}:${lang.replace(/[^\w-]/g, '').toLowerCase()}`;
+function translateSegments(v, raw) {
+  const lang = normalizeLang(raw); if (!lang) return Promise.reject(new Error('Unsupported language'));
+  const key = `${v.id}:${lang.toLowerCase()}`;
   if (!inflight.has(key)) inflight.set(key, translateOnce(v, lang).finally(() => inflight.delete(key)));
   return inflight.get(key);
 }
 async function translateOnce(v, lang) {
-  const safe = lang.replace(/[^\w-]/g, '').toLowerCase(); const cache = path.join(store.videoDir(v.id), `captions_${safe}.json`);
+  const safe = lang.toLowerCase(); const cache = path.join(store.videoDir(v.id), `captions_${safe}.json`);
   if (fs.existsSync(cache)) return JSON.parse(fs.readFileSync(cache, 'utf8'));
   if (!(await llm.available())) throw new Error('Ollama is not running');
   const segs = v.segments || [], out = [];
@@ -53,4 +61,4 @@ function startMaintenance() {
   const sweep = () => { const days = store.getSettings().retentionDays; if (!days) return; const cut = Date.now() - days * 86400000; store.list().forEach((v) => { if (v.createdAt < cut) { store.remove(v.id); store.log(null, `Retention policy deleted "${v.title}"`, 'system'); } }); };
   sweep(); setInterval(sweep, 3600000).unref();
 }
-module.exports = { feed, translateSegments, inflightCount: () => inflight.size, storageUsed, startMaintenance };
+module.exports = { feed, translateSegments, normalizeLang, inflightCount: () => inflight.size, storageUsed, startMaintenance };

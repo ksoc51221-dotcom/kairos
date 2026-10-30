@@ -47,7 +47,7 @@ function mount(app, ctx) {
     res.redirect(security.safeNext(q.query.to));
   });
   // these two flip a cookie on a GET, so they get the same-origin check too
-  app.get('/view-as/:mode', requireOwner, security.guardSameOrigin, (q, res) => { res.setHeader('Set-Cookie', `sp_asviewer=${q.params.mode === 'viewer' ? 1 : 0}; Path=/; SameSite=Lax`); res.redirect(q.query.to || '/'); });
+  app.get('/view-as/:mode', requireOwner, security.guardSameOrigin, (q, res) => { res.setHeader('Set-Cookie', `sp_asviewer=${q.params.mode === 'viewer' ? 1 : 0}; Path=/; SameSite=Lax`); res.redirect(security.safeNext(q.query.to)); });
   app.get('/stop-viewing-as', security.guardSameOrigin, (_q, res) => { res.setHeader('Set-Cookie', 'sp_asviewer=0; Path=/; Max-Age=0'); res.redirect('/'); });
 
   // ---- viewer API (everything here is gated by the link's privacy settings) ----
@@ -107,15 +107,22 @@ function mount(app, ctx) {
   });
 
   // ---- captions: original, or translated on demand with the local model ----
-  app.get('/api/v/:id/captions.vtt', gated, async (q, res) => {
-    const v = q.video, lang = String(q.query.lang || '').slice(0, 30); let segs = v.segments || [];
-    try { if (lang && lang !== 'original') segs = await extras.translateSegments(v, lang); } catch (e) { return res.status(502).send('Translation failed: ' + e.message); }
+  // K-6: a translation runs the local model and writes a file for good, so it is rate limited and only the listed languages are accepted
+  const wantLang = (q, res) => {
+    const raw = String(q.query.lang || '').trim();
+    if (!raw || raw.toLowerCase() === 'original') return { lang: '' };
+    const lang = extras.normalizeLang(raw); if (!lang) res.status(400).json({ error: 'Unsupported language' });
+    return { lang };
+  };
+  app.get('/api/v/:id/captions.vtt', limit, gated, async (q, res) => {
+    const v = q.video, w = wantLang(q, res); if (w.lang === null || w.lang === undefined) return; const lang = w.lang; let segs = v.segments || [];
+    try { if (lang) segs = await extras.translateSegments(v, lang); } catch (e) { return res.status(502).send('Translation failed: ' + e.message); }
     const t = (s) => { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = (s % 60).toFixed(3).padStart(6, '0'); return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${x}`; };
     res.type('text/vtt').send('WEBVTT\n\n' + segs.map((s, i) => `${i + 1}\n${t(s.start)} --> ${t(Math.max(s.end, s.start + 1))}\n${s.text}\n`).join('\n'));
   });
-  app.get('/api/v/:id/captions.json', gated, async (q, res) => {
-    const lang = String(q.query.lang || '').slice(0, 30);
-    try { res.json(lang && lang !== 'original' ? await extras.translateSegments(q.video, lang) : q.video.segments || []); } catch (e) { res.status(502).json({ error: e.message }); }
+  app.get('/api/v/:id/captions.json', limit, gated, async (q, res) => {
+    const w = wantLang(q, res); if (w.lang === null || w.lang === undefined) return; const lang = w.lang;
+    try { res.json(lang ? await extras.translateSegments(q.video, lang) : q.video.segments || []); } catch (e) { res.status(502).json({ error: e.message }); }
   });
   // U3: one Server-Sent Events stream instead of polling. A watch page subscribes to its own video; the library subscribes to everything (owner only).
   // The payload only says *what* changed; the page refetches it. Bursts (progress updates) are coalesced to one event per 200 ms.
