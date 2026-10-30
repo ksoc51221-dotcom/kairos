@@ -76,7 +76,7 @@ function gLoad() {
   gs.loading = import(ROOT + 'node_modules/@mediapipe/tasks-vision/vision_bundle.mjs')
     .then(({ GestureRecognizer }) => GestureRecognizer.createFromOptions(
       { wasmLoaderPath: models + 'wasm/vision_wasm_internal.js', wasmBinaryPath: models + 'wasm/vision_wasm_internal.wasm' },
-      { baseOptions: { modelAssetPath: models + 'gesture_recognizer.task' }, runningMode: 'VIDEO', numHands: 1 }))
+      { baseOptions: { modelAssetPath: models + 'gesture_recognizer.task' }, runningMode: 'VIDEO', numHands: 1, minHandDetectionConfidence: G.CFG.minDetect, minHandPresenceConfidence: G.CFG.minDetect, minTrackingConfidence: G.CFG.minDetect })) // (0.4 finds a hand in a few more dim or small frames than the default 0.5; measured with no phantom hand in 560 frames of nothing)
     .then((r) => { gs.rec = r; gs.loadMs = Math.round(performance.now() - t0); gs.canvas = document.createElement('canvas'); gs.ctx = gs.canvas.getContext('2d', { willReadFrequently: false }); })
     .catch((e) => { gs.error = String(e && e.message || e); console.error('gesture recognizer failed to load: ' + gs.error); gs.loading = null; });
   return gs.loading;

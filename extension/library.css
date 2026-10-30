@@ -1,0 +1,51 @@
+body { min-height: 100vh; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px clamp(16px, 4vw, 40px); border-bottom: 1px solid var(--line); background: var(--surface); }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: .02em; color: var(--accent-lt); text-decoration: none; }
+.logo svg { width: 28px; height: 28px; }
+.summary { font: 500 13px var(--mono); color: var(--ink-2); }
+main { max-width: 1120px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 60px; }
+.h { margin: 0 0 18px; font-size: 22px; color: var(--ink-strong); }
+.note { color: var(--ink-2); font-size: 13px; margin: 0; }
+.storage { margin-top: 28px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.thumb { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; background: #0b1120 center / cover no-repeat; border: 0; cursor: pointer; }
+.thumb:hover::after { content: ""; position: absolute; inset: 0; background: rgba(2, 6, 23, .25); }
+.thumb .dur { position: absolute; right: 8px; bottom: 8px; padding: 3px 6px; border-radius: 3px; background: rgba(2, 6, 23, .85); color: #fff; font: 600 12px var(--mono); }
+.thumb .mode { position: absolute; left: 8px; top: 8px; padding: 3px 6px; border-radius: 3px; background: rgba(2, 6, 23, .85); color: var(--accent-lt); font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+.card .body { display: grid; gap: 4px; padding: 12px 14px 8px; }
+.card .name { font-weight: 600; color: var(--ink-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .sub { font-size: 12px; color: var(--ink-2); }
+.card .tools { display: flex; gap: 4px; padding: 0 8px 8px; }
+.icon-btn { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r); color: var(--ink); }
+.icon-btn:hover { background: var(--raised); }
+.icon-btn.danger:hover { color: var(--red); }
+
+.empty { padding: 56px 0; text-align: center; color: var(--ink); }
+.empty p { margin: 0 0 6px; font-size: 16px; }
+.welcome { margin-bottom: 28px; padding: 22px 24px; border: 1px solid #065f46; background: #022c22; border-radius: 8px; }
+.welcome h1 { margin: 0 0 10px; font-size: 20px; color: #7bd8b1; }
+.welcome ol { margin: 0 0 16px; padding-left: 20px; display: grid; gap: 8px; color: var(--ink); }
+.welcome .lead { margin: 0 0 12px; color: var(--ink); }
+.welcome code { padding: 1px 5px; border-radius: 4px; background: var(--raised); font: 12px var(--mono); }
+.demo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: fit-content; max-width: 100%; margin: 0 0 16px; padding: 14px 16px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.demo-pill { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: #fff; }
+.demo-pill svg.i { width: 32px; height: 32px; }
+.demo-hint { color: var(--ink-2); font-size: 12px; }
+.demo-orb { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; }
+.demo-orb.off { background: var(--rec); }
+.row-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.promo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 22px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); }
+.promo b { color: var(--ink-strong); flex-basis: 100%; }
+.promo span { flex: 1; min-width: 200px; }
+.promo .btn { text-decoration: none; }
+
+.back { display: inline-block; margin-bottom: 16px; color: var(--ink); text-decoration: none; font-weight: 600; }
+.back:hover { color: var(--accent-lt); }
+.stage { background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.stage video { display: block; width: 100%; max-height: 72vh; background: #000; }
+.meta { display: grid; gap: 10px; margin-top: 16px; }
+.title-input { width: 100%; padding: 8px 10px; margin-left: -10px; border: 1px solid transparent; border-radius: var(--r); background: transparent; color: var(--ink-strong); font: 700 22px var(--font); }
+.title-input:hover, .title-input:focus { border-color: var(--line); background: var(--surface); }
+.meta-line { font: 500 13px var(--mono); color: var(--ink-2); }

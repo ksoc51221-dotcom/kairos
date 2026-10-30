@@ -9,6 +9,9 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .top .tsearch { position: relative; display: block; flex: 1 1 320px; max-width: 520px; min-width: 100px; }
 .top .tsearch .field { padding-left: 32px; box-shadow: none; }
 .top .tsearch > span { position: absolute; left: 10px; top: 0; bottom: 0; display: grid; place-items: center; color: var(--mute); pointer-events: none; }
+.top .tsearch kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.top .tsearch .field:focus ~ kbd, .top .tsearch .field:not(:placeholder-shown) ~ kbd { display: none; }
+@media (max-width: 860px) { .top .tsearch kbd { display: none; } }
 .top .tsearch svg.i { width: 16px; height: 16px; }
 .top .brand .bn { white-space: nowrap; }
 .iconbtn.on { background: var(--accent-soft); color: var(--accent); }
@@ -24,7 +27,7 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .ws .wsm { display: flex; align-items: center; gap: 6px; }
 .ws .btn { width: 100%; margin-top: 2px; }
 .rh { display: flex; align-items: center; justify-content: space-between; min-height: 22px; margin: 16px 0 4px; padding: 0 8px; }
-.rh button { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid transparent; border-radius: var(--r); background: none; color: var(--mute); cursor: pointer; }
+.rh button { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid transparent; border-radius: var(--r); background: none; color: var(--mute); cursor: pointer; }
 .rh button:hover { background: var(--surface-2); border-color: var(--line-soft); color: var(--ink); }
 .rh button svg.i { width: 14px; height: 14px; }
 .ni { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 4px 8px; border-radius: var(--r); font: 500 13px/20px var(--font); color: var(--ink-2); cursor: pointer; transition: background 150ms var(--ease), color 150ms var(--ease); }
@@ -61,6 +64,34 @@ select.field:hover { background-color: var(--surface-1); }
 
 /* ---- video cards ---- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.vt { display: inline-flex; } .vt .btn { border-radius: 0; } .vt .btn:first-child { border-radius: var(--r) 0 0 var(--r); } .vt .btn:last-child { border-radius: 0 var(--r) var(--r) 0; margin-left: -1px; }
+.vt .btn.on { background: var(--accent-soft, var(--surface-2)); color: var(--accent-d); border-color: var(--accent); position: relative; z-index: 1; }
+.grid.list { grid-template-columns: 1fr; gap: 8px; }
+.grid.list .vc { flex-direction: row; align-items: stretch; }
+.grid.list .th { width: 176px; flex: none; aspect-ratio: 16/9; border-bottom: 0; border-right: 1px solid var(--line-soft); }
+.grid.list .vm { flex: 1; min-width: 0; justify-content: center; }
+.grid.list .vm .t { min-height: 0; -webkit-line-clamp: 1; }
+@media (max-width: 640px) { .grid.list .th { width: 120px; } .grid.list .acc { display: none; } .grid.list .proc .meta { font-size: 0; } .grid.list .proc svg.i { width: 20px; height: 20px; } }
+.feat { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); overflow: hidden; color: inherit; margin-bottom: 8px; }
+.feat .th { border-bottom: 0; border-right: 1px solid var(--line-soft); }
+.feat .fm { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; padding: 24px; min-width: 0; }
+.feat .h1 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; transition: color 150ms var(--ease); } .feat:hover .h1 { color: var(--accent-d); }
+.feat .fcta { margin-top: 6px; }
+@media (max-width: 860px) { .feat { grid-template-columns: 1fr; } .feat .th { border-right: 0; border-bottom: 1px solid var(--line-soft); } .feat .fm { padding: 16px; } }
+.kbs { display: grid; gap: 8px; margin-top: 4px; } .kbs span { display: block; color: var(--ink-2); } .kbs kbd { margin-right: 2px; }
+.fr3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; list-style: none; margin: 8px auto 0; padding: 0; max-width: 720px; }
+.fr3 li { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--r); background: var(--surface); }
+.fr3 b { font: 600 12px/16px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent-d); } .fr3 span { color: var(--ink-2); }
+.fresh { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; border-color: var(--accent); background: var(--accent-soft); flex-wrap: wrap; }
+.fresh .tile { width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--r); background: var(--accent); color: var(--accent-ink); flex: none; }
+.fresh .ft { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .fresh .t { font: 600 14px/20px var(--font); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .fresh .t:hover { color: var(--accent-d); }
+.fresh .fa { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ck { position: absolute; left: 8px; top: 8px; z-index: 2; width: 20px; height: 20px; border: 2px solid #fff; border-radius: var(--r-sm); background: rgba(15, 23, 42, .55); display: none; }
+.selm .ck { display: block; } .selm .tools { display: none; } .selm .vc { cursor: pointer; }
+.vc.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.vc.picked .ck { background: var(--accent); border-color: var(--accent); } .vc.picked .ck::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.sbar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 25; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 12px; background: var(--code-bg); color: #f8fafc; border-radius: var(--r); box-shadow: 0 8px 24px rgba(15, 23, 42, .25); font: 500 13px/20px var(--font); }
+.sbar .btn.ghost.dark { color: #cbd5e1; } .sbar .btn.ghost.dark:hover { background: #334155; }
 .vc { display: flex; flex-direction: column; overflow: hidden; position: relative; color: inherit; }
 .th { position: relative; aspect-ratio: 16/9; background: var(--stage) center/cover; border-bottom: 1px solid var(--line-soft); overflow: hidden; }
 .th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 200ms var(--ease); } .th img.in { opacity: 1; }
@@ -71,6 +102,8 @@ select.field:hover { background-color: var(--surface-1); }
 .ring { width: 40px; height: 40px; transform: rotate(-90deg); } .ring circle { fill: none; stroke-width: 4; } .ring .bg { stroke: rgba(255, 255, 255, .22); } .ring .fg { stroke: var(--code-accent); transition: stroke-dashoffset 400ms var(--ease); }
 .ring.spin { animation: rs 1s linear infinite; } @keyframes rs { to { transform: rotate(270deg); } }
 .upbar { height: 4px; width: 70%; background: rgba(255, 255, 255, .25); border-radius: var(--r-sm); overflow: hidden; } .upbar i { display: block; height: 100%; width: 0; background: var(--code-accent); transition: width 150ms linear; }
+.wp { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(15, 23, 42, .55); }
+.wp i { display: block; height: 100%; background: var(--accent); }
 .dur, .lockb { position: absolute; background: rgba(15, 23, 42, .88); color: #fff; border-radius: var(--r-sm); font: 500 11px/14px var(--mono); }
 .dur { right: 8px; bottom: 8px; padding: 2px 6px; letter-spacing: .02em; }
 .lockb { right: 8px; top: 8px; display: flex; align-items: center; gap: 4px; padding: 2px 6px; letter-spacing: .04em; text-transform: uppercase; }
@@ -83,6 +116,7 @@ select.field:hover { background-color: var(--surface-1); }
 .tools svg.i { width: 15px; height: 15px; }
 .vm { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
 .vm .t { min-height: 40px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font: 600 13px/20px var(--font); letter-spacing: -.005em; }
+.vc .vm .t { transition: color 150ms var(--ease); } .vc:hover .vm .t { color: var(--accent-d); }
 .vm .by { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stats { display: flex; align-items: center; gap: 12px; }
 .stats span { display: inline-flex; align-items: center; gap: 4px; }
@@ -107,6 +141,7 @@ select.field:hover { background-color: var(--surface-1); }
 .nt .nb { flex: 1; min-width: 0; } .nq { margin-top: 4px; color: var(--mute); font-size: 12px; line-height: 18px; }
 .bars { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-bottom: 20px; }
 .bars div { position: relative; flex: 1; min-height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
+.bars em { position: absolute; top: -16px; left: 0; right: 0; text-align: center; font: 500 10px/14px var(--mono); font-style: normal; color: var(--ink-2); }
 .bars span { position: absolute; bottom: -18px; left: -4px; right: -4px; text-align: center; font: 500 10px/14px var(--mono); color: var(--mute); }
 .tw { overflow-x: auto; } .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tbl th, .tbl td { padding: 8px 12px; border-bottom: 1px solid var(--line-soft); text-align: left; }
@@ -118,8 +153,8 @@ select.field:hover { background-color: var(--surface-1); }
 .sec .d { margin: 0 0 8px; max-width: 760px; color: var(--ink-2); }
 .fr { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 4px 24px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line-soft); }
 .fr.tog { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
-.fl label { display: block; font: 500 13px/20px var(--font); color: var(--ink); }
-.fl small { display: block; margin-top: 2px; color: var(--mute); font-size: 12px; line-height: 18px; } .fl small b { color: var(--ink-2); font-weight: 500; }
+.flab label { display: block; font: 500 13px/20px var(--font); color: var(--ink); }
+.flab small { display: block; margin-top: 2px; color: var(--mute); font-size: 12px; line-height: 18px; } .flab small b { color: var(--ink-2); font-weight: 500; }
 .fc { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; } .fc .field { max-width: 460px; }
 .fr.tog .fc { align-items: flex-end; }
 code { padding: 0 4px; border: 1px solid var(--line-soft); border-radius: var(--r-sm); background: var(--surface-2); font: 400 11px/16px var(--mono); }
@@ -148,7 +183,7 @@ details ol { margin: 0; padding: 10px 12px 10px 30px; font-size: 12px; line-heig
 .mv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ink-2); font-size: 12px; }
 .pbar { width: 120px; height: 4px; border-radius: var(--r-sm); background: var(--surface-3); overflow: hidden; } .pbar i { display: block; height: 100%; background: var(--accent); }
 .mdl + .callout, .mdl .callout { margin-top: 8px; } .mdl .callout { margin: 8px 12px 12px; flex-direction: column; align-items: stretch; }
-.savebar { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 8px; padding: 12px 0; background: var(--bg); border-top: 1px solid var(--line-soft); }
+.savebar { position: sticky; bottom: -24px; z-index: 3; display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin: 8px 0 -24px; padding: 12px 0 36px; background: var(--bg); border-top: 1px solid var(--line-soft); }
 #saved { display: inline-flex; align-items: center; gap: 6px; } #saved svg.i { width: 14px; height: 14px; }
 
 /* ---- small screens ---- */
@@ -156,23 +191,23 @@ details ol { margin: 0; padding: 10px 12px 10px 30px; font-size: 12px; line-heig
   .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .rail { flex-direction: row; align-items: center; gap: 4px; padding: 6px 12px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--line-soft); }
   .rail .grp { display: contents; } .rail .ws, .rail .rh, .rail .none { display: none; } .rail .ni { flex: none; white-space: nowrap; }
-  main { padding: 16px; }
+  main { padding: 16px; } .savebar { bottom: -16px; margin-bottom: -16px; padding-bottom: 28px; }
   .fr, .fr.tog { grid-template-columns: minmax(0, 1fr); } .fr.tog .fc { align-items: flex-start; }
 }
-@media (max-width: 720px) { .top { gap: 8px; padding: 0 8px; } .top .brand { padding-right: 8px; } .top .lbl, .top .brand .bn { display: none; } }
+@media (max-width: 720px) { .top { gap: 8px; padding: 0 8px; } .top .brand { padding-right: 8px; } .top .lbl, .top .brand .bn { display: none; } .top #record .lbl { display: inline; font-size: 0; } .top #record .lbl::after { content: "Rec"; font-size: 12px; } }
 @media (prefers-reduced-motion: reduce) { .th img, .th .gif, .ring .fg { transition: none; } }
 </style></head><body>
 <header class="top">
   <a class="brand" id="brand" href="#/home"></a>
   <nav class="topnav" aria-label="Main"><a href="#/library" data-k="library">Library</a><a href="#/settings" data-k="settings">Settings</a></nav>
   <button class="iconbtn" id="collapse" title="Hide the sidebar" aria-label="Hide the sidebar" data-i="sidebar"></button>
-  <label class="tsearch"><span data-i="search"></span><input class="field" id="q" placeholder="Search videos, transcripts, tags, people" aria-label="Search" autocomplete="off"></label>
+  <label class="tsearch"><span data-i="search"></span><input class="field" id="q" placeholder="Search videos, transcripts, tags, people" aria-label="Search" aria-keyshortcuts="/" autocomplete="off"><kbd aria-hidden="true">/</kbd></label>
   <div class="grow"></div>
   <div class="acts"><button class="btn" id="record" title="Record a video" aria-label="Record a video"><span class="dot rec"></span><span class="lbl">Record a video</span></button>
     <a class="iconbtn badgebtn" href="#/notifications" id="bell" title="Notifications" aria-label="Notifications" data-i="bell"></a><span class="vsep"></span><a class="avatar" id="who" href="#/settings" title="Settings"></a></div>
 </header>
 <div class="shell" id="shell"><nav class="rail" id="nav" aria-label="Library"></nav><main id="main"><div class="grid"><div class="vc card"><div class="th skeleton"></div><div class="vm"><div class="skeleton sk1"></div><div class="skeleton sk2"></div></div></div><div class="vc card"><div class="th skeleton"></div><div class="vm"><div class="skeleton sk1"></div><div class="skeleton sk2"></div></div></div><div class="vc card"><div class="th skeleton"></div><div class="vm"><div class="skeleton sk1"></div><div class="skeleton sk2"></div></div></div></div></main></div>
-<div id="drop"><div class="dz"><span data-i="upload"></span>Drop a video to add it to your library</div></div><div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div><div id="drop"><div class="dz"><span data-i="upload"></span>Drop a video to add it to your library</div></div><div id="modal" class="modal" hidden></div>
 <input id="file" type="file" accept="video/*,.mkv,.avi,.mov" hidden>
 <script src="/static/csrf.js"></script><script src="/static/ui.js"></script>
 <script>
@@ -219,7 +254,9 @@ function ask({ title, text = '', input = null, typed = '', ok = 'OK', danger = f
 }
 let uploads = []; // U19: files being sent right now, shown as cards at once
 let videos = [], folders = [], spaces = [], notifs = [], settings = {}, me = {}, route = location.hash.slice(2) || 'home', shownRoute = null;
-const F = { type: '', act: '', date: '', sort: 'new', tab: 'videos' }; // filters on My Library
+const SEL = { on: false, ids: new Set() };
+const VIEW = (() => { try { return localStorage.getItem('kairos.view') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } })();
+const F = { type: '', act: '', date: '', sort: 'new', tab: 'videos', view: VIEW }; // filters on My Library
 
 async function refresh() { [videos, folders, spaces, notifs] = await Promise.all([J('/api/videos'), J('/api/folders'), J('/api/spaces'), J('/api/notifications')]); renderNav(); }
 function renderBrand() { const b = me.brand || {}; document.getElementById('brand').innerHTML = `${UI.logo(b)}<span class="bn">${esc(b.hideBranding ? '' : b.name || 'Kairos')}</span>`; }
@@ -245,19 +282,47 @@ const ring = (p) => { const C = 2 * Math.PI * 18; return `<svg class="ring ${p =
 const ACCESS = { link: 'Link', email: 'Email', password: 'Password', private: 'Private' };
 const nReact = (v) => ['good', 'question', 'issue', 'idea', 'key'].reduce((a, k) => a + (Number((v.reactions || {})[k]) || 0), 0);
 const card = (v) => { const mode = v.privacy?.mode || 'link', by = v.by || settings.ownerName || 'You', sp = (v.spaces || []).length;
-  return `<a class="vc card hov" data-key="${v.id}" href="/v/${v.id}"><div class="th">${v.status === 'failed' ? '' : `<img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')">`}${v.hasGif ? `<div class="gif" data-gif="/media/${v.id}/preview.gif"></div>` : ''}
+  return `<a class="vc card hov" data-key="${v.id}" href="/v/${v.id}"><div class="th"><span class="ck" aria-hidden="true"></span>${v.status === 'failed' ? '' : `<img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')">`}${v.hasGif ? `<div class="gif" data-gif="/media/${v.id}/preview.gif"></div>` : ''}
   ${v.status !== 'ready' ? `<div class="proc">${v.status === 'failed' ? `${I('x-circle')}<span class="meta">Failed</span>` : `${ring(pct(v))}<span class="meta">${esc((v.stage || 'Processing').replace(/\s*\d+%$/, ''))}${pct(v) != null ? ' ' + pct(v) + '%' : '…'}</span>`}</div>` : ''}
   <div class="tools"><button data-a="later" data-id="${v.id}" title="Watch later" aria-label="Watch later">${I(v.watchLater ? 'bookmark-on' : 'bookmark')}</button><button data-a="del" data-id="${v.id}" title="Delete" aria-label="Delete">${I('trash')}</button></div>
-  ${mode !== 'link' ? `<span class="lockb">${I('lock')}${esc(ACCESS[mode] || mode)}</span>` : ''}${v.type === 'image' ? '' : `<span class="dur">${fmt(v.duration)}</span>`}</div>
+  ${mode !== 'link' ? `<span class="lockb">${I('lock')}${esc(ACCESS[mode] || mode)}</span>` : ''}${v.type === 'image' ? '' : `<span class="dur">${fmt(v.duration)}</span>`}${v.status === 'ready' && v.type !== 'image' && v.progress > 3 && v.duration > 5 && v.progress < v.duration * 0.98 ? `<div class="wp" role="img" aria-label="${Math.round(v.progress / v.duration * 100)}% watched"><i style="width:${Math.min(100, v.progress / v.duration * 100).toFixed(1)}%"></i></div>` : ''}</div>
   <div class="vm"><div class="t">${esc(v.title)}</div><div class="meta by"><b>${esc(by)}</b> · ${ago(v.createdAt)}${sp ? ` · ${sp} space${sp > 1 ? 's' : ''}` : ''}</div>
   <div class="stats meta"><span title="Views">${I('eye')}<b>${v.views}</b></span><span title="Comments">${I('comment')}<b>${v.comments.length}</b></span><span title="Markers">${I('flag')}<b>${nReact(v)}</b></span><span class="acc">${ACCESS[mode] || mode}</span></div></div></a>`; };
+const feat = (v) => { const by = v.by || settings.ownerName || 'You';
+  return `<a class="feat card hov" href="/v/${v.id}"><div class="th"><img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')"><span class="dur">${fmt(v.duration)}</span></div>
+  <div class="fm"><span class="meta">Newest recording</span><h2 class="h1">${esc(v.title)}</h2><div class="meta"><b>${esc(by)}</b> · ${ago(v.createdAt)} · ${fmt(v.duration)}</div>
+  <div class="stats meta"><span title="Views">${I('eye')}<b>${v.views}</b></span><span title="Comments">${I('comment')}<b>${v.comments.length}</b></span><span title="Markers">${I('flag')}<b>${nReact(v)}</b></span></div><span class="btn pri fcta">${I('play')}Watch</span></div></a>`; };
+const firstRun = () => emptyBox('video', 'Record your first video', 'Kairos records your screen, writes the transcript and keeps everything on this computer until you share a link.', recBtns) +
+  `<ol class="fr3"><li><b>1 · Record</b><span>Press Record. Pick a screen, add your camera if you like.</span></li><li><b>2 · Review</b><span>Your video appears here with a transcript. Cut or clean it up in the editor.</span></li><li><b>3 · Share</b><span>Copy a link. Only people who can reach this computer can open it.</span></li></ol>`;
+const freshBanner = (v) => `<div class="fresh card" id="fresh" data-id="${v.id}" role="region" aria-label="New recording"><span class="tile">${I('check')}</span><div class="ft"><span class="meta">Your recording is ready</span><a class="t" href="/v/${v.id}">${esc(v.title)}</a></div><div class="fa"><button class="btn" id="f-copy">${I('link')}Copy link</button><a class="btn" href="/edit/${v.id}">${I('pencil')}Edit</a><a class="btn pri" href="/v/${v.id}">${I('play')}Watch</a><button class="btn icon ghost" id="f-x" aria-label="Dismiss" title="Dismiss">${I('x')}</button></div></div>`;
 const upCard = (u) => `<div class="vc card" data-key="up-${u.id}"><div class="th"><div class="proc">${u.error ? `${I('x-circle')}<span class="meta">${esc(u.error)}</span>` : `<span class="meta">Uploading ${esc(u.name.slice(0, 28))}</span><div class="upbar"><i style="width:${u.pct}%"></i></div><span class="meta">${u.pct}%</span>`}</div></div><div class="vm"><div class="t">${esc(u.name)}</div><div class="stats meta"><span>Uploading</span></div></div></div>`;
 const recBtns = `<button class="btn pri" data-act="record">${I('video')}Record a video</button><button class="btn" data-act="upload">${I('upload')}Upload a file</button>`;
 const emptyBox = (ico, title, text = '', actions = '') => `<div class="empty"><span class="tile">${I(ico)}</span><h3 class="h3">${title}</h3>${text ? `<p>${text}</p>` : ''}${actions ? `<div class="ea">${actions}</div>` : ''}</div>`;
 const skeleton = () => `<div class="ph"><div class="skeleton" style="width:220px;height:32px"></div></div><div class="grid">${'<div class="vc card"><div class="th skeleton"></div><div class="vm"><div class="skeleton sk1"></div><div class="skeleton sk2"></div></div></div>'.repeat(6)}</div>`;
 let upShown = false;
-const grid = (list, empty = ['video', 'Nothing here yet']) => { const ups = !upShown && uploads.length ? (upShown = true, uploads.map(upCard).join('')) : ''; return list.length || ups ? `<div class="grid" data-morph>${ups}${list.map(card).join('')}</div>` : emptyBox(...empty); };
+const grid = (list, empty = ['video', 'Nothing here yet']) => { const ups = !upShown && uploads.length ? (upShown = true, uploads.map(upCard).join('')) : ''; return list.length || ups ? `<div class="grid${route === 'library' && F.view === 'list' ? ' list' : ''}${route === 'library' && SEL.on ? ' selm' : ''}" data-morph>${ups}${list.map(card).join('')}</div>` : emptyBox(...empty); };
+// Multi-select: "Select" turns the cards into toggles; a bar appears with bulk actions for whatever is picked.
+function syncSel() {
+  document.querySelectorAll('.vc[data-key]').forEach((c) => { const on = SEL.ids.has(c.dataset.key), selm = SEL.on && c.closest('.selm') && !c.dataset.key.startsWith('up-'); c.classList.toggle('picked', on);
+    if (selm) { c.setAttribute('role', 'checkbox'); c.setAttribute('aria-checked', on); } else { c.removeAttribute('role'); c.removeAttribute('aria-checked'); } });
+  let b = document.getElementById('sbar'); const n = SEL.ids.size;
+  if (!SEL.on || !n) { b?.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'sbar'; b.className = 'sbar'; document.body.appendChild(b);
+    b.onclick = async (e) => { const a = e.target.closest('[data-s]')?.dataset.s; if (!a) return; const ids = [...SEL.ids], ok = (p) => Promise.all(ids.map(p));
+      if (a === 'clear') { SEL.ids.clear(); syncSel(); return; }
+      if (a === 'later') { await ok((id) => J(`/api/videos/${id}`, 'PATCH', { watchLater: true })); toast(`${ids.length} saved to Watch later`); }
+      else if (a === 'del') { if (!await ask({ title: `Delete ${ids.length} video${ids.length === 1 ? '' : 's'}?`, text: 'They are removed from this computer. This cannot be undone.', ok: 'Delete', danger: true })) return; await ok((id) => J(`/api/videos/${id}`, 'DELETE')); toast(`${ids.length} deleted`); }
+      else if (a === 'move') { const r = e.target.closest('[data-s]').getBoundingClientRect(); document.querySelectorAll('.pm').forEach((p) => p.remove()); const p = document.createElement('div'); p.className = 'pop pm'; p.style.cssText = `left:${r.left}px;bottom:${innerHeight - r.top + 4}px`;
+        p.innerHTML = [['', 'No folder'], ...folders.map((f) => [f.id, f.name])].map(([id, n]) => `<button class="btn ghost" data-f="${esc(id)}">${esc(n)}</button>`).join(''); document.body.appendChild(p);
+        p.onclick = async (ev) => { const f = ev.target.closest('[data-f]'); if (!f) return; p.remove(); await ok((id) => J(`/api/videos/${id}`, 'PATCH', { folder: f.dataset.f || null })); toast(`${ids.length} moved`); SEL.ids.clear(); await refresh(); show(); };
+        setTimeout(() => document.addEventListener('mousedown', function f(ev) { if (!p.contains(ev.target)) { p.remove(); document.removeEventListener('mousedown', f); } })); return; }
+      SEL.ids.clear(); await refresh(); show(); }; }
+  b.innerHTML = `<span role="status">${n} selected</span><button class="btn dark sm" data-s="later">${I('bookmark')}Watch later</button><button class="btn dark sm" data-s="move">${I('folder')}Move to…</button><button class="btn dark sm" data-s="del">${I('trash')}Delete</button><button class="btn ghost dark sm" data-s="clear">Clear</button>`; UI.fill(b);
+}
+document.addEventListener('click', (e) => { if (!SEL.on) return; const c = e.target.closest('.selm .vc[data-key]'); if (!c || c.dataset.key.startsWith('up-')) return; e.preventDefault(); const k = c.dataset.key; SEL.ids.has(k) ? SEL.ids.delete(k) : SEL.ids.add(k); syncSel(); });
+window.addEventListener('hashchange', () => { if (SEL.on) { SEL.on = false; SEL.ids.clear(); syncSel(); } });
 function wireCards() {
+  syncSel();
   document.querySelectorAll('.th img').forEach((i) => i.complete && i.naturalWidth && i.classList.add('in'));
   document.querySelectorAll('.vc[data-key]').forEach((c) => { // the GIF preview starts only after the pointer has rested on the card for 250 ms
     const g = c.querySelector('.gif'); if (!g || c._wired) return; c._wired = true; let t = null;
@@ -308,17 +373,23 @@ async function render_(m, q) {
   if (q && route !== 'settings' && route !== 'workspace') { const r = videos.filter((v) => matches(v, q)); m.innerHTML = head('Search', 'Results') + `<p class="sub">${r.length} result${r.length === 1 ? '' : 's'} for “${esc(q)}”</p>` + grid(r, ['search', 'No matches', 'Try a word from the title, the transcript, a tag or a viewer’s name.']); return; }
   if (route === 'home') {
     const f = await J('/api/feed'); const sec = (t, l) => (l.length ? `<div class="sh"><h2 class="h3">${t}</h2><span class="meta">${l.length}</span></div>${grid(l)}` : '');
-    const body = sec('Continue watching', f.unfinished) + sec('Trending this week', f.trending) + sec('Recommended for you', f.recommended) + sec('From tags you follow', f.following) + sec('Latest', f.latest);
-    m.innerHTML = head('Home', `Welcome back, ${esc(settings.ownerName || 'there')}`, newMenu) + `<p class="sub">Everything here is computed on this computer.</p>` + body +
-      (videos.length ? (body ? '' : sec('Library', videos.slice(0, 8))) : emptyBox('video', 'No videos yet', 'Record your screen, or upload a video file.', recBtns)); wireNew();
+    const top = videos.filter((v) => v.status === 'ready' && v.type !== 'image').sort((a, b) => b.createdAt - a.createdAt)[0];
+    const seen = (() => { try { return localStorage.getItem('kairos.seen'); } catch { return null; } })(), fresh = top && Date.now() - top.createdAt < 15 * 60000 && seen !== top.id;
+    const body = sec('Continue watching', f.unfinished) + sec('Trending this week', f.trending) + sec('Recommended for you', f.recommended) + sec('From tags you follow', f.following) + sec('Latest', f.latest.filter((v) => v.id !== top?.id));
+    m.innerHTML = head('Home', `Welcome back, ${esc(settings.ownerName || 'there')}`, newMenu) + `<p class="sub">Everything here is computed on this computer.</p>` + (top ? (fresh ? freshBanner(top) : feat(top)) : '') + body +
+      (videos.length ? (body ? '' : sec('Library', videos.slice(0, 8))) : firstRun()); wireNew();
+    if ($('fresh')) { const id = $('fresh').dataset.id, gone = () => { try { localStorage.setItem('kairos.seen', id); } catch {} $('fresh').remove(); };
+      $('f-copy').onclick = async () => { try { await navigator.clipboard.writeText(`${location.origin}/v/${id}`); toast('Link copied'); } catch { toast('Could not copy the link', true); } }; $('f-x').onclick = gone; }
   } else if (route === 'library') {
     const tags = [...new Set(videos.flatMap((v) => v.tags || []))].sort(), fol = settings.follows || [], all = filtered(videos), shown = all.filter((v) => !window._tag || (v.tags || []).includes(window._tag));
-    m.innerHTML = head('Library', 'Videos', `<button class="btn" id="newf">${I('folder')}New folder</button>${newMenu}`) +
+    m.innerHTML = head('Library', 'Videos', `<button class="btn${SEL.on ? ' pri' : ''}" id="selbtn" aria-pressed="${SEL.on}">${I('check')}${SEL.on ? 'Done' : 'Select'}</button><span class="vt" role="group" aria-label="View"><button class="btn icon${F.view === 'grid' ? ' on' : ''}" data-v="grid" aria-pressed="${F.view === 'grid'}" aria-label="Grid view" title="Grid view">${I('view-grid')}</button><button class="btn icon${F.view === 'list' ? ' on' : ''}" data-v="list" aria-pressed="${F.view === 'list'}" aria-label="List view" title="List view">${I('view-list')}</button></span><button class="btn" id="newf">${I('folder')}New folder</button>${newMenu}`) +
       `<div class="tabs lt" id="ltabs"><button data-t="videos" class="${F.tab === 'videos' ? 'on' : ''}">Videos</button><button data-t="screenshots" class="${F.tab === 'screenshots' ? 'on' : ''}">Screenshots</button><span class="cnt">${all.length} ${F.tab === 'videos' ? 'video' : 'screenshot'}${all.length === 1 ? '' : 's'}</span></div>
       <div class="filters"><span class="meta">Filter</span>${sel('f-type', [['', 'Video type'], ['screen', 'Screen'], ['screen-cam', 'Screen + camera'], ['cam', 'Camera only'], ['upload', 'Uploaded']], F.type)}${sel('f-act', [['', 'Activity'], ['views', 'Has views'], ['none', 'No views yet'], ['comments', 'Has comments']], F.act)}${sel('f-date', [['', 'Upload date'], ['today', 'Today'], ['week', 'This week'], ['month', 'This month']], F.date)}${sel('f-sort', [['new', 'Newest to Oldest'], ['old', 'Oldest to Newest'], ['views', 'Most viewed'], ['title', 'Title A to Z']], F.sort)}</div>` +
       (tags.length ? `<div class="tags" id="tags">${tags.map((t) => `<button class="tg ${window._tag === t ? 'on' : ''}" data-t="${esc(t)}">#${esc(t)}</button>`).join('')}${window._tag ? `<button class="btn sm" id="follow">${I(fol.includes(window._tag) ? 'check' : 'plus')}${fol.includes(window._tag) ? 'Following' : 'Follow'} #${esc(window._tag)}</button>` : ''}</div>` : '') +
       grid(shown, F.tab === 'videos' ? (videos.some((v) => v.type !== 'image') ? ['search', 'No videos match', 'Change or clear the filters above.'] : ['video', 'No videos yet', 'Record your screen, or drop a video file anywhere on this page.', recBtns]) : ['image', 'No screenshots yet', 'Press ⌥⇧A to take one.']);
     wireNew(); $('newf').onclick = () => $('addf').click();
+    $('selbtn').onclick = () => { SEL.on = !SEL.on; SEL.ids.clear(); show(); };
+    document.querySelectorAll('.vt [data-v]').forEach((b) => (b.onclick = () => { F.view = b.dataset.v; try { localStorage.setItem('kairos.view', F.view); } catch {} show(); }));
     document.querySelectorAll('#ltabs button').forEach((b) => (b.onclick = () => { F.tab = b.dataset.t; show(); }));
     for (const [id, k] of [['f-type', 'type'], ['f-act', 'act'], ['f-date', 'date'], ['f-sort', 'sort']]) $(id).onchange = (e) => { F[k] = e.target.value; show(); };
     document.querySelectorAll('#tags .tg[data-t]').forEach((b) => (b.onclick = () => { window._tag = window._tag === b.dataset.t ? null : b.dataset.t; show(); }));
@@ -346,14 +417,14 @@ async function render_(m, q) {
 async function renderInsights(m) {
   const d = await J('/api/insights'), mx = Math.max(1, ...d.byDay.map((x) => x.n)), mb = (b) => (b / 1048576).toFixed(b > 1e8 ? 0 : 1) + ' MB', kv = ([k, v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   m.innerHTML = head('Admin', 'Insights') + `<p class="sub">Overview of this library.</p><div class="kvs">${[['Videos', d.videos], ['Views by others', d.views], ['Comments', d.comments], ['Markers', d.reactions], ['Secrets blurred', d.blurred], ['On disk', mb(d.storage)]].map(kv).join('')}</div>
-  <div class="sh"><h2 class="h3">Views, last 14 days</h2></div><div class="card pad"><div class="bars">${d.byDay.map((x) => `<div style="height:${(x.n / mx) * 100}%" title="${x.n}"><span>${x.day.slice(3)}</span></div>`).join('')}</div></div>
-  <div class="sh"><h2 class="h3">Top videos</h2></div><div class="card flat tw"><table class="tbl"><tr><th>Video</th><th class="n">Views</th></tr>${d.top.map((t) => `<tr><td><a class="lk" href="/v/${t.id}">${esc(t.title)}</a></td><td class="n">${t.views}</td></tr>`).join('') || '<tr><td colspan="2" class="meta">No data yet</td></tr>'}</table></div>
-  <div class="sh"><h2 class="h3">People</h2></div><div class="card flat tw"><table class="tbl"><tr><th>Who</th><th class="n">Views</th><th class="n">Time watched</th></tr>${d.people.map((p) => `<tr><td>${esc(p.name)} <span class="meta nocase">${esc(p.email)}</span></td><td class="n">${p.views}</td><td class="n">${fmt(p.watched)}</td></tr>`).join('') || '<tr><td colspan="3" class="meta">No viewers yet</td></tr>'}</table></div>
-  <div class="sh"><h2 class="h3">Activity log</h2></div><div class="card flat tw"><table class="tbl">${d.activity.map((a) => `<tr><td class="meta nocase">${new Date(a.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${esc(a.event)}</td><td>${esc(a.who || '')}</td><td>${esc(a.title || '')}</td></tr>`).join('') || '<tr><td class="meta">No activity yet</td></tr>'}</table></div>`;
+  <div class="sh"><h2 class="h3">Views, last 14 days</h2></div><div class="card pad"><div class="bars">${d.byDay.map((x) => `<div style="height:${(x.n / mx) * 100}%" title="${x.n} view${x.n === 1 ? "" : "s"}">${x.n ? `<em>${x.n}</em>` : ""}<span>${x.day.slice(3)}</span></div>`).join('')}</div></div>
+  <div class="sh"><h2 class="h3">Top videos</h2></div><div class="card flat tw"><table class="tbl"><tr><th>Video</th><th class="n">Views</th></tr>${d.top.map((t) => `<tr><td><a class="lk" href="/v/${t.id}">${esc(t.title)}</a></td><td class="n">${t.views}</td></tr>`).join('') || '<tr><td colspan="2" class="meta">No views yet. Share a link and the counts appear here.</td></tr>'}</table></div>
+  <div class="sh"><h2 class="h3">People</h2></div><div class="card flat tw"><table class="tbl"><tr><th>Who</th><th class="n">Views</th><th class="n">Time watched</th></tr>${d.people.map((p) => `<tr><td>${esc(p.name)} <span class="meta nocase">${esc(p.email)}</span></td><td class="n">${p.views}</td><td class="n">${fmt(p.watched)}</td></tr>`).join('') || '<tr><td colspan="3" class="meta">No named viewers yet. People appear here when a link asks for their email.</td></tr>'}</table></div>
+  <div class="sh"><h2 class="h3">Activity log</h2></div><div class="card flat tw"><table class="tbl">${d.activity.map((a) => `<tr><td class="meta nocase">${new Date(a.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${esc(a.event)}</td><td>${esc(a.who || '')}</td><td>${esc(a.title || '')}</td></tr>`).join('') || '<tr><td class="meta">No activity yet. Views, comments and shares are logged here.</td></tr>'}</table></div>`;
 }
 
 // ---- settings: two tabs (General = #/settings, Workspace = #/workspace). Rows are label + control + hint; sections are bordered cards with a mono label. ----
-const frow = (label, html, hint = '') => { const id = (/\bid="([^"]+)"/.exec(html) || [])[1]; return `<div class="fr${/type="checkbox"/.test(html) ? ' tog' : ''}"><div class="fl"><label${id ? ` for="${id}"` : ''}>${label}</label>${hint ? `<small>${hint}</small>` : ''}</div><div class="fc">${html}</div></div>`; };
+const frow = (label, html, hint = '') => { const id = (/\bid="([^"]+)"/.exec(html) || [])[1]; return `<div class="fr${/type="checkbox"/.test(html) ? ' tog' : ''}"><div class="flab"><label${id ? ` for="${id}"` : ''}>${label}</label>${hint ? `<small>${hint}</small>` : ''}</div><div class="fc">${html}</div></div>`; };
 const inp = (id, val = '', o = {}) => `<input class="field${o.mono ? ' mono' : ''}${o.cls ? ' ' + o.cls : ''}" id="${id}" type="${o.type || 'text'}"${o.min !== undefined ? ` min="${o.min}"` : ''} value="${esc(val)}"${o.ph ? ` placeholder="${esc(o.ph)}"` : ''}${o.type === 'password' ? ' autocomplete="off"' : ''} spellcheck="false">`;
 const section = (label, desc, body, id = '') => `<section class="card pad sec"${id ? ` id="${id}"` : ''}><h3 class="tag pri">${label}</h3>${desc ? `<p class="d">${desc}</p>` : ''}${body}</section>`;
 const stabs = (cur) => `<div class="tabs lt st" style="margin-bottom:16px">${[['settings', 'General'], ['workspace', 'Workspace']].map(([r, l]) => `<button data-r="${r}" class="${cur === r ? 'on' : ''}">${l}</button>`).join('')}</div>`;
@@ -420,7 +491,7 @@ const DEFAULT_ACCENT = '#047857', OLD_DEFAULTS = ['#047857', '#7b5cf0', '#3267d4
 async function renderWorkspace(m) {
   const s = (settings = await J('/api/settings')), b = s.brand, I_ = s.integrations || {}, acc = OLD_DEFAULTS.includes(String(b.accent || '').toLowerCase()) ? DEFAULT_ACCENT : b.accent;
   const grp = (name, set, rows) => `<div class="gh"><span class="tag">${name}</span>${set ? '<span class="badge">Configured</span>' : ''}</div>${rows}`;
-  const dl = ([k, v]) => `<div class="fr"><div class="fl"><label>${k}</label></div><div class="fc">${v}</div></div>`;
+  const dl = ([k, v]) => `<div class="fr"><div class="flab"><label>${k}</label></div><div class="fc">${v}</div></div>`;
   m.innerHTML = head('Settings', 'Settings') + stabs('workspace') +
     section('Branding', 'Make the player yours.', frow('Product name', inp('b-name', b.name)) +
       frow('Accent colour', `<div class="acc"><input type="color" id="b-acc" value="${esc(acc)}"><span class="mono num" id="b-hex">${esc(acc)}</span><button class="btn sm" id="b-accr" type="button">Reset to default</button></div>`, 'Replaces the emerald accent on the library, watch pages and share pages.') +
@@ -500,6 +571,16 @@ function liveUpdates() {
   const es = new EventSource('/api/events'); es.addEventListener('video', kick); es.addEventListener('settings', () => { if (route === 'workspace') loadModels(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
 }
+// Keyboard shortcuts: "/" search, "?" cheat-sheet, "g" then h/l/r/w/s to jump. Ignored while typing, in a dialog, or with a modifier held.
+const GO = { h: 'home', l: 'library', r: 'recent', w: 'watchlater', s: 'settings' }; let gAt = 0;
+document.addEventListener('keydown', (e) => {
+  const t = e.target, typing = t.matches?.('input, textarea, select, [contenteditable]'); if (typing || e.metaKey || e.ctrlKey || e.altKey || !$('modal').hidden) return;
+  if (e.key === 'Escape' && SEL.on) { SEL.on = false; SEL.ids.clear(); show(); }
+  else if (e.key === '/') { e.preventDefault(); $('q').focus(); $('q').select(); }
+  else if (e.key === '?') { e.preventDefault(); ask({ title: 'Keyboard shortcuts', ok: 'Close', text: `<span class="kbs"><span><kbd>/</kbd> Search</span><span><kbd>g</kbd> <kbd>h</kbd> Home</span><span><kbd>g</kbd> <kbd>l</kbd> All videos</span><span><kbd>g</kbd> <kbd>r</kbd> Recent</span><span><kbd>g</kbd> <kbd>w</kbd> Watch later</span><span><kbd>g</kbd> <kbd>s</kbd> Settings</span><span><kbd>?</kbd> This list</span><span><kbd>Esc</kbd> Close a dialog</span></span>` }); }
+  else if (e.key === 'g') gAt = Date.now();
+  else if (GO[e.key] && Date.now() - gAt < 1200) { gAt = 0; location.hash = '#/' + GO[e.key]; }
+});
 (async () => {
   UI.fill(document); me = await J('/api/me'); UI.brand(me.brand); renderBrand(); $('who').textContent = UI.initials(me.name || me.brand.name);
   if (location.pathname === '/settings') location.hash = '#/settings'; settings = await J('/api/settings'); await refresh(); show(); liveUpdates();

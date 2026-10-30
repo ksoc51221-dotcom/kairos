@@ -197,7 +197,7 @@
       try {
         await o.api(`/api/videos/${o.videoId}/redact/apply`, { body: { ranges: sel.map((p) => ({ from: r2(p.from), to: r2(p.to) })), rewriteNotes: !!st.rewrite } });
         Object.assign(st, { open: false, text: '', res: null, err: null, applyErr: null, picked: new Set(), prev: '', saving: false, confirmDel: false, pick: freshPick(), pubAt: 0 });
-        o.toast('Bleeping the audio...');
+        o.toast('Bleeping the audio…');
         if (o.onChange) o.onChange({ stage: 'Bleeping speech', editError: null }); else if (st.paint) st.paint();
       } catch (e) { st.saving = false; st.applyErr = errOf(e); if (st.paintRes) st.paintRes(); }
     }

@@ -104,7 +104,7 @@ function link(label, fn) { const b = document.createElement('button'); b.classNa
 // and learns a new sign (two takes); "Reset" goes back to the default. Only the hand-shape numbers and the sketch are stored, never a picture.
 const SIGN_ROWS = [
   { id: 'pause', name: 'Pause', plain: 'Open palm', hold: '1 s' },
-  { id: 'stop', name: 'Stop', plain: 'Closed fist', hold: '2 s' },
+  { id: 'stop', name: 'Stop', plain: 'Closed fist', hold: '1 s' },
   { id: 'zoom', name: 'Zoom in', plain: 'Two fingers crossed', how: 'keep holding: the longer, the deeper' },
   { id: 'zoomout', name: 'Zoom out', plain: 'Both index fingers crossed in an X', how: 'keep holding until it is wide again' },
 ];
@@ -163,7 +163,7 @@ function paintSettings(body) {
   t.appendChild(toggle('Cursor ring while I present (only I see it)', 'cursorFx'));
   t.appendChild(toggle('Record clicks for effects in the player', 'clickFx'));
   t.appendChild(toggle('Privacy Guard: cover secrets automatically', 'pg'));
-  const gt = toggle('Hand signs (beta): pause, stop and zoom with your hand', 'gestures'); gt.title = 'Camera on, while recording: hold your open palm for 1 s to pause or resume, a closed fist for 2 s to stop, cross two fingers and keep holding to zoom in slowly (the longer, the deeper), or make an X with both index fingers and keep holding to zoom back out. Zoom signs are ignored while paused. Teach it your own signs below. On by default.'; t.appendChild(gt);
+  const gt = toggle('Hand signs (beta): pause, stop and zoom with your hand', 'gestures'); gt.title = 'Camera on, while recording: hold your open palm for 1 s to pause or resume, a closed fist for 1 s to stop (keep it still, and show it after your hand was away: a fist that was already up when you started does not count), cross two fingers and keep holding to zoom in slowly (the longer, the deeper), or make an X with both index fingers and keep holding to zoom back out. Zoom signs are ignored while paused. Teach it your own signs below. On by default.'; t.appendChild(gt);
   pad.appendChild(t);
   pad.appendChild(paintSigns());
   const k = document.createElement('div'); k.className = 'keys';

@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Kairos: screen & camera recorder",
+  "short_name": "Kairos",
+  "version": "0.1.2",
+  "description": "Record your screen, your camera, or both from any tab. Local-first: recordings stay in your browser until you save them.",
+  "minimum_chrome_version": "116",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "Kairos",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+  },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["storage", "offscreen", "unlimitedStorage", "activeTab", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["lib/core.js", "lib/icons.js", "content/styles.js", "content/content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    { "resources": ["bubble.html"], "matches": ["http://*/*", "https://*/*"] }
+  ],
+  "commands": {
+    "_execute_action": { "suggested_key": { "default": "Alt+Shift+R" }, "description": "Open the Kairos recorder" },
+    "toggle-pause": { "suggested_key": { "default": "Alt+Shift+P" }, "description": "Pause or resume the recording" },
+    "stop-recording": { "suggested_key": { "default": "Alt+Shift+S" }, "description": "Stop and save the recording" }
+  }
+}

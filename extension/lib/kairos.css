@@ -1,0 +1,29 @@
+/* Kairos tokens for the extension's own pages (popup, library, permissions). Same palette as src/shared/ui.css: slate surfaces, one emerald accent,
+   red for record and destructive things. The in-page launcher (content/styles.js) carries its own copy because it lives in a shadow root. */
+:root {
+  --font: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --bg: #0b1120; --surface: #0f172a; --raised: #1e293b; --raised-hover: #29364b; --line: #334155;
+  --ink: #cbd5e1; --ink-2: #94a3b8; --ink-strong: #f8fafc;
+  --accent: #047857; --accent-hover: #0a8a67; --accent-lt: #34d399;
+  --rec: #dc2626; --red: #f87171;
+  --warn-bg: #3a2c0a; --warn-line: #6b5314; --warn-ink: #ffd685;
+  --r: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+a { color: var(--accent-lt); }
+:focus-visible { outline: 2px solid var(--accent-lt); outline-offset: 2px; }
+[hidden] { display: none !important; }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg.i .f { fill: currentColor; stroke: none; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 14px; border-radius: var(--r); background: var(--raised); border: 1px solid var(--line); font-weight: 600; color: var(--ink); transition: background 120ms var(--ease); }
+.btn:hover { background: var(--raised-hover); }
+.btn.primary { background: var(--accent); border-color: color-mix(in srgb, var(--accent), black 25%); color: #fff; }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.danger { color: var(--red); }
+.btn:disabled { opacity: .5; cursor: default; }
+.mono { font-family: var(--mono); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

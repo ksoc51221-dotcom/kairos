@@ -1,14 +1,15 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kairos</title><!--OG-->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kairos</title><!--OG-->
 <link rel="stylesheet" href="/static/app.css"><style>html,body{margin:0;height:100%;background:#000}.stage{border-radius:0;height:100%;aspect-ratio:auto}#root{height:100%}
 #proc{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:var(--stage);text-align:center;z-index:6}#proc[hidden]{display:none}
 a.wm{position:absolute;left:10px;top:10px;font:600 11px/14px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(15,23,42,.72);padding:5px 8px;border-radius:4px;z-index:5}</style></head><body>
-<div id="root"><div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><a class="wm" id="wm" target="_blank">Kairos</a><div id="proc" hidden></div></div></div>
+<main id="root"><h1 class="sr" id="h1"></h1><div class="stage" id="stage"><div id="zoomwrap"><video id="v" controls playsinline></video><div id="ov"></div></div><div id="cap"></div><a id="cta" hidden></a><a class="wm" id="wm" target="_blank">Kairos</a><div id="proc" hidden></div></div></main>
 <script src="/static/ui.js"></script><script src="/static/player.js"></script><script>
 const { $, api, gateUI, attach } = SP; const id = location.pathname.split('/').pop();
 (async () => {
   const me = await api('/api/me'); UI.brand(me.brand);
   $('wm').hidden = me.brand.hideBranding; $('wm').textContent = me.brand.name; $('wm').href = `/v/${id}`;
   let vm; try { vm = await api(`/api/v/${id}`); } catch (e) { return gateUI($('root'), id, e, () => location.reload()); }
+  $('h1').textContent = vm.title || 'Video';
   if (vm.status !== 'ready') { $('proc').hidden = false; $('proc').textContent = 'Processing…'; setTimeout(() => location.reload(), 4000); return; }
   $('v').src = `/media/${id}/video.mp4`; $('v').poster = `/media/${id}/thumb.jpg`; const ctl = attach({ stage: $('stage'), video: $('v'), vm, embed: true }); if (vm.captionsDefault) ctl.setCaptions('original').catch(() => {});
 })();

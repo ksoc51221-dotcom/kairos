@@ -8,7 +8,7 @@
 [![Latest release](https://img.shields.io/github/v/release/ksoc51221-dotcom/kairos)](https://github.com/ksoc51221-dotcom/kairos/releases/latest)
 [![MIT licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
-**[⬇ Download Kairos for Mac (Apple silicon)](https://github.com/ksoc51221-dotcom/kairos/releases/latest)** · [Run from source](#run-it-about-5-minutes) · [How it works](#how-it-works) · [Feature checklist](docs/FEATURES.md)
+**[⬇ Download Kairos for Mac (Apple silicon)](https://github.com/ksoc51221-dotcom/kairos/releases/latest)** · [No Mac app? Use the browser extension](extension/README.md) · [Run from source](#run-it-about-5-minutes) · [How it works](#how-it-works) · [Feature checklist](docs/FEATURES.md)
 
 ![A shared recording: Privacy Guard cleared it, and the AI Actions tab turned it into an action plan an agent can run](docs/images/watch-action-plan.jpg)
 
