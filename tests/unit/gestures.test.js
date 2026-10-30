@@ -55,7 +55,7 @@ test('gaps: a pause sign bridges a longer gap (up to 0.9 s) but the time it was 
   assert.deepEqual(fires(run([...every(0, 500, S), ...every(625, 1000, null), ...every(1125, 3000, S)])), [[2125, S]], 'a stop gets no extra reach: a fist that vanishes for 0.5 s starts over');
 });
 
-test('gaps: a stretch with no samples at all (the loop stalled) restarts on more than 450 ms, and keeps on 450 or less', () => {
+test('gaps: a stretch with no samples at all (the loop stalled) restarts on more than 500 ms, and keeps on 500 or less', () => {
   assert.deepEqual(fires(run([[0, S], [200, S], [400, S], [1000, S], [1100, S]])), [], '600 ms of silence resets');
   assert.deepEqual(fires(run([[0, S], [400, S], [800, S], [1000, S]])), [[1000, S]], '400 ms gaps are kept');
 });
@@ -157,14 +157,14 @@ test('step is pure: it never changes the state it was given, and the same input 
 
 test('commands: pause and stop = the ⌥⇧P / ⌥⇧S message after 1 s, zoom in and out = holds that count after 0.4 s; defaults are palm, fist, crossed fingers and an X of both index fingers', () => {
   assert.deepEqual(G.COMMANDS, {
-    pause: { control: 'toggle-pause', holdMs: 1000, minScore: 0.5, maxGapMs: 900, duty: 0.5 },
+    pause: { control: 'toggle-pause', holdMs: 1000, minScore: 0.5, keepScore: 0.4, maxGapMs: 900, duty: 0.5, still: 0.15 },
     stop: { control: 'stop', holdMs: 1000, minScore: 0.6, fresh: true, still: 0.1 },
     zoom: { control: 'zoom-in', continuous: true, holdMs: 400, minScore: 0.5 },
     zoomout: { control: 'zoom-out', continuous: true, holdMs: 400, minScore: 0.5, twoHands: true },
   });
   assert.deepEqual(G.DEFAULT_SIGN, { pause: 'Open_Palm', stop: 'Closed_Fist', zoom: 'crossed', zoomout: 'cross-x' });
   assert.deepEqual(G.NAMES, { pause: 'Pause', stop: 'Stop', zoom: 'Zoom in', zoomout: 'Zoom out' });
-  assert.deepEqual([G.CFG.holdMs, G.CFG.breakMs, G.CFG.cooldownMs, G.CFG.releaseMs, G.CFG.minScore, G.CFG.hz, G.CFG.maxFrame], [1000, 450, 1500, 800, 0.5, 8, 320]);
+  assert.deepEqual([G.CFG.holdMs, G.CFG.breakMs, G.CFG.cooldownMs, G.CFG.releaseMs, G.CFG.minScore, G.CFG.hz, G.CFG.maxFrame], [1000, 500, 1500, 800, 0.5, 8, 320]);
 });
 
 // ---------------- classify: which command is a hand asking for ----------------
@@ -221,7 +221,8 @@ test('classify: by default an open palm is pause, a closed fist is stop, crossed
   assert.equal(G.classify({ label: 'Open_Palm', score: 0.66 }).id, 'pause');
   assert.equal(G.classify(HANDS.find((h) => h.label === 'Closed_Fist')).id, 'stop', 'a real fist');
   assert.equal(G.classify({ label: 'Closed_Fist', score: 0.95 }), null, 'a stop never rests on MediaPipe\'s label alone: with no landmarks to read, a fist is nothing');
-  assert.equal(G.classify({ label: 'Open_Palm', score: 0.4 }), null);
+  assert.equal(G.classify({ label: 'Open_Palm', score: 0.39 }), null);
+  assert.deepEqual(G.classify({ label: 'Open_Palm', score: 0.4 }), { id: 'pause', score: 0.4 }, 'between keepScore and minScore: passed down, step() decides');
   for (const l of ['Thumb_Up', 'Victory', 'Pointing_Up', 'None']) assert.equal(G.classify({ label: l, score: 0.9 }), null, l);
   assert.equal(G.classify(null), null);
   const z = G.classify({ label: 'Victory', score: 0.8, wl: CROSSED, lm: image(0.31, 0.42) });
@@ -484,7 +485,7 @@ test('classify: the label only helps - a thumb up, a half closed hand and a spre
 });
 
 // ---------------- the stop guards: a fist is a common resting hand ----------------
-test('fresh: a fist that was already up when the stream began, or never left, is not a stop; it has to go away for more than 0.45 s and come back', () => {
+test('fresh: a fist that was already up when the stream began, or never left, is not a stop; it has to go away for more than 0.5 s and come back', () => {
   assert.deepEqual(fires(run(every(0, 4000, S), G.CFG, true)), [], 'a fist up from the very first sample (a recording that starts with a hand on the camera)');
   assert.deepEqual(fires(run([...every(0, 2000, S), ...every(2125, 2375, null), ...every(2500, 4000, S)], G.CFG, true)), [], 'a short dip (0.375 s) is a flicker, not leaving');
   assert.deepEqual(fires(run([...every(0, 2000, S), ...every(2125, 2750, null), ...every(2875, 4500, S)], G.CFG, true)), [[3875, S]], 'gone for 0.75 s and back: a new sign, held for 1 s');
@@ -501,7 +502,7 @@ test('still: a stop needs a still hand - a fist that is swinging about is not a 
   assert.ok(f[0][0] > 1500 && f[0][0] <= 2500, 'fires once the hand has been still for a moment, not while it moves: ' + f[0][0]);
   assert.ok(out.filter((o) => o.t >= 1000 && o.t <= 1500).every((o) => o.progress > 0.9 && !o.fire), 'the ring waits full while the hand moves');
   assert.deepEqual(fires(run(every(0, 2000, S).map(([t, l, s]) => [t, l, s, at(0.4 + 0.005 * (t % 250 ? 1 : 0))]))), [[1000, S]], 'a hand that is only trembling (a few millimetres) is still');
-  assert.deepEqual(fires(run(every(0, 1500, P).map(([t, l, s]) => [t, l, s, at(0.1 + 0.04 * (t / 125))]))), [[1000, P]], 'pause has no such rule: a palm waved in the air still pauses');
+  assert.deepEqual(fires(run(every(0, 1500, P).map(([t, l, s]) => [t, l, s, at(0.1 + 0.04 * (t / 125))]))), [], 'pause has a looser rule (0.15): a palm waved across the picture waits too');
 });
 
 test('flicker: a palm that drops out for up to 0.9 s still pauses after about a second of palm, and a fist that flickers for 0.375 s still stops after 1 s', () => {
@@ -547,4 +548,32 @@ test('bubble: the recognizer options use names MediaPipe knows and numbers from 
     assert.ok(new RegExp('\\b' + name + '\\b').test(types), name + ' is a GestureRecognizerOptions field');
   }
   assert.ok(typeof G.CFG.minDetect === 'number' && G.CFG.minDetect > 0 && G.CFG.minDetect < 0.5);
+});
+
+test('K-5: a gap is measured from the last good sample, so exactly breakMs is forgiven and one sample more is not', () => {
+  // stop (no maxGapMs): good at 0..500, then 500 ms of nothing, good again at 1000 keeps the clock; 625 ms of nothing (back at 1125) restarts it
+  assert.deepEqual(fires(run([...every(0, 500, S), ...every(1000, 1250, S)])), [[1000, S]]);
+  assert.deepEqual(fires(run([...every(0, 500, S), ...every(1125, 2500, S)])), [[2125, S]]);
+  // pause (maxGapMs 900): the time beyond breakMs is taken off the hold from the last good sample: palm 0..500, back at 1125 = 625 gap, 125 not counted
+  const out = run([...every(0, 500, P), ...every(625, 1000, null), ...every(1125, 2500, P)]);
+  assert.deepEqual(fires(out), [[1125, P]]);
+  assert.ok(out.find((o) => o.t === 1000).progress >= 0.5, 'the ring does not empty during the gap');
+});
+
+test('keepScore: a pause palm that dips to 0.4-0.5 keeps its hold but cannot start one; stop has no such leeway', () => {
+  const dip = [...every(0, 375, P, 0.7), ...every(500, 750, P, 0.42), ...every(875, 1250, P, 0.7)];
+  assert.deepEqual(fires(run(dip)), [[1000, P]], 'a dip is not a break');
+  assert.deepEqual(fires(run(every(0, 3000, P, 0.45))), [], 'a hand that never reaches 0.5 does not start a pause');
+  assert.equal(G.classify({ label: 'Open_Palm', score: 0.9, wl: null }, {}).id, 'pause');
+  assert.deepEqual(fires(run([...every(0, 375, S, 0.9), ...every(500, 875, S, 0.5), ...every(1000, 2500, S, 0.9)])), [[2000, S]], 'a stop dip below 0.6 longer than the gap forgiven breaks it: it starts over');
+});
+
+test('still: a pause palm that is waved about waits (ring full) and fires once it settles', () => {
+  const wave = (from, to) => { const a = []; for (let t = from, i = 0; t <= to; t += 125, i++) a.push([t, P, 0.9, { x: i % 2 ? 0.3 : 0.6, y: 0.5 }]); return a; };
+  const still = (from, to) => { const a = []; for (let t = from; t <= to; t += 125) a.push([t, P, 0.9, { x: 0.5, y: 0.5 }]); return a; };
+  const waving = run(wave(0, 1500));
+  assert.deepEqual(fires(waving), []);
+  assert.equal(waving[10].progress, 0.999, 'ring waits full');
+  assert.deepEqual(fires(run([...wave(0, 1000), ...still(1125, 2500)])).map((f) => f[1]), [P], 'fires once the hand has settled');
+  assert.deepEqual(fires(run(still(0, 1500))), [[1000, P]], 'a held palm is unaffected');
 });

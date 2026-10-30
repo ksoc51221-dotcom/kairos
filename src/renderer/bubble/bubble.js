@@ -178,6 +178,7 @@ v.addEventListener('loadedmetadata', paintZoom); v.addEventListener('resize', pa
 
 // ---- the loop ----
 const PAUSED_HINT = 'Paused · nothing is recorded · hold your palm to resume';
+let firedAt = -1e9, firedStop = false;
 function commandTick(hands, t0) {
   // the X of both index fingers is only looked for while the picture is zoomed in (and unless a one-hand sign was taught for zoom out): that is when two hands are being looked for
   const x = hands.length > 1 && gs.numHands > 1 && !custom('zoomout') && Z.isZoomed(zm) ? G.crossXScore(hands, gs.canvas.width / gs.canvas.height) : 0;
@@ -185,7 +186,8 @@ function commandTick(hands, t0) {
   const c = x >= G.COMMANDS.zoomout.minScore ? { id: 'zoomout', score: x } : pick.c;
   const out = G.step(gs.state, { t: t0, label: c && c.id, score: c ? c.score : 0, at: c && c.at });
   const dir = out.seen === 'zoom' ? 1 : out.seen === 'zoomout' ? -1 : 0, moving = dir !== 0 && !gs.paused;
-  gs.state = out.state; holdRing(out.progress, out.seen && G.COMMANDS[out.seen].control === 'stop'); reticle(out.seen === 'zoom' && moving ? out.at : null);
+  gs.state = out.state; if (out.fire) { firedAt = t0; firedStop = G.COMMANDS[out.fire].control === 'stop'; }
+  holdRing(t0 - firedAt < 400 ? 1 : out.progress, t0 - firedAt < 400 ? firedStop : out.seen && G.COMMANDS[out.seen].control === 'stop'); reticle(out.seen === 'zoom' && moving ? out.at : null); // a command that just fired keeps the ring full for 0.4 s: "it went through" before the app's own answer (the pill) arrives
   // the zoom sign (or the zoom-out sign) is held long enough: the picture goes in (out). Never while paused, and no zooming out of a picture that is whole
   zrSample(t0, moving && !!c && c.id === out.seen && out.held >= G.COMMANDS[out.seen].holdMs && (dir > 0 || Z.isZoomed(zm)), out.at, dir || 1);
   showHint(!out.seen || zr ? '' : dir && gs.paused ? PAUSED_HINT : out.seen === 'zoomout' && !Z.isZoomed(zm) ? '' : hintFor(out.seen)); // while the picture is zooming, its own pill (zrFrame) says how far

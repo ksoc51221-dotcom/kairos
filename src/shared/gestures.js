@@ -9,7 +9,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   const CFG = {
     holdMs: 1000,      // default hold: the same sign must be held this long (a command can set its own)
-    breakMs: 450,      // a gap in the sign shorter than this is forgiven: 3 missed samples in a row at 7-8 a second (real hands flicker); a command can set its own
+    breakMs: 500,      // the time between two good samples that is forgiven: 3 missed samples in a row at 8 a second are 4 intervals = 500 ms (real hands flicker); a command can set its own
     cooldownMs: 1500,  // after a command fires, signs are ignored for this long
     releaseMs: 800,    // ...and the sign that fired must be let go (hand down, or another sign) this long before it can fire again
     minScore: 0.5,     // default confidence needed for a sample to count (a command can set its own)
@@ -32,7 +32,7 @@
   // Numbers come from a real recording (Phase 8 follow-up): an open palm scores 0.53-0.78 (mean 0.66), a closed fist 0.71-0.88, so the palm bar is
   // low. A stop ends the recording, so it needs a clearer score and its guards, but only the same 1 s hold as pause (it was 2 s).
   const COMMANDS = {
-    pause: { control: 'toggle-pause', holdMs: 1000, minScore: 0.5, maxGapMs: 900, duty: 0.5 },
+    pause: { control: 'toggle-pause', holdMs: 1000, minScore: 0.5, keepScore: 0.4, maxGapMs: 900, duty: 0.5, still: 0.15 },
     stop: { control: 'stop', holdMs: 1000, minScore: 0.6, fresh: true, still: 0.1 },
     zoom: { control: 'zoom-in', continuous: true, holdMs: 400, minScore: 0.5 },
     zoomout: { control: 'zoom-out', continuous: true, holdMs: 400, minScore: 0.5, twoHands: true },
@@ -148,7 +148,8 @@
   //          the raw frame), wl = 21 world landmarks. Any of them may be missing.
   //   signs  { pause?: { ex }, stop?: { ex }, zoom?: { ex } }: the person's own signs (ex = their templates, each the 32 numbers). A command without
   //          one answers to its default sign.
-  // Returns the command this hand is asking for with a 0..1 score, or null. When two commands qualify the better score wins.
+  // Returns the command this hand is asking for with a 0..1 score, or null. When two commands qualify the better score wins. A score between a command's
+  // keepScore and minScore is passed down too: step() lets it continue a hold that minScore started, but never start one.
   // The default palm and fist are read from the world landmarks first (palmOf / fistOf), so a tilted hand still counts; MediaPipe's label then only HELPS the palm:
   // when it says Open_Palm and the landmarks do not flatly contradict it (floor), the score is the better of the two. The fist is landmarks only: a stop ends the
   // recording, and the landmarks alone score 0.6 or more on 99 % of real fists, so the label has nothing to add but the risk of a thumb up or a half closed hand
@@ -172,7 +173,7 @@
       else if (COMMANDS[id].twoHands) score = 0; // the default needs both hands: crossXScore
       else if (id === 'zoom') score = s ? crossedOf(s) : 0;
       else score = defaultScore(id, hand, s);
-      if (score >= COMMANDS[id].minScore && (!best || score > best.score)) best = { id, score };
+      if (score >= (COMMANDS[id].keepScore ?? COMMANDS[id].minScore) && (!best || score > best.score)) best = { id, score };
     }
     if (best && hand.lm && hand.lm.length >= 21) best.at = tipPoint(hand.lm);
     return best;
@@ -223,7 +224,7 @@
   //   at        (out) the position at the latest good sample, with `seen` and `fire`
   //   held      ms the sign in `seen` has been held (0 without one); a continuous sign is under way once held >= its holdMs
   // The state is returned, never mutated: feed it back in with the next sample.
-  // A hold survives a gap of up to breakMs, measured from the last good sample, or from the first bad one after it. A command with maxGapMs survives a
+  // A hold survives a gap of up to breakMs, measured from the last good sample to the next one. A command with maxGapMs survives a
   // longer one too (the ring stops where it was), but the time beyond breakMs is not counted: the hold is that much later.
   function step(state, sample, cfg = CFG) {
     const r = stepCore(state, sample, cfg);
@@ -246,7 +247,7 @@
       else if (t - s.freeSince >= cfg.releaseMs) s = { ...s, lock: null, freeSince: 0 };
     }
     if (t < s.cooldownUntil || (shown && label === s.lock)) return { state: s.label ? { ...s, label: null, since: 0, lastSeen: 0, lostAt: 0 } : s, progress: 0, fire: null, seen: null, at: null };
-    const base = s.lostAt || s.lastSeen;
+    const base = s.lastSeen; // gaps are measured from the last GOOD sample (not the first bad one, which would forgive one sample too many)
     const alive = !!s.label && t - base <= reachOf(s.label, cfg); // is the hold still going at t?
     const same = alive && s.label === label;
     const good = shown && (same || score >= bar); // a hold that is going on needs only keepScore, a new one the full bar
