@@ -26,7 +26,7 @@ async function recoverOrphans() {
   }
 }
 
-// ---- thumbnails: drawn once from the video itself, then saved (only needed for the GRID view) ----
+// ---- thumbnails: drawn once from the video itself, then saved (for both ROWS and GRID) ----
 function makeThumb(rec) {
   return new Promise((resolve) => {
     const v = document.createElement('video');
@@ -79,6 +79,14 @@ async function showList() {
   const grid = $('grid'); grid.replaceChildren(); grid.classList.add('i-stagger'); paintToggle();
   recs.forEach((r, i) => { const c = card(r); c.style.setProperty('--i', Math.min(i, 8)); grid.appendChild(c); });
 }
+// ROWS: the thumbnail is saved/generated only when its row scrolls into view
+const THUMB_IO = 'IntersectionObserver' in self ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { THUMB_IO.unobserve(e.target); e.target._go(); } }), { rootMargin: '200px' }) : null;
+function lazyThumb(r, box) {
+  const paint = (b) => { box.style.backgroundImage = `url(${url(b)})`; box.classList.add('has'); };
+  if (r.thumb) { paint(r.thumb); return; }
+  box._go = () => makeThumb(r).then(async (b) => { if (!b) return; paint(b); const fresh = await DB.getRecording(r.id); if (fresh) { fresh.thumb = b; await DB.putRecording(fresh); } });
+  if (THUMB_IO) THUMB_IO.observe(box); else box._go();
+}
 function card(r) {
   const c = el('article', VIEW === 'grid' ? 'card tile' : 'card');
   if (VIEW === 'grid') {
@@ -96,12 +104,14 @@ function card(r) {
   }
   const open = el('button', 'open'); open.setAttribute('aria-label', 'Play ' + r.title); open.onclick = () => { location.hash = '#/v/' + r.id; };
   const glyph = el('span', 'glyph'); glyph.innerHTML = KairosIcons.svg(MODE_ICON[r.mode] || 'film');
+  glyph.append(el('span', 'dur', C.formatTime(r.durationMs || 0)));
+  lazyThumb(r, glyph);
   c.title = metaOf(r);
   const tools = el('div', 'tools');
   const dl = el('button', 'icon-btn'); dl.title = 'Download'; dl.setAttribute('aria-label', 'Download'); dl.innerHTML = KairosIcons.svg('download'); dl.onclick = () => download(r);
   const del = el('button', 'icon-btn danger'); del.title = 'Delete'; del.setAttribute('aria-label', 'Delete'); del.innerHTML = KairosIcons.svg('trash'); del.onclick = () => remove(r);
   tools.append(dl, del);
-  c.append(open, glyph, el('span', 'name', r.title), el('span', 'dur', C.formatTime(r.durationMs || 0)), el('span', 'when', when(r.createdAt)), el('span', 'enter', '↵'), tools);
+  c.append(open, glyph, el('span', 'name', r.title), el('span', 'when', when(r.createdAt)), el('span', 'enter', '↵'), tools);
   return c;
 }
 

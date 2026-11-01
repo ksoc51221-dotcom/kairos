@@ -71,11 +71,15 @@ select.field:hover { background-color: var(--raised); }
 
 /* ---- titles-only rows ---- */
 .rows { display: flex; flex-direction: column; border-top: 1px solid var(--hair); }
-.row { position: relative; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto 44px 52px 14px; align-items: center; gap: 14px; min-height: 44px; padding: 0 12px 0 14px; border-bottom: 1px solid var(--hair); color: inherit; transition: background var(--t-quick) var(--ease); }
+.row { position: relative; display: grid; grid-template-columns: 96px minmax(0, 1fr) 44px 52px 14px; align-items: center; gap: 14px; min-height: 66px; padding: 6px 12px 6px 14px; border-bottom: 1px solid var(--hair); color: inherit; transition: background var(--t-quick) var(--ease); }
 .row:hover, .row:focus-visible { background: var(--raised); outline: none; }
 .row:focus-visible, .row.picked { background: var(--selected); box-shadow: inset 2px 0 0 var(--accent-text); }
-.row .rg { position: relative; display: grid; place-items: center; color: var(--ink-3); }
-.row .rg svg.i { width: 16px; height: 16px; }
+.row .rg { position: relative; display: grid; place-items: center; width: 96px; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--hair); border-radius: var(--r-chip); background: var(--raised); color: var(--ink-3); }
+.row .rg > svg.i { width: 18px; height: 18px; }
+.row .rg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 200ms var(--ease); } .row .rg img.in { opacity: 1; }
+.row .rg .rd { position: absolute; right: 3px; bottom: 3px; padding: 1px 4px; border-radius: var(--r-chip); background: rgba(0, 0, 0, .8); color: #fff; font-size: 10px; line-height: 12px; letter-spacing: .02em; }
+.row .rg .rd.bad { color: #fff; background: var(--alert); }
+.row .rg .ck { left: 3px; top: 3px; margin: 0; }
 .row .rt { min-width: 0; display: flex; align-items: center; gap: 8px; font: 500 13px/20px var(--sans); color: var(--ink); }
 .row .rt span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .rt svg.i { width: 13px; height: 13px; color: var(--ink-3); }
@@ -88,10 +92,11 @@ select.field:hover { background-color: var(--raised); }
 .row .tools button { width: 24px; height: 24px; background: none; color: var(--ink-3); }
 .row .tools button:hover { background: var(--selected); color: var(--ink); }
 .row .tools svg.i { width: 14px; height: 14px; }
-.row .ck { left: 0; top: 50%; margin-top: -10px; position: absolute; }
-.row .upb { grid-column: 2 / 5; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.row .rg .ck { position: absolute; z-index: 2; }
+.row .urd { font: 400 11px/14px var(--mono); letter-spacing: .04em; color: var(--ink-3); white-space: nowrap; } .row .urd.bad { color: var(--alert); }
+.row .upb { grid-column: 2 / 4; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .row .upb .upbar { width: 120px; background: var(--selected); } .row .upb .upbar i { background: var(--accent-text); }
-@media (max-width: 640px) { .row { grid-template-columns: 20px minmax(0, 1fr) auto 40px; gap: 10px; padding: 0 10px; } .row .tools, .row .rh { display: none; } }
+@media (max-width: 640px) { .row { grid-template-columns: 72px minmax(0, 1fr) 40px; gap: 10px; padding: 6px 10px; min-height: 52px; } .row .rg { width: 72px; } .row .rg .rd { font-size: 9px; line-height: 11px; padding: 1px 3px; } .row .upb { grid-column: 2 / 4; } .row .tools, .row .rh { display: none; } }
 @media (hover: none) { .row .rh { display: none; } }
 
 /* ---- video cards (GRID) ---- */
@@ -318,12 +323,13 @@ const ACCESS = { link: 'Link', email: 'Email', password: 'Password', private: 'P
 const nReact = (v) => ['good', 'question', 'issue', 'idea', 'key'].reduce((a, k) => a + (Number((v.reactions || {})[k]) || 0), 0);
 const agoS = (t) => { const s = (Date.now() - t) / 1000; if (s < 45) return 'NOW'; const u = [[60, 'M'], [3600, 'H'], [86400, 'D'], [604800, 'W'], [2592000, 'MO'], [31536000, 'Y']]; let k = 0; while (k < u.length - 1 && s >= u[k + 1][0]) k++; return Math.floor(s / (k ? u[k][0] : 60)) + u[k][1]; };
 const glyph = (v) => (v.type === 'image' ? 'image' : v.source === 'upload' ? 'upload' : v.mode === 'cam' ? 'video' : 'board');
-// ROWS: type glyph · title · mono duration · mono relative time. Hover fades the background and shows a mono ↵; the two quick actions sit on the right.
+// ROWS: 16:9 thumbnail (duration chip in its corner) · title · mono duration · mono relative time. Hover fades the background and shows a mono ↵; the two quick actions sit on the right.
 const row = (v) => { const mode = v.privacy?.mode || 'link', ready = v.status === 'ready', p = pct(v);
-  const mid = v.status === 'failed' ? '<span class="rd bad">FAILED</span>' : !ready ? `<span class="rd">PROCESSING${p != null ? ' ' + String(p).padStart(2, '0') + '%' : ''}</span>` : `<span class="rd">${v.type === 'image' ? '' : fmt(v.duration)}</span>`;
-  return `<a class="row" data-key="${v.id}" href="/v/${v.id}" title="${esc(ACCESS[mode] || mode)}"><span class="rg"><span class="ck" aria-hidden="true"></span>${I(glyph(v))}</span><span class="rt"><span>${esc(v.title)}</span>${mode !== 'link' ? I('lock') : ''}</span>${mid}<span class="ra" title="${esc(ago(v.createdAt))}">${agoS(v.createdAt)}</span>
+  const chip = v.status === 'failed' ? '<span class="rd bad">FAILED</span>' : !ready ? `<span class="rd">${p != null ? String(p).padStart(2, '0') + '%' : '···'}</span>` : v.type === 'image' ? '' : `<span class="rd">${fmt(v.duration)}</span>`;
+  const img = v.status === 'failed' ? '' : `<img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')" onerror="this.remove()">`;
+  return `<a class="row" data-key="${v.id}" href="/v/${v.id}" title="${esc(ACCESS[mode] || mode)}"><span class="rg">${I(glyph(v))}${img}<span class="ck" aria-hidden="true"></span>${chip}</span><span class="rt"><span>${esc(v.title)}</span>${mode !== 'link' ? I('lock') : ''}</span><span class="ra" title="${esc(ago(v.createdAt))}">${agoS(v.createdAt)}</span>
   <span class="tools"><button data-a="later" data-id="${v.id}" title="Watch later" aria-label="Watch later">${I(v.watchLater ? 'bookmark-on' : 'bookmark')}</button><button data-a="del" data-id="${v.id}" title="Delete" aria-label="Delete">${I('trash')}</button></span><span class="rh" aria-hidden="true">↵</span></a>`; };
-const upRow = (u) => `<div class="row" data-key="up-${u.id}"><span class="rg">${I('upload')}</span><span class="rt"><span>${esc(u.name)}</span></span>${u.error ? `<span class="upb"><span class="rd bad">${esc(u.error)}</span></span>` : `<span class="upb"><span class="rd">UPLOADING ${String(u.pct).padStart(2, '0')}%</span><span class="upbar"><i style="width:${u.pct}%"></i></span></span>`}</div>`;
+const upRow = (u) => `<div class="row" data-key="up-${u.id}"><span class="rg">${I('upload')}</span><span class="rt"><span>${esc(u.name)}</span></span>${u.error ? `<span class="upb"><span class="urd bad">${esc(u.error)}</span></span>` : `<span class="upb"><span class="urd">UPLOADING ${String(u.pct).padStart(2, '0')}%</span><span class="upbar"><i style="width:${u.pct}%"></i></span></span>`}</div>`;
 const card = (v) => { const mode = v.privacy?.mode || 'link', by = v.by || settings.ownerName || 'You', sp = (v.spaces || []).length;
   return `<a class="vc card hov" data-key="${v.id}" href="/v/${v.id}"><div class="th"><span class="ck" aria-hidden="true"></span>${v.status === 'failed' ? '' : `<img loading="lazy" decoding="async" alt="" src="/media/${v.id}/thumb.jpg" onload="this.classList.add('in')">`}${v.hasGif ? `<div class="gif" data-gif="/media/${v.id}/preview.gif"></div>` : ''}
   ${v.status !== 'ready' ? `<div class="proc">${v.status === 'failed' ? `${I('x-circle')}<span class="meta">Failed</span>` : `${ring(pct(v))}<span class="meta">${esc((v.stage || 'Processing').replace(/\s*\d+%$/, ''))}${pct(v) != null ? ' ' + pct(v) + '%' : '…'}</span>`}</div>` : ''}
@@ -340,7 +346,7 @@ const freshBanner = (v) => `<div class="fresh card" id="fresh" data-id="${v.id}"
 const upCard = (u) => `<div class="vc card" data-key="up-${u.id}"><div class="th"><div class="proc">${u.error ? `${I('x-circle')}<span class="meta">${esc(u.error)}</span>` : `<span class="meta">Uploading ${esc(u.name.slice(0, 28))}</span><div class="upbar"><i style="width:${u.pct}%"></i></div><span class="meta">${u.pct}%</span>`}</div></div><div class="vm"><div class="t">${esc(u.name)}</div><div class="stats meta"><span>Uploading</span></div></div></div>`;
 const recBtns = `<button class="btn pri" data-act="record">${I('video')}Record a video</button><button class="btn" data-act="upload">${I('upload')}Upload a file</button>`;
 const emptyBox = (ico, title, text = '', actions = '') => `<div class="empty"${text ? ` title="${esc(text)}"` : ''}><span class="eg">${I(ico)}</span><span class="meta">${title} · 00</span>${actions ? `<div class="ea">${actions}</div>` : ''}</div>`;
-const skeleton = () => `<div class="ph"><div class="skeleton" style="width:220px;height:32px"></div></div>` + (F.view === 'rows' ? `<div class="rows">${'<div class="row"><span class="skeleton" style="width:16px;height:16px"></span><span class="skeleton sk1"></span></div>'.repeat(7)}</div>` : `<div class="grid">${'<div class="vc card"><div class="th skeleton"></div><div class="vm"><div class="skeleton sk1"></div><div class="skeleton sk2"></div></div></div>'.repeat(6)}</div>`);
+const skeleton = () => `<div class="ph"><div class="skeleton" style="width:220px;height:32px"></div></div>` + (F.view === 'rows' ? `<div class="rows">${'<div class="row"><span class="skeleton" style="width:96px;aspect-ratio:16/9"></span><span class="skeleton sk1"></span></div>'.repeat(7)}</div>` : `<div class="grid">${'<div class="vc card"><div class="th skeleton"></div><div class="vm"><div class="skeleton sk1"></div><div class="skeleton sk2"></div></div></div>'.repeat(6)}</div>`);
 let upShown = false;
 const grid = (list, empty = ['video', 'Nothing here yet']) => { const rows = F.view === 'rows', ups = !upShown && uploads.length ? (upShown = true, uploads.map(rows ? upRow : upCard).join('')) : ''; return list.length || ups ? `<div class="${rows ? 'rows' : 'grid'}${route === 'library' && SEL.on ? ' selm' : ''}" data-morph>${ups}${list.map(rows ? row : card).join('')}</div>` : emptyBox(...empty); };
 // Multi-select: "Select" turns the cards into toggles; a bar appears with bulk actions for whatever is picked.
