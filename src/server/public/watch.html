@@ -1,110 +1,108 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kairos</title><!--OG--><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
+<title>Kairos</title><!--OG--><link rel="stylesheet" href="/static/instrument.css"><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
 /* Watch page: workstation layout (media canvas left, 460px inspector right). Tokens and components come from app.css; this block holds the page-only rules. */
 :root { --vb: 0px; }
 .wk { height: calc(100vh - var(--topbar-h) - var(--vb)); }
-.viewas { background: var(--accent-soft); color: var(--accent-d); text-align: center; font: 500 11px/16px var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--line-soft); } .viewas a { text-decoration: underline; margin-left: 8px; }
-/* Privacy Guard hero: the product's one differentiator, so it is the only solid emerald block on the page body */
-.guard { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--accent); color: var(--accent-ink); border-radius: var(--r); }
-.guard > svg.i { width: 24px; height: 24px; stroke-width: 1.75; }
-.guard .gt { display: flex; flex-direction: column; min-width: 0; flex: 1; } .guard .gt b { font: 600 16px/24px var(--font); letter-spacing: -.01em; } .guard .gt span { font: 400 12px/16px var(--font); color: rgba(255,255,255,.88); }
-.guard .gstats { display: flex; gap: 20px; align-items: baseline; flex: none; }
-.guard .gs { font: 500 12px/16px var(--font); color: rgba(255,255,255,.88); } .guard .gs b { font: 600 20px/24px var(--mono); color: #fff; margin-right: 6px; } .guard .gs.none { font-size: 12px; }
-@media (max-width: 640px) { .guard { flex-wrap: wrap; } .guard .gstats { flex-basis: 100%; } }
+.viewas { background: var(--selected); color: var(--ink); text-align: center; font: 400 10.5px/16px var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--hair); } .viewas a { text-decoration: underline; text-underline-offset: 3px; margin-left: 8px; }
+/* Privacy Guard: one hairline row, shield glyph + mono status + mono counts */
+.guard { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border: 1px solid var(--hair); border-radius: var(--r-btn); font: 400 10.5px/16px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.guard > svg.i { width: 16px; height: 16px; color: var(--ink); }
+.guard .gl { color: var(--ink); font-weight: 500; } .guard .gs { margin-left: auto; color: var(--ink-2); font-variant-numeric: tabular-nums; } .guard .gs b { font-weight: 500; color: var(--ink); }
+@media (max-width: 640px) { .guard .gs { margin-left: 0; flex-basis: 100%; } }
 /* top bar */
-#title { font: 600 16px/24px var(--font); letter-spacing: -.01em; border: 1px solid transparent; background: transparent; color: var(--ink); width: min(340px, 28vw); min-width: 100px; padding: 2px 6px; border-radius: var(--r); text-overflow: ellipsis; }
-#title:not([readonly]):hover { background: var(--surface-1); border-color: var(--line-soft); } #title:focus { outline: 1px solid var(--accent); background: var(--surface); }
+#title { font: 600 16px/24px var(--sans); letter-spacing: -.01em; border: 1px solid transparent; background: transparent; color: var(--ink); width: min(340px, 28vw); min-width: 100px; padding: 2px 6px; border-radius: var(--r-btn); text-overflow: ellipsis; }
+#title:not([readonly]):hover { background: var(--raised); border-color: var(--hair); } #title:focus { outline: none; border-color: var(--hair-strong); background: var(--surface); }
 #by { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; }
 .by2 { display: none; }
 @media (max-width: 1040px) { #by { display: none; } .by2 { display: inline; } #title { flex: 1; width: auto; } }
 .top .acts .avatar { text-decoration: none; }
 @media (max-width: 640px) { .top { gap: 8px; padding: 0 8px; } .top .brand { padding-right: 0; border-right: 0; } .top .brand > span:not(.logo) { display: none; } #by, .lbl, .top .vsep, #who, #planBtn { display: none; } #title { flex: 1; width: auto; min-width: 0; } }
 /* canvas */
-.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 22px; }
-.strip .sep { color: var(--off); }
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; } .strip:empty { display: none; }
+.strip .sep { color: var(--ink-3); }
 @media (max-width: 640px) { .strip .sep { display: none; } }
 #proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: var(--stage); z-index: 6; font-size: 13px; padding: 16px; }
-.psteps, .pfail { width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px; } .psteps h3, .pfail h3 { margin: 0; font: 600 16px/24px var(--font); letter-spacing: -.01em; }
-.psteps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; } .psteps li { display: flex; gap: 12px; align-items: flex-start; color: #94a3b8; } .psteps li.on { color: #fff; } .psteps li.done { color: #cbd5e1; }
-.psteps small { display: flex; align-items: center; gap: 8px; margin-top: 2px; font: 400 12px/16px var(--font); color: #94a3b8; } .psteps b { font-weight: 500; }
-.pn { width: 20px; height: 20px; flex: none; border: 1px solid #475569; border-radius: var(--r-sm); display: grid; place-items: center; } .psteps li.on .pn { border-color: var(--code-accent); } .psteps li.done .pn { background: var(--code-accent); border-color: var(--code-accent); color: #022c22; } .pn svg.i { width: 14px; height: 14px; } .pn .spin { width: 10px; height: 10px; border-width: 2px; border-color: #475569; border-top-color: var(--code-accent); }
-.pbar { flex: 1; max-width: 160px; height: 4px; background: #334155; border-radius: 2px; overflow: hidden; } .pbar i { display: block; height: 100%; background: var(--code-accent); }
-.pfail { text-align: left; } .pfail > svg.i { width: 24px; height: 24px; color: #fca5a5; } .pfail p { margin: 0; color: #cbd5e1; line-height: 20px; } .pfail .axbar { margin-top: 0; } .btn.dark.danger { color: #fca5a5; }
-.pfail details { color: #94a3b8; font-size: 12px; } .pfail summary { cursor: pointer; } .pfail code { display: block; margin-top: 6px; font: 400 12px/18px var(--mono); word-break: break-word; }
-.spin { width: 14px; height: 14px; border: 2px solid var(--surface-4); border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; flex: none; } .spin.lg { width: 28px; height: 28px; border-width: 3px; margin: 0 auto 12px; border-color: #475569; border-top-color: var(--code-accent); }
+.psteps, .pfail { width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px; } .psteps h3, .pfail h3 { margin: 0; font: 600 16px/24px var(--sans); letter-spacing: -.01em; }
+.psteps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; } .psteps li { display: flex; gap: 12px; align-items: flex-start; color: #A3A3A8; } .psteps li.on { color: #fff; } .psteps li.done { color: #D4D4D8; }
+.psteps small { display: flex; align-items: center; gap: 8px; margin-top: 2px; font: 400 12px/16px var(--sans); color: #A3A3A8; } .psteps b { font-weight: 500; }
+.pn { width: 20px; height: 20px; flex: none; border: 1px solid rgba(255,255,255,.3); border-radius: 2px; display: grid; place-items: center; } .psteps li.on .pn { border-color: #fff; } .psteps li.done .pn { background: #fff; border-color: #fff; color: #0B0B0C; } .pn svg.i { width: 14px; height: 14px; } .pn .spin { width: 10px; height: 10px; border-width: 2px; border-color: rgba(255,255,255,.3); border-top-color: #fff; }
+.pbar { flex: 1; max-width: 160px; height: 2px; background: rgba(255,255,255,.25); overflow: hidden; } .pbar i { display: block; height: 100%; background: #fff; }
+.pfail { text-align: left; } .pfail > svg.i { width: 24px; height: 24px; color: var(--alert); } .pfail p { margin: 0; color: #D4D4D8; line-height: 20px; } .pfail .axbar { margin-top: 0; } .btn.dark.danger { color: var(--alert); }
+.pfail details { color: #A3A3A8; font-size: 12px; } .pfail summary { cursor: pointer; } .pfail code { display: block; margin-top: 6px; font: 400 12px/18px var(--mono); word-break: break-word; }
+.spin { width: 14px; height: 14px; border: 2px solid var(--hair-strong); border-top-color: var(--ink); border-radius: 50%; animation: s 1s linear infinite; flex: none; } .spin.lg { width: 28px; height: 28px; border-width: 2px; margin: 0 auto 12px; border-color: rgba(255,255,255,.3); border-top-color: #fff; }
 @keyframes s { to { transform: rotate(360deg); } }
 .pframe { display: flex; flex-direction: column; gap: 8px; }
 .pframe:fullscreen { background: #000; gap: 0; } .pframe:fullscreen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:fullscreen .pc { border-radius: 0; border-width: 1px 0 0; }
 .pframe:-webkit-full-screen { background: #000; gap: 0; } .pframe:-webkit-full-screen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:-webkit-full-screen .pc { border-radius: 0; border-width: 1px 0 0; }
-.pc { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
-.pc .scrub { height: 24px; touch-action: none; } .pc .scrub:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pc { border: 1px solid var(--hair); border-radius: var(--r-btn); padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
+.pc .scrub { height: 24px; touch-action: none; } .pc .scrub:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .pc .scrub .thumb { top: 3px; }
-.pc-marks { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; } .pc-mk { position: absolute; top: 2px; width: 2px; height: 5px; margin-left: -1px; background: var(--ink-2); } .pc-mk.r { background: var(--accent); }
-.pc-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .pc-time { white-space: nowrap; } .pc-time b { color: var(--ink); }
-.pc-vol { width: 72px; height: 24px; accent-color: var(--accent); }
+.pc-marks { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; } .pc-mk { position: absolute; top: 2px; width: 1px; height: 5px; margin-left: -.5px; background: var(--ink-3); } .pc-mk.r { background: var(--ink); }
+.pc-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .pc-time { white-space: nowrap; font-variant-numeric: tabular-nums; } .pc-time b { color: var(--ink); }
+.pc-vol { width: 72px; height: 24px; accent-color: var(--ink); }
 .markers { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rbar { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
-.rb { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); font: 500 12px/16px var(--font); cursor: pointer; transition: background 150ms var(--ease), border-color 150ms var(--ease); }
-.rb:hover { background: var(--surface-1); border-color: var(--line-strong); } .rb svg.i { width: 16px; height: 16px; color: var(--accent); } .rb .n { font: 600 11px/14px var(--mono); color: var(--mute); }
+.rb { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 8px; border: 1px solid var(--hair-strong); background: none; border-radius: var(--r-chip); color: var(--ink); font: 400 11px/16px var(--mono); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background var(--t-quick) var(--ease), transform var(--t-quick) var(--ease); } .rb:active { transform: scale(.96); }
+.rb:hover { background: var(--raised); } .rb svg.i { width: 15px; height: 15px; color: var(--ink); } .rb .n { font: 400 11px/14px var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); } .rb .n.z { color: var(--ink-3); }
 .rb.cm-b { margin-left: auto; } .rb.cm-b svg.i { color: var(--ink); }
 .notes { display: flex; flex-direction: column; gap: 8px; } .notes:empty { display: none; }
-.callout .tag { display: block; margin-bottom: 2px; } .callout.warn .tag { color: var(--warn-ink); } .callout.ok .tag { color: var(--accent-d); } .callout.bad .tag { color: var(--danger-ink); }
+.callout .tag { display: block; margin-bottom: 2px; } .callout.warn .tag { color: var(--ink); } .callout.ok .tag { color: var(--ink); } .callout.bad .tag { color: var(--alert); }
 .imgview { display: grid; place-items: center; } .imgview img { max-width: 100%; max-height: 70vh; }
 /* inspector */
 .wk-side { min-height: 0; } .wk-body.panel { gap: 20px; }
 .sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.sl { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); display: flex; align-items: center; gap: 8px; }
+.sl { font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
 .sl .grow { text-align: right; }
-.opts { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
-.opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line-soft); } .opt:last-child { border-bottom: 0; } .opt.off { color: var(--off); }
-.olab { font-weight: 500; } .osub { color: var(--mute); font-size: 12px; line-height: 18px; margin-top: 2px; }
-.apply { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.opts { border: 1px solid var(--hair); border-radius: var(--r-panel); }
+.opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--hair); } .opt:last-child { border-bottom: 0; } .opt.off { color: var(--ink-3); }
+.olab { font-weight: 500; } .osub { color: var(--ink-3); font-size: 12px; line-height: 18px; margin-top: 2px; }
+.apply { border: 1px solid var(--hair-strong); box-shadow: inset 2px 0 0 var(--accent-text); border-radius: var(--r-btn); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .apply .r { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .cms { display: flex; flex-direction: column; gap: 16px; }
 .cm { display: flex; gap: 10px; } .cm .avatar { width: 28px; height: 28px; } .cm b { font-weight: 600; }
-.cm .at { color: var(--accent); font: 500 11px/16px var(--mono); cursor: pointer; margin-left: 8px; letter-spacing: .02em; } .cm p { margin: 2px 0 0; line-height: 20px; overflow-wrap: anywhere; } .men { color: var(--accent); font-weight: 600; }
+.cm .at { color: var(--ink); font: 500 11px/16px var(--mono); cursor: pointer; margin-left: 8px; letter-spacing: .02em; } .cm p { margin: 2px 0 0; line-height: 20px; overflow-wrap: anywhere; } .men { color: var(--ink); font-weight: 600; }
 .tr { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; } .tr .tstamp { cursor: pointer; flex: none; }
-.empty { color: var(--mute); text-align: center; margin: 24px 0; }
-.chaps { display: flex; flex-direction: column; gap: 4px; } .chap { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 10px; cursor: pointer; font: 400 13px/20px var(--font); } .chap:hover { border-color: var(--accent); }
+.empty { color: var(--ink-3); text-align: center; margin: 24px 0; }
+.chaps { display: flex; flex-direction: column; gap: 4px; } .chap { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--hair-strong); background: var(--surface); border-radius: var(--r-btn); padding: 6px 10px; cursor: pointer; font: 400 13px/20px var(--sans); } .chap:hover { border-color: var(--ink-2); }
 .chap .tstamp { flex: none; cursor: pointer; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tasks { margin: 0; padding-left: 18px; line-height: 20px; } .tasks li + li { margin-top: 4px; }
 .card p { margin: 0; line-height: 20px; } .card p + p { margin-top: 6px; }
 .stp .gh { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .stp .gh b { font-weight: 600; }
-.stp .gd { color: var(--mute); margin: 0 0 8px; } .stp img { width: 100%; border-radius: var(--r); border: 1px solid var(--line); cursor: pointer; display: block; }
-.crew { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); align-items: flex-start; } .crew .dot { margin-top: 7px; }
-.crew small { display: block; color: var(--mute); font-size: 12px; line-height: 16px; margin-top: 2px; } .crew .d { font-size: 12px; margin-top: 3px; }
+.stp .gd { color: var(--ink-3); margin: 0 0 8px; } .stp img { width: 100%; border-radius: var(--r-btn); border: 1px solid var(--hair-strong); cursor: pointer; display: block; }
+.crew { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hair); align-items: flex-start; } .crew .dot { margin-top: 7px; }
+.crew small { display: block; color: var(--ink-3); font-size: 12px; line-height: 16px; margin-top: 2px; } .crew .d { font-size: 12px; margin-top: 3px; }
 .ghead { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .kvs3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.heat { display: flex; align-items: flex-end; height: 56px; gap: 1px; cursor: pointer; } .heat i { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 2px; opacity: .8; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padding: 6px 4px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; } th { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
-.act { padding: 6px 0; border-bottom: 1px solid var(--line-soft); } .act small { color: var(--mute); display: block; font: 500 11px/14px var(--mono); letter-spacing: .02em; margin-top: 2px; }
-.set { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); } .set .lab { flex: 1; min-width: 0; } .set small { display: block; color: var(--mute); font-size: 12px; line-height: 18px; }
+.heat { display: flex; align-items: flex-end; height: 56px; gap: 1px; cursor: pointer; } .heat i { flex: 1; background: var(--ink-3); border-radius: 1px 1px 0 0; min-height: 2px; transition: background var(--t-quick) var(--ease); } .heat i:hover { background: var(--ink); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padding: 6px 4px; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; } th { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.act { padding: 6px 0; border-bottom: 1px solid var(--hair); } .act small { color: var(--ink-3); display: block; font: 500 11px/14px var(--mono); letter-spacing: .02em; margin-top: 2px; }
+.set { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); } .set .lab { flex: 1; min-width: 0; } .set small { display: block; color: var(--ink-3); font-size: 12px; line-height: 18px; }
 .set .field { width: auto; max-width: 200px; }
-.md { white-space: pre-wrap; word-break: break-word; font: 400 12px/18px var(--mono); background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: var(--r); padding: 10px 12px; margin: 8px 0; max-height: 320px; overflow: auto; }
+.md { white-space: pre-wrap; word-break: break-word; font: 400 12px/18px var(--mono); background: var(--raised); border: 1px solid var(--hair); border-radius: var(--r-btn); padding: 10px 12px; margin: 8px 0; max-height: 320px; overflow: auto; }
 .stepper.docs::before, .stepper.docs .node { display: none; } .stepper.docs .stp { padding-left: 0; }
-.stepper.docs { gap: 0; border-top: 1px solid var(--line-soft); } .stepper.docs .stp > .card { border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; box-shadow: none; background: none; padding: 10px 0; } .stepper.docs .stp.on > .card { border-color: var(--line-soft); box-shadow: none; }
-details.mcp > summary { cursor: pointer; list-style: none; color: var(--mute); font: 500 12px/16px var(--font); padding: 6px 0 0; } details.mcp > summary::-webkit-details-marker { display: none; } details.mcp > summary::before { content: '+'; display: inline-block; width: 14px; font-family: var(--mono); } details.mcp[open] > summary::before { content: '–'; } details.mcp > summary:hover { color: var(--ink); } details.mcp .code { margin-top: 8px; }
+.stepper.docs { gap: 0; border-top: 1px solid var(--hair); } .stepper.docs .stp > .card { border: 0; border-bottom: 1px solid var(--hair); border-radius: 0; box-shadow: none; background: none; padding: 10px 0; } .stepper.docs .stp.on > .card { border-color: var(--hair); box-shadow: none; }
+details.mcp > summary { cursor: pointer; list-style: none; color: var(--ink-3); font: 500 12px/16px var(--sans); padding: 6px 0 0; } details.mcp > summary::-webkit-details-marker { display: none; } details.mcp > summary::before { content: '+'; display: inline-block; width: 14px; font-family: var(--mono); } details.mcp[open] > summary::before { content: '–'; } details.mcp > summary:hover { color: var(--ink); } details.mcp .code { margin-top: 8px; }
 .code.row > span { min-width: 0; word-break: normal; overflow-wrap: anywhere; }
-.axrow { display: flex; align-items: center; gap: 10px; } .axrow .lab { flex: 1; min-width: 0; font-weight: 500; } .axrow small { display: block; color: var(--mute); font-weight: 400; font-size: 12px; line-height: 16px; margin-top: 2px; }
-.axbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; } .prev dt { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin-top: 12px; } .prev dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.axrow { display: flex; align-items: center; gap: 10px; } .axrow .lab { flex: 1; min-width: 0; font-weight: 500; } .axrow small { display: block; color: var(--ink-3); font-weight: 400; font-size: 12px; line-height: 16px; margin-top: 2px; }
+.axbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; } .prev dt { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); margin-top: 12px; } .prev dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 .pop { position: absolute; z-index: 60; padding: 4px; min-width: 180px; }
-.pop .mi { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; text-align: left; padding: 7px 10px; border-radius: var(--r); font: 500 12px/16px var(--font); cursor: pointer; white-space: nowrap; color: var(--ink); } .pop .mi:hover { background: var(--surface-1); } .pop .mi.danger { color: var(--danger); } .pop .mi svg { color: var(--mute); }
+.pop .mi { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; text-align: left; padding: 7px 10px; border-radius: var(--r-btn); font: 500 12px/16px var(--sans); cursor: pointer; white-space: nowrap; color: var(--ink); } .pop .mi:hover { background: var(--raised); } .pop .mi.danger { color: var(--alert); } .pop .mi svg { color: var(--ink-3); }
 .fade { animation: fadein 150ms var(--ease); } @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-@media (max-width: 1040px) { .wk { flex-direction: column; height: auto; } .wk-canvas { overflow: visible; border-right: 0; } .wk-side { width: 100%; border-top: 1px solid var(--line-soft); overflow: visible; min-height: 480px; } .wk-body { overflow: visible; } }
+@media (max-width: 1040px) { .wk { flex-direction: column; height: auto; } .wk-canvas { overflow: visible; border-right: 0; } .wk-side { width: 100%; border-top: 1px solid var(--hair); overflow: visible; min-height: 480px; } .wk-body { overflow: visible; } }
 @media (max-width: 640px) { .wk-canvas > .in { padding: 12px; } .rb.cm-b { margin-left: 0; } }
 /* share modal */
-.sm .hd { display: flex; align-items: center; gap: 12px; } .sm .hd h3 { flex: 1; } .sm .lk { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none; font: 500 12px/16px var(--font); cursor: pointer; padding: 6px 8px; border-radius: var(--r); } .sm .lk:hover { background: var(--surface-1); border-color: var(--line-soft); } .sm .lk.on { color: var(--accent); border-color: var(--accent); }
+.sm .hd { display: flex; align-items: center; gap: 12px; } .sm .hd h3 { flex: 1; } .sm .lk { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none; font: 500 12px/16px var(--sans); cursor: pointer; padding: 6px 8px; border-radius: var(--r-btn); } .sm .lk:hover { background: var(--raised); border-color: var(--hair); } .sm .lk.on { color: var(--ink); border-color: var(--ink-2); }
 .sm .to { margin-top: 14px; position: relative; }
-.sm .sug, .sm .got { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 4px 10px; font: 500 12px/18px var(--font); cursor: pointer; }
-.sm .got span { cursor: default; background: var(--accent-soft); border-color: transparent; padding: 3px 4px 3px 10px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 2px; color: var(--mute); }
-.sm h5 { margin: 20px 0 8px; font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); } .sm h5 small { display: block; margin-top: 4px; font: 400 12px/16px var(--font); letter-spacing: 0; text-transform: none; color: var(--mute); }
-.sm .acc { display: flex; align-items: center; gap: 12px; } .sm .acc b { display: inline-flex; align-items: center; gap: 4px; font: 600 13px/20px var(--font); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
-.sm .ft { display: flex; align-items: center; gap: 16px; margin: 20px -24px -20px; padding: 12px 24px; border-top: 1px solid var(--line-soft); background: var(--surface-1); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
-.sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font: 500 12px/16px var(--font); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
-.sm .more { margin-top: 12px; padding: 12px; background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: var(--r); } .sm .pwrow { margin-top: 10px; }
-.sm .note { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--mute); } .sm .note.w { color: var(--warn-ink); } .sm .note.e { color: var(--danger); }
-.sm .more a:not(.btn) { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; } .sm .more a:not(.btn):hover { color: var(--accent-d); } /* links in the public-link block read as links (the global reset makes them plain text) */
+.sm .sug, .sm .got { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hair-strong); background: var(--surface); border-radius: var(--r-btn); padding: 4px 10px; font: 500 12px/18px var(--sans); cursor: pointer; }
+.sm .got span { cursor: default; background: var(--selected); border-color: transparent; padding: 3px 4px 3px 10px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 2px; color: var(--ink-3); }
+.sm h5 { margin: 20px 0 8px; font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); } .sm h5 small { display: block; margin-top: 4px; font: 400 12px/16px var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.sm .acc { display: flex; align-items: center; gap: 12px; } .sm .acc b { display: inline-flex; align-items: center; gap: 4px; font: 600 13px/20px var(--sans); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--ink-3); font-size: 12px; margin-top: 2px; }
+.sm .ft { display: flex; align-items: center; gap: 16px; margin: 20px -24px -20px; padding: 12px 24px; border-top: 1px solid var(--hair); background: var(--raised); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
+.sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font: 500 12px/16px var(--sans); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--ink); margin: 0; }
+.sm .more { margin-top: 12px; padding: 12px; background: var(--raised); border: 1px solid var(--hair); border-radius: var(--r-btn); } .sm .pwrow { margin-top: 10px; }
+.sm .note { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--ink-3); } .sm .note.w { color: var(--ink); } .sm .note.e { color: var(--alert); }
+.sm .more a:not(.btn) { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; } .sm .more a:not(.btn):hover { color: var(--ink); } /* links in the public-link block read as links (the global reset makes them plain text) */
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
 <header class="top"><a class="brand" href="/" id="brand"></a>
@@ -124,7 +122,7 @@ details.mcp > summary { cursor: pointer; list-style: none; color: var(--mute); f
         <button class="btn icon sm ghost" data-pc="pip" title="Picture in picture" aria-label="Picture in picture" data-i="pip"></button><button class="btn icon sm ghost" data-pc="fs" title="Fullscreen" aria-label="Fullscreen" data-i="fullscreen"></button></div></div></div>
   <div class="markers"><div class="rbar" id="react"></div><button class="btn icon" id="later" hidden></button></div>
   <div class="notes" id="notes"></div>
-  <div class="kvs" id="metrics"></div>
+  <div class="kstrip" id="metrics"></div>
 </div></main>
 <aside class="wk-side"><div class="tabs" id="tabs"></div><div class="wk-sub" id="sub"></div><div class="wk-body panel" id="panel"><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:56px"></div><div class="skeleton" style="height:56px"></div></div>
   <form class="wk-foot" id="form"><div class="inwrap"><input class="field" id="ctext" placeholder="Comment at the current time… use @name to mention" autocomplete="off"><button class="send" aria-label="Send comment" data-i="send"></button></div></form></aside></div></div>
@@ -140,12 +138,12 @@ const now = () => $('v')?.currentTime || 0; // B10: screenshots replace #v with 
 const copied = (btn) => { const t = btn.innerHTML; btn.textContent = 'Copied'; setTimeout(() => (btn.innerHTML = t), 1400); }; // U16
 const seek = (t) => { const v = $('v'); if (!v) return; v.currentTime = t; v.play(); };
 const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const plural = (n, w) => `${String(n).padStart(2, '0')} ${w}${n === 1 ? '' : 's'}`;
 const patch = async (body) => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); lastKey = ''; render(); };
 
 async function boot() {
   UI.fill(document); $('v').poster = `/media/${id}/thumb.jpg`; // U12: the poster and the skeletons are on screen before any API call returns
-  me = await api('/api/me'); UI.brand(me.brand);
+  me = await api('/api/me'); UI.brand(me.brand, !me.owner); // the owner's accent colour is for what viewers see; the owner's own screens stay lime
   $('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${esc(me.brand.name)}</span>`);
   if (document.cookie.includes('sp_asviewer=1')) { $('viewas').hidden = false; document.documentElement.style.setProperty('--vb', '34px'); }
   $('ownerBtns').hidden = !me.owner; $('nav').hidden = !me.owner; $('vcopy').hidden = me.owner; $('later').hidden = !me.owner; $('who').textContent = UI.initials(me.name || me.brand.name);
@@ -202,10 +200,10 @@ function renderTabs() {
   let on = null; $('tabs').querySelectorAll('button').forEach((b) => { const is = b.dataset.t === tab; b.classList.toggle('on', is); if (is) on = b; if (b.dataset.t === 'generate') { const busy = me.owner && vm.stage && vm.stage !== 'done'; b.querySelector('.dot')?.remove(); if (busy) b.insertAdjacentHTML('beforeend', '<span class="dot pulse"></span>'); } });
   if (on) { const ind = $('tabs').querySelector('.ind'); ind.style.width = on.offsetWidth + 'px'; ind.style.transform = `translateX(${on.offsetLeft}px)`; }
 }
-function go(t) { scrollOf[tab] = $('panel').scrollTop; tab = t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; }
+function go(t) { scrollOf[tab] = $('panel').scrollTop; tab = t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; const pl = $('panel'); pl.classList.remove('i-slide'); void pl.offsetWidth; pl.classList.add('i-slide'); }
 // the inspector sub-header: a real fact on the left, small neutral badges (only true ones) on the right
 function renderSub() {
-  const busy = vm.stage && vm.stage !== 'done', local = me.owner ? '<span class="badge">On this device</span>' : '';
+  const busy = vm.stage && vm.stage !== 'done', local = '';
   const [left, right] = { edit: [plural(draft().length, 'cut') + ' in draft', local], activity: [plural(vm.comments.length, 'comment'), me.owner ? `<span class="badge">${plural(vm.views, 'view')}</span>` : ''],
     generate: [busy ? 'AI crew working' : 'AI notes', local], actions: ['AI actions', local], transcript: [plural((vm.segments || []).length, 'segment'), ''], settings: ['Owner only', ''] }[tab] || ['', ''];
   const h = `<span class="meta">${esc(left)}</span><span>${right}</span>`; if ($('sub').dataset.h !== h) { $('sub').dataset.h = h; $('sub').innerHTML = h; }
@@ -242,9 +240,6 @@ function renderStrip() {
   if (vm.status === 'failed') parts.push(`<span class="badge err">${I('alert-triangle')}Failed</span>`);
   else if (!ready) parts.push('<span class="badge"><span class="dot warn pulse"></span>Processing</span>');
   else if (me.owner && vm.shareable === false) parts.push('<span class="badge warn"><span class="dot warn pulse"></span>Guard checking</span>');
-  if (vm.type !== 'image' && vm.duration) parts.push(`<span class="meta">${fmt(vm.duration)}</span>`);
-  if (vm.width && vm.height) parts.push(`<span class="meta">${vm.width}×${vm.height}</span>`);
-  if (me.owner) parts.push('<span class="meta">On this device</span>');
   const by2 = `<span class="sep by2">·</span><span class="meta by2">${esc([vm.by || me.brand?.name, UI.ago(vm.createdAt), plural(vm.views, 'view')].filter(Boolean).join(' · '))}</span>`; // shown here instead of the top bar when that is too narrow
   const h = parts.join('<span class="sep">·</span>') + (parts.length ? by2 : by2.replace(/^<span class="sep by2">·<\/span>/, '')); if ($('strip').dataset.h !== h) { $('strip').dataset.h = h; $('strip').innerHTML = h; }
 }
@@ -253,13 +248,14 @@ function renderGuard() {
   let h = '';
   if (ready && vm.status !== 'failed' && !(me.owner && vm.shareable === false)) {
     const b = vm.redactionCount || 0, a = me.owner ? vm.speechRedactions || 0 : 0;
-    const stat = (n, w) => `<span class="gs"><b class="num">${n}</b>${w}</span>`;
-    h = `<div class="guard" role="status">${I('shield-check')}<div class="gt"><b>Privacy Guard cleared</b><span>${me.owner ? 'Checked on this computer before anyone could watch.' : 'Checked before you could watch.'}</span></div><div class="gstats">${b || a ? (b ? stat(b, 'blurred') : '') + (a ? stat(a, 'bleeped') : '') : '<span class="gs none">Nothing needed hiding</span>'}</div></div>`;
+    const parts = [b ? `${UI.n(b, 2, 'g-blur')} BLURRED` : '', a ? `${UI.n(a, 2, 'g-bleep')} BLEEPED` : ''].filter(Boolean);
+    h = `<div class="guard" role="status" title="${me.owner ? 'Checked on this computer before anyone could watch.' : 'Checked before you could watch.'}">${I('shield-check')}<span class="gl">PRIVACY GUARD · CLEARED</span><span class="gs">${parts.length ? parts.join(' · ') : 'NOTHING TO HIDE'}</span></div>`;
   }
   if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
+  UI.roll(el);
 }
 function renderMetrics() {
-  const kv = (k, v) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`, c = [];
+  const kv = (k, v) => `<div><span class="k">${k}</span><span class="v">${typeof v === 'number' ? UI.n(v, 2, 'm-' + k) : v}</span></div>`, c = [];
   const reacts = Object.values(vm.reactions || {}).reduce((a, n) => a + n, 0), vs = (vm.viewers || []).filter((x) => !x.owner);
   if (vm.type !== 'image' && vm.duration) c.push(kv('Duration', fmt(vm.duration)));
   if (vm.width && vm.height) c.push(kv('Resolution', `${vm.width}×${vm.height}`));
@@ -270,6 +266,7 @@ function renderMetrics() {
   if (me.owner && vs.length && vm.duration) c.push(kv('Avg. watched', Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) + '%'));
   if (me.owner && an?.silenceSeconds > 0) c.push(kv('Silence found', an.silenceSeconds + 's'));
   const h = c.join(''); if ($('metrics').dataset.h !== h) { $('metrics').dataset.h = h; $('metrics').innerHTML = h; }
+  UI.roll($('metrics'));
 }
 function renderNotes() {
   const n = [], ready = isReady(), busy = ready && vm.stage && vm.stage !== 'done';
@@ -286,8 +283,8 @@ function renderNotes() {
 }
 // U15: the count goes up the instant you click; the server's answer replaces it a moment later (and corrects it if the write failed)
 function drawReactions() {
-  const html = KINDS.map(([k, l, ic]) => `<button class="rb" data-k="${k}" title="Mark this moment: ${l}">${I(ic)}${l}${vm.reactions[k] ? `<span class="n">${vm.reactions[k]}</span>` : ''}</button>`).join('') + `<button class="rb cm-b" id="cfocus">${I('comment')}Comment</button>`;
-  if ($('react').dataset.h === html) return; $('react').dataset.h = html; $('react').innerHTML = html;
+  const html = KINDS.map(([k, l, ic]) => `<button class="rb" data-k="${k}" title="Mark this moment: ${l}" aria-label="${l}">${I(ic)}<span class="n${vm.reactions[k] ? '' : ' z'}">${UI.n(vm.reactions[k] || 0, 2, 'rx-' + k)}</span></button>`).join('') + `<button class="rb cm-b" id="cfocus" title="Comment at the current time">${I('comment')}COMMENT</button>`;
+  if ($('react').dataset.h === html) return; $('react').dataset.h = html; $('react').innerHTML = html; UI.roll($('react'));
   const react = async (k) => {
     const at = now(), before = vm.reactions[k] || 0;
     ctl?.floatReaction(k); vm.reactions = { ...vm.reactions, [k]: before + 1 }; drawReactions();
@@ -343,10 +340,10 @@ function renderEdit(p) {
   const busy = !!(vm.stage && vm.stage !== 'done');
   if (me.owner && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !busy) loadAnalysis();
   const sil = an?.silenceSeconds ?? null, fil = an?.fillerCount ?? null, cuts = draft().length, applying = /^Applying edits/.test(vm.stage || '');
-  const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"><span class="tile sm ${disabled ? 'off' : ''}">${I(icon)}</span><div class="grow"><div class="olab">${label}</div>${sub ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
+  const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"${sub && !/</.test(sub) ? ` title="${esc(sub)}"` : ''}><span class="tile sm ${disabled ? 'off' : ''}">${I(icon)}</span><div class="grow"><div class="olab">${label}</div>${sub && /</.test(sub) ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
   p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div>${busy ? '<div class="osub">Describing an edit opens when the video is not being processed.</div>' : '<div id="epHost"></div>'}</section>
-    ${cuts || vm.edits?.inserts?.length ? `<div class="apply"><div><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` and ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready.</b> Nothing changes until you apply them; the previous version is kept so you can undo once.</div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
-    ${vm.canUndo && vm.undoKind !== 'redact' ? `<div class="apply"><div>Edits were applied to this video.</div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
+    ${cuts || vm.edits?.inserts?.length ? `<div class="apply" title="Nothing changes until you apply them; the previous version is kept so you can undo once."><div class="meta"><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` · ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready</b></div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
+    ${vm.canUndo && vm.undoKind !== 'redact' ? `<div class="apply"><div class="meta"><b>Edits applied</b></div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
     ${vm.editError && !/^Could not bleep/.test(vm.editError) ? `<div class="err">${esc(vm.editError)}</div>` : ''}
     <section class="sec"><div class="sl">Bleep speech</div><div id="rpHost"></div></section>
     <section class="sec"><div class="sl">Quick clean-up</div><div class="opts">
@@ -386,7 +383,7 @@ function renderActivity(p, bind) {
     (me.owner ? `<section class="sec owner-sec"><div class="sl">Insights</div><div class="kvs3">${kv('Views', vs.length)}${kv('People', uniq)}${kv('Avg. watched', avg + '%')}</div>
     <div class="heat" id="heat">${heat.map((h, k) => `<i data-at="${k}" style="height:${Math.max(4, (h / mx) * 100)}%" title="${fmt(k)}: ${h}"></i>`).join('') || '<span class="chip">Nobody has watched yet.</span>'}</div>
     <div class="ghead"><span class="sl grow">Who watched</span><a class="btn sm" href="/api/videos/${id}/viewers.csv">${I('download')}Export CSV</a></div>
-    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--mute)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td class="mono">${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>
+    <table><tr><th>Who</th><th>When</th><th>Watched</th></tr>${(vm.viewers || []).slice().reverse().map((x) => `<tr><td>${esc(x.name)}${x.owner ? ' (you)' : ''}<br><small style="color:var(--ink-3)">${esc(x.email || '')}</small></td><td>${new Date(x.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td class="mono">${vm.duration ? Math.min(100, Math.round(x.maxT / vm.duration * 100)) : 0}%</td></tr>`).join('') || '<tr><td colspan="3" class="chip">No views yet. Use Share → Preview as viewer.</td></tr>'}</table>
     <div class="sl" style="margin-top:8px">Activity log</div>${(vm.activity || []).map((a) => `<div class="act">${esc(a.event)}<small>${esc(a.who || '')} · ${new Date(a.at).toLocaleString()}</small></div>`).join('') || '<div class="empty">No activity yet.</div>'}</section>` : '');
   bind(); p.querySelectorAll('#heat i').forEach((h) => (h.onclick = () => seek(+h.dataset.at)));
 }
@@ -403,7 +400,7 @@ function renderGenerate(p, bind) {
   if (vm.guide) sec.push(guideHTML());
   else sec.push(`<div class="empty">${busy ? 'The AI crew is working on this recording…' : 'Nothing was generated for this recording.'}</div>`);
   if (me.owner) sec.push(`<section class="sec"><div class="sl">AI crew</div>` + (vm.crew || []).map((c) => `<div class="crew"><span class="${DOT[c.status] || 'dot off'}"></span><div><b>${esc(c.name)}</b>${c.ms ? `<span class="meta nocase"> · ${(c.ms / 1000).toFixed(1)}s</span>` : ''}<small>${esc(c.role)}</small>${c.detail ? `<div class="d">${esc(c.detail)}</div>` : ''}</div></div>`).join('') +
-    `<p class="chip">Everything runs on this computer: Whisper, OCR and a local Ollama model.</p><div><button class="btn" id="rerun">${I('refresh')}Re-run AI notes</button></div></section>`);
+    `<div><button class="btn" id="rerun" title="Everything runs on this computer: Whisper, OCR and a local Ollama model.">${I('refresh')}Re-run AI notes</button></div></section>`);
   p.innerHTML = sec.join(''); bind();
   if ($('gmd')) { $('gmd').onclick = async () => { await navigator.clipboard.writeText(guideMd()); copied($('gmd')); }; $('ghtml').onclick = exportGuideHtml; }
   if ($('rerun')) $('rerun').onclick = async () => { await fetch(`/api/videos/${id}/rerun`, { method: 'POST' }); toast('AI crew restarted'); };
@@ -418,7 +415,7 @@ function guideHTML() {
 const guideMd = () => { const g = vm.guide; return `# ${g.title}\n\n${g.intro}\n\n` + g.steps.map((s) => `## ${s.n}. ${s.title}\n${s.detail}\n${s.image ? `\n![Step ${s.n}](${location.origin}/media/${id}/guide/${s.image})\n` : ''}`).join('\n') + `\n${g.closing}\n`; };
 async function exportGuideHtml() {
   const g = vm.guide, imgs = await Promise.all(g.steps.map(async (s) => { if (!s.image) return ''; const b = await (await fetch(`/media/${id}/guide/${s.image}`)).blob(); return new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); }));
-  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#0f172a"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, k) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[k] ? `<img src="${imgs[k]}" style="width:100%;border-radius:4px;border:1px solid #cbd5e1">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
+  const html = `<!doctype html><meta charset="utf-8"><title>${esc(g.title)}</title><body style="font:16px/1.55 -apple-system,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#0f172a"><h1>${esc(g.title)}</h1><p>${esc(g.intro)}</p>` + g.steps.map((s, k) => `<h2>${s.n}. ${esc(s.title)}</h2><p>${esc(s.detail)}</p>${imgs[k] ? `<img src="${imgs[k]}" style="width:100%;border-radius:4px;border:1px solid #D4D4D8">` : ''}`).join('') + `<p>${esc(g.closing)}</p></body>`;
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = g.title.replace(/[^\w -]/g, '') + '.html'; a.click();
 }
 
@@ -489,16 +486,16 @@ function renderActions(p) {
   const t = ax.targets;
   const rows = ax.list.map((a) => {
     const r = ax.results[a.id], busy = ax.busy[a.id], open = ax.open === a.id;
-    return `<div class="stp ${open ? 'on' : ''}"><span class="node"></span><div class="card pad"><div class="axrow"><span class="tile sm">${I(AXICON[a.id] || 'doc')}</span><div class="lab">${esc(a.label)}<small>${esc(a.blurb)}${a.cached ? (a.cached.stale ? ' · <b>transcript changed since</b>' : ` · made ${UI.ago(a.cached.at)}`) : ''}</small></div>
+    return `<div class="stp ${open ? 'on' : ''}"><span class="node"></span><div class="card pad"><div class="axrow" title="${esc(a.blurb + (a.cached ? (a.cached.stale ? ' · transcript changed since' : ` · made ${UI.ago(a.cached.at)}`) : ''))}"><span class="tile sm">${I(AXICON[a.id] || 'doc')}</span><div class="lab">${esc(a.label)}${a.cached?.stale ? ' <span class="meta">Stale</span>' : ''}</div>
       <button class="btn sm" data-ax="${a.id}" ${busy || !ax.ready ? 'disabled' : ''}>${busy ? 'Writing…' : a.cached ? (open ? 'Hide' : 'Open') : 'Generate'}</button></div>` +
       (open && r ? `<div class="md" id="axmd">${esc(r.markdown)}</div><div class="axbar"><button class="btn sm" data-axcopy="${a.id}">${I('copy')}Copy</button><button class="btn sm" data-axre="${a.id}">${a.cached?.stale ? 'Regenerate (transcript changed)' : 'Regenerate'}</button>
         <span class="meta" style="margin-left:4px">Send to</span>${t.map((x) => `<button class="btn sm" data-axsend="${a.id}|${x.id}" ${x.ready ? '' : 'disabled'} title="${x.ready ? 'Shows exactly what will be sent first' : 'Add ' + esc(x.needs) + ' in Settings → Workspace → Integrations'}">${esc(x.label)}</button>`).join('')}</div>` : '') + '</div></div>';
   }).join('');
   p.innerHTML = `${ax.ready ? '' : `<div class="callout warn">${I('alert-triangle')}<div>Available once the Privacy Guard has cleared the video and it has a transcript.</div></div>`}${ax.err ? `<div class="err">${esc(ax.err)}</div>` : ''}
-    <section class="sec"><div class="sl">Record for agents</div><div class="card pad"><p>Turn this recording into a brief for Claude Code, Cursor or any coding agent: what you said, the steps shown with screenshot files, where you clicked.</p>
-      <div class="axbar"><button class="btn pri sm" id="planCopy" ${ax.ready ? '' : 'disabled'}>${I('copy')}Copy action plan</button><a class="btn sm" href="/api/videos/${id}/action-plan?download=1">${I('download')}Download .md</a></div>
-      <details class="mcp"><summary>Or let an agent read it itself</summary><div class="code row"><span><span class="pr">$</span>${esc(MCP_CMD)}</span><button class="btn dark sm" id="mcpCopy">${I('copy')}Copy</button></div></details></div></section>
-    <section class="sec"><div class="sl">Documents from this recording</div><div class="stepper docs">${rows}</div></section>`;
+    <section class="sec"><div class="sl">Record for agents</div><div class="card pad" title="Turn this recording into a brief for Claude Code, Cursor or any coding agent: what you said, the steps shown with screenshot files, where you clicked.">
+      <div class="axbar"><button class="btn sm" id="planCopy" ${ax.ready ? '' : 'disabled'}>${I('copy')}Copy action plan</button><a class="btn sm" href="/api/videos/${id}/action-plan?download=1">${I('download')}Download .md</a></div>
+      <details class="mcp"><summary>Agent access</summary><div class="code row"><span><span class="pr">$</span>${esc(MCP_CMD)}</span><button class="btn dark sm" id="mcpCopy">${I('copy')}Copy</button></div></details></div></section>
+    <section class="sec"><div class="sl">Documents</div><div class="stepper docs">${rows}</div></section>`;
   p.querySelectorAll('[data-ax]').forEach((b) => (b.onclick = () => (ax.list.find((x) => x.id === b.dataset.ax).cached ? openAction(b.dataset.ax) : runAction(b.dataset.ax))));
   p.querySelectorAll('[data-axre]').forEach((b) => (b.onclick = () => runAction(b.dataset.axre, true)));
   p.querySelectorAll('[data-axcopy]').forEach((b) => (b.onclick = async () => { await navigator.clipboard.writeText(ax.results[b.dataset.axcopy].markdown); copied(b); }));
@@ -512,7 +509,7 @@ async function previewSend(action, target) {
   const m = $('modal'); m.hidden = false;
   const close = () => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', onKey, true); }, onKey = (e) => { if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey, true);
-  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Send to ${esc(pv.label)}"><h3>Send to ${esc(pv.label)}?</h3><p style="color:var(--mute);margin:6px 0 0">${esc(pv.summary)}. This is exactly what will be sent; your key is hidden here.</p>
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Send to ${esc(pv.label)}"><h3>Send to ${esc(pv.label)}?</h3><p style="color:var(--ink-3);margin:6px 0 0">${esc(pv.summary)}. This is exactly what will be sent; your key is hidden here.</p>
     <dl class="prev"><dt>Request</dt><dd class="mono">${esc(pv.method)} ${esc(pv.url)}</dd><dt>Headers</dt><dd><div class="md">${esc(Object.entries(pv.headers).map(([k, v]) => `${k}: ${v}`).join('\n'))}</div></dd><dt>Body</dt><dd><div class="md">${esc(JSON.stringify(pv.body, null, 2))}</div></dd></dl>
     <div class="axbar" style="justify-content:flex-end"><button class="btn" id="px-no">Cancel</button><button class="btn pri" id="px-go">${I('send')}Send</button></div></div>`;
   m.onclick = (e) => { if (e.target === m) close(); }; $('px-no').onclick = close; $('px-go').focus();
@@ -543,7 +540,7 @@ async function openShare() {
     ${st.mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="m-pw" placeholder="${p0.hasPassword ? 'Leave empty to keep the current password' : 'Choose a password'}" value="${esc(st.pw)}"></div>` : ''}
     <div id="m-pub"></div>
     ${st.panel === 'embed' ? `<div class="more"><b>Embed in Notion, Zendesk, Intercom, Confluence or any site</b><code class="b" style="margin-top:10px">&lt;iframe src="${esc(base)}/embed/${id}" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</code><button class="btn sm" id="m-ecopy" style="margin-top:10px">Copy embed code</button></div>` : ''}
-    ${st.panel === 'social' ? `<div class="more"><div class="rowf" style="flex-wrap:wrap"><a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/tweet?url=${encodeURIComponent(link())}&text=${encodeURIComponent(vm.title)}">Post on X</a><a class="btn" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link())}">LinkedIn</a><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(vm.title + ' ' + link())}">WhatsApp</a></div>${s.lan ? '' : '<p class="note" style="margin:10px 0 0;color:var(--mute);font-size:13px">This link opens on this computer only. Turn on “People on my network” in Settings to share on your Wi-Fi.</p>'}</div>` : ''}
+    ${st.panel === 'social' ? `<div class="more"><div class="rowf" style="flex-wrap:wrap"><a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/tweet?url=${encodeURIComponent(link())}&text=${encodeURIComponent(vm.title)}">Post on X</a><a class="btn" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link())}">LinkedIn</a><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(vm.title + ' ' + link())}">WhatsApp</a></div>${s.lan ? '' : '<p class="note" style="margin:10px 0 0;color:var(--ink-3);font-size:13px">This link opens on this computer only. Turn on “People on my network” in Settings to share on your Wi-Fi.</p>'}</div>` : ''}
     <div class="ft"><button class="t" id="m-copy" title="This link opens on this Mac only (or on your Wi-Fi if you turned that on). For a link anyone can open, use Public link above.">${I('link')}Copy local link (this Mac only)</button><label class="t"><input type="checkbox" id="m-time" ${st.withTime ? 'checked' : ''}>Share video at ${fmt(t0)}</label><button class="t" id="m-lock">${I('lock')}Set password</button><button class="btn go ${dirty() ? 'pri' : ''}" id="m-go" ${dirty() ? '' : 'disabled'}>Share</button></div></div>`;
     wire(); drawPub();
   };
@@ -606,16 +603,16 @@ async function openShare() {
   const GH_WARN = `<div class="callout warn" style="margin-top:10px;display:block"><b>Read this before you publish to GitHub</b><ul style="margin:6px 0 0;padding-left:18px"><li><b>No password.</b> Anyone who has the link can watch and save the video. The page asks search engines not to list it, but the repository will appear on your public GitHub profile.</li><li><b>Deleting is not guaranteed.</b> Kairos tries to delete the repository after 30 days or when you click Unpublish (it needs the delete permission on your GitHub login), and GitHub may keep copies in caches. Anyone who already saved or forked the video keeps it.</li><li>Only a smaller copy of this video (720p) and its title leave your Mac.</li></ul></div>`;
   const pubForm = (P) => {
     const hs = avail(P), host = (pu.host = hs.some((h) => h[0] === pu.host) ? pu.host : hs[0][0]), can = hs.find((h) => h[0] === host)[2];
-    const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--mute)">${host === 'github' ? 'Fastest and free. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Slower to set up: two accounts.'}</p>` : '';
-    if (!can.ok) return picker + `<p class="note" style="margin:0;font-size:13px;color:var(--mute)">${esc(can.message)}</p>`;
+    const picker = hs.length > 1 ? `<div class="rowf" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">${hs.map(([k]) => `<button class="btn sm ${host === k ? 'pri' : ''}" data-ph="${k}">${HOSTS[k]}</button>`).join('')}</div><p class="note" style="margin:0 0 10px;font-size:13px;color:var(--ink-3)">${host === 'github' ? 'Fastest and free. No password option, and deleting is not guaranteed.' : 'Has a password option, and the copy is really deleted. Slower to set up: two accounts.'}</p>` : '';
+    if (!can.ok) return picker + `<p class="note" style="margin:0;font-size:13px;color:var(--ink-3)">${esc(can.message)}</p>`;
     const modes = can.modes, mode = (pu.mode = modes.includes(pu.mode) ? pu.mode : modes.includes(P.mode) ? P.mode : modes[0]);
     const what = host === 'github' ? 'I understand it will be <b>public on GitHub with no password</b>, that deleting it later is <b>not guaranteed</b>, and that the Privacy Guard cannot catch everything. It does not blur faces.'
       : `I understand Kairos will upload a copy of <b>${esc(vm.title)}</b> to Backblaze and Cloudflare servers for up to 30 days. The Privacy Guard blurs what it recognises, but it cannot catch everything, and it does not blur faces.`;
     return `${picker}${host === 'github' ? GH_WARN : `<div class="rowf" style="flex-wrap:wrap;gap:8px">${modes.map((k) => `<button class="btn sm ${mode === k ? 'pri' : ''}" data-pm="${k}">${PMODES[k]}</button>`).join('')}</div>`}
       ${host !== 'github' && mode === 'password' ? `<div class="pwrow"><input class="field" type="password" id="pub-pw" autocomplete="new-password" placeholder="Choose a password (8 or more characters). You must tell people yourself." value="${esc(pu.pw)}"></div>` : ''}
-      ${(can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:var(--warn-ink)">${esc(w)}</p>`).join('')}
+      ${(can.warnings || []).map((w) => `<p class="note" style="margin:10px 0 0;font-size:13px;color:var(--ink)">${esc(w)}</p>`).join('')}
       <label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;line-height:1.45"><input type="checkbox" id="pub-ok" ${pu.ok ? 'checked' : ''} style="margin-top:3px"><span>I have watched this video on this Mac. ${what}</span></label>
-      ${pu.err ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--danger)">${esc(pu.err)}</p>` : ''}
+      ${pu.err ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--alert)">${esc(pu.err)}</p>` : ''}
       <div class="rowf" style="margin-top:12px;gap:8px"><button class="btn pri" id="pub-go" ${pu.ok && !pu.busy && (host === 'github' || mode !== 'password' || pu.pw.length >= 8) ? '' : 'disabled'}>${pu.busy ? 'Starting…' : P.state === 'live' ? 'Republish' : host === 'github' ? 'Publish to GitHub' : 'Publish'}</button>${pu.form && P.state === 'live' ? '<button class="btn sm" id="pub-cancel-form">Never mind</button>' : ''}</div>`;
   };
   function drawPub() {
@@ -626,18 +623,18 @@ async function openShare() {
     else if (P.state === 'working') {
       const pct = Math.round((P.progress || 0) * 100);
       h = `<div style="font-size:14px">${P.stage === 'uploading' ? 'Uploading' : P.stage === 'finishing' && P.host === 'github' ? 'GitHub is building the page (this can take a minute or two)' : P.stage === 'finishing' ? 'Finishing' : 'Making a small copy'}… ${pct}%</div><progress max="1" value="${P.progress || 0}" style="width:100%;margin:8px 0"></progress>
-        ${P.previous ? `<p class="note" style="margin:0 0 8px;font-size:13px;color:var(--mute)">The earlier link keeps working until the new one is ready.</p>` : ''}<button class="btn sm" id="pub-cancel">Cancel</button>`;
+        ${P.previous ? `<p class="note" style="margin:0 0 8px;font-size:13px;color:var(--ink-3)">The earlier link keeps working until the new one is ready.</p>` : ''}<button class="btn sm" id="pub-cancel">Cancel</button>`;
     } else {
       if (P.state === 'live') {
         h = `<div class="rowf" style="gap:8px"><input class="field" readonly id="pub-url" value="${esc(P.url)}" style="flex:1;min-width:0"><button class="btn sm" id="pub-copy">Copy</button><a class="btn sm" target="_blank" rel="noopener" href="${esc(P.url)}">Open</a></div>
-          <p class="note" style="margin:8px 0 0;font-size:13px;color:var(--mute)">${P.host === 'github' ? 'GitHub · no password, anyone with the link can watch and save it' : esc(PMODES[P.mode] || P.mode)} · available until ${pday(P.expiresAt)} · ${pmb(P.bytes || 0)}${P.allowDownload ? '' : ' · downloads off'}</p>
-          ${P.host === 'github' && P.repoUrl ? `<p class="note" style="margin:6px 0 0;font-size:13px;color:var(--mute)"><a target="_blank" rel="noopener" href="${esc(P.repoUrl)}">View the repository on GitHub</a></p>` : ''}
-          ${P.stale ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--warn-ink)"><b>Out of date:</b> ${esc(P.staleWhy)}. The public link still shows the old version. Republish to update it.</p>` : ''}
-          ${P.notice ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--warn-ink)">${esc(P.notice)}</p>` : ''}
+          <p class="note" style="margin:8px 0 0;font-size:13px;color:var(--ink-3)">${P.host === 'github' ? 'GitHub · no password, anyone with the link can watch and save it' : esc(PMODES[P.mode] || P.mode)} · available until ${pday(P.expiresAt)} · ${pmb(P.bytes || 0)}${P.allowDownload ? '' : ' · downloads off'}</p>
+          ${P.host === 'github' && P.repoUrl ? `<p class="note" style="margin:6px 0 0;font-size:13px;color:var(--ink-3)"><a target="_blank" rel="noopener" href="${esc(P.repoUrl)}">View the repository on GitHub</a></p>` : ''}
+          ${P.stale ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--ink)"><b>Out of date:</b> ${esc(P.staleWhy)}. The public link still shows the old version. Republish to update it.</p>` : ''}
+          ${P.notice ? `<p class="note" style="margin:8px 0 0;font-size:13px;color:var(--ink)">${esc(P.notice)}</p>` : ''}
           ${pu.form ? `<div style="margin-top:12px">${pubForm(P)}</div>` : `<div class="rowf" style="margin-top:12px;gap:8px"><button class="btn sm" id="pub-re">Republish…</button><button class="btn sm danger" id="pub-un">Unpublish</button></div>`}`;
       } else {
         const why = P.state === 'failed' ? `Publishing failed: ${P.error || 'unknown problem'}` : P.state === 'removed' ? P.reason : P.state === 'expired' ? 'The earlier public link expired and its copy was deleted.' : '';
-        h = `${connNote()}${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? 'var(--danger)' : 'var(--mute)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
+        h = `${connNote()}${why ? `<p class="note" style="margin:0 0 10px;font-size:13px;color:${P.state === 'failed' ? 'var(--alert)' : 'var(--ink-3)'}">${esc(why)}</p>` : ''}${pubForm(P)}`;
       }
     }
     el.innerHTML = `<h5>Public link<small>Opens on any phone or computer, even when this Mac is off</small></h5><div class="more" style="margin-top:6px">${h}</div>`;
@@ -674,7 +671,7 @@ async function openShare() {
     m.querySelectorAll('[data-rp]').forEach((b) => (b.onclick = () => { st.people.splice(+b.dataset.rp, 1); draw(); }));
     m.querySelectorAll('[data-rs]').forEach((b) => (b.onclick = () => { st.spaces.delete(b.dataset.rs); draw(); }));
     m.querySelectorAll('[data-as]').forEach((b) => (b.onclick = () => { st.spaces.add(b.dataset.as); draw(); }));
-    m.querySelector('#m-acc').onclick = () => popover(m.querySelector('#m-acc'), Object.entries(ACCESS).map(([k, [n, d, ic]]) => `<button class="mi" data-m="${k}">${I(ic)}<span><b style="font-weight:600">${n}</b><br><small style="color:var(--mute)">${d}</small></span></button>`).join(''), (pp, c) => pp.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => { c(); st.mode = b.dataset.m; draw(); })));
+    m.querySelector('#m-acc').onclick = () => popover(m.querySelector('#m-acc'), Object.entries(ACCESS).map(([k, [n, d, ic]]) => `<button class="mi" data-m="${k}">${I(ic)}<span><b style="font-weight:600">${n}</b><br><small style="color:var(--ink-3)">${d}</small></span></button>`).join(''), (pp, c) => pp.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => { c(); st.mode = b.dataset.m; draw(); })));
     const pw = m.querySelector('#m-pw'); if (pw) pw.oninput = () => { st.pw = pw.value; m.querySelector('#m-go').disabled = !dirty(); m.querySelector('#m-go').classList.toggle('pri', dirty()); };
     m.querySelector('#m-copy').onclick = async (e) => { await navigator.clipboard.writeText(link()); copied(e.currentTarget); };
     m.querySelector('#m-time').onchange = (e) => { st.withTime = e.target.checked; };

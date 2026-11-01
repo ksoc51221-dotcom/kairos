@@ -151,7 +151,7 @@
 
     // ---------- the panel ----------
     function composerHTML() {
-      if (!st.open) return `<button type="button" class="btn ep-open rp-open">${I('volume-off')}<span>Bleep speech</span></button><p class="ep-hint">Hide a sentence, a topic or a moment in the sound. You review every bleep before it is made.</p>`;
+      if (!st.open) return `<button type="button" class="btn ep-open rp-open" title="Hide a sentence, a topic or a moment in the sound. You review every bleep before it is made.">${I('volume-off')}<span>Bleep speech</span></button>`;
       const len = st.text.length;
       return `<div class="card pad ep-card">
         <div class="ep-head"><span class="tag">Bleep speech</span><button type="button" class="iconbtn rp-close" title="Close" aria-label="Close">${I('x')}</button></div>

@@ -1,12 +1,12 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edit · Kairos</title><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
+<title>Edit · Kairos</title><link rel="stylesheet" href="/static/instrument.css"><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/edit-prompt.css"><style>
 /* The editor (owner only). Non-destructive: everything below changes a draft edit list that is saved as you go; "Apply edits" renders a new
    video.mp4 once, with one level of undo. Preview skips the cut ranges, so what you hear is what Apply will make. Workstation layout: dark slate
    preview + timeline on the left, 460px inspector (Describe an edit, underline tabs, scrolling body) on the right. */
-body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--surface-1); }
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--raised); }
 .top { position: static; flex: none; gap: 10px; }
-.top .ttl { margin: 0; font: 600 16px/20px var(--font); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
-.top .st { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.top .ttl { margin: 0; font: 600 16px/20px var(--sans); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
+.top .st { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
 .work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--side-w, 460px); }
 @media (max-width: 980px) { .work { grid-template-columns: 1fr; grid-template-rows: auto 480px; overflow: auto; } }
 .left { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 16px 20px 12px; gap: 10px; overflow: auto; }
@@ -15,42 +15,43 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; b
 .stagebox .stage { height: auto; max-height: 100%; width: min(100%, calc((100vh - 470px) * 16 / 9)); }
 .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .bar .time { font: 500 12px/1 var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; min-width: 150px; }
-.bar .res { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-left: auto; font-variant-numeric: tabular-nums; }
-.bar input[type=range] { accent-color: var(--accent); width: 120px; height: 24px; }
+.bar .res { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); margin-left: auto; font-variant-numeric: tabular-nums; }
+.bar input[type=range] { accent-color: var(--ink); width: 120px; height: 24px; }
 .bar .meta kbd { margin: 0 2px; }
-.tlwrap { position: relative; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); overflow: hidden; flex: none; touch-action: none; }
+.tlwrap { position: relative; border: 1px solid var(--hair-strong); border-radius: var(--r-btn); background: var(--surface); overflow: hidden; flex: none; touch-action: none; }
 #tl { display: block; width: 100%; height: 150px; cursor: crosshair; }
-.right { border-left: 1px solid var(--line-soft); background: var(--surface); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-#dock { flex: none; max-height: 52%; overflow: auto; border-bottom: 1px solid var(--line-soft); background: var(--surface-1); }
+.right { border-left: 1px solid var(--hair); background: var(--surface); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+#dock { flex: none; max-height: 52%; overflow: auto; border-bottom: 1px solid var(--hair); background: var(--raised); }
 #epHost { padding: 12px 16px; } #rpHost { padding: 0 16px 12px; } #rpHost .ep-hint { display: none; }
-.right .tabs { border-bottom: 1px solid var(--line-soft); padding: 0 16px; gap: 18px; flex: none; position: relative; } .right .tabs button { font-size: 13px; padding: 12px 0 10px; }
+.right .tabs { border-bottom: 1px solid var(--hair); padding: 0 16px; gap: 18px; flex: none; position: relative; } .right .tabs button { font-size: 13px; padding: 12px 0 10px; }
 .panel { flex: 1; overflow: auto; padding: 16px 16px 28px; }
-.sub { font: 500 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin: 22px 0 10px; } .sub:first-child { margin-top: 0; }
-.hint { color: var(--mute); font-size: 13px; line-height: 20px; margin: 0 0 12px; }
+.sub { font: 500 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); margin: 22px 0 10px; } .sub:first-child { margin-top: 0; }
+.hint { color: var(--ink-3); font-size: 13px; line-height: 20px; margin: 0 0 12px; }
 .words { font-size: 14px; line-height: 2; user-select: none; -webkit-user-select: none; cursor: text; }
-.words span { padding: 2px 1px; border-radius: var(--r-sm); cursor: pointer; } .words span:hover { background: var(--surface-2); }
-.words span.now { background: var(--accent-soft); color: var(--accent); } .words span.sel { background: var(--accent); color: var(--accent-ink); }
-.words span.cut { text-decoration: line-through; color: var(--danger); background: var(--danger-soft); }
-.selbar { position: sticky; top: -16px; z-index: 2; display: flex; align-items: center; gap: 10px; background: var(--code-bg); color: var(--code-ink); border-radius: var(--r); padding: 6px 8px 6px 12px; margin: -4px 0 12px; font-size: 13px; }
-.prop { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--line-soft); font-size: 13px; cursor: pointer; } .prop:hover { background: var(--surface-2); }
-.prop input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; } .prop .tm { font: 500 11px var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--mute); min-width: 100px; } .prop .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .prop .added { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--good); }
-.sect { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 14px; margin-bottom: 12px; } .sect h4 { margin: 0 0 4px; font: 600 14px/20px var(--font); display: flex; align-items: center; gap: 8px; } .sect .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
-.lib { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--line-soft); } .lib .nm { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lib small { font: 500 11px var(--mono); letter-spacing: .04em; color: var(--mute); }
-.lib img { width: 72px; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--r-sm); background: var(--surface-2); }
-.ov { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 8px; cursor: pointer; } .ov.on { border: 2px solid var(--accent); padding: 7px; background: var(--accent-soft); } .ov .nm { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ov small { font: 500 11px var(--mono); letter-spacing: .04em; color: var(--mute); }
+.words span { padding: 2px 1px; border-radius: 2px; cursor: pointer; } .words span:hover { background: var(--raised); }
+.words span.now { background: var(--selected); color: var(--ink); } .words span.sel { background: var(--accent); color: var(--on-accent); }
+.words span.cut { text-decoration: line-through; color: var(--alert); background: var(--raised); }
+.selbar { position: sticky; top: -16px; z-index: 2; display: flex; align-items: center; gap: 10px; background: var(--raised); color: var(--ink); border-radius: var(--r-btn); padding: 6px 8px 6px 12px; margin: -4px 0 12px; font-size: 13px; }
+.prop { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--hair); font-size: 13px; cursor: pointer; } .prop:hover { background: var(--raised); }
+.prop input { width: 16px; height: 16px; accent-color: var(--ink); flex: none; } .prop .tm { font: 500 11px var(--mono); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--ink-3); min-width: 100px; } .prop .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .prop .added { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); }
+.sect { border: 1px solid var(--hair-strong); border-radius: var(--r-btn); background: var(--surface); padding: 14px; margin-bottom: 12px; } .sect h4 { margin: 0 0 4px; font: 600 14px/20px var(--sans); display: flex; align-items: center; gap: 8px; } .sect .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.lib { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--hair); } .lib .nm { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lib small { font: 500 11px var(--mono); letter-spacing: .04em; color: var(--ink-3); }
+.lib img { width: 72px; aspect-ratio: 16/9; object-fit: cover; border-radius: 2px; background: var(--raised); }
+.ov { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--hair-strong); border-radius: var(--r-btn); margin-bottom: 8px; cursor: pointer; } .ov.on { border: 2px solid var(--ink-2); padding: 7px; background: var(--selected); } .ov .nm { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ov small { font: 500 11px var(--mono); letter-spacing: .04em; color: var(--ink-3); }
 .ov .tile { width: 28px; height: 28px; }
+@media (max-width: 1100px) { .top .brand > span:not(.logo) { display: none; } }
 .addrow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.frm { display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; align-items: center; margin-top: 12px; font-size: 13px; } .frm label { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.frm { display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; align-items: center; margin-top: 12px; font-size: 13px; } .frm label { font: 500 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
 .frm .two { display: flex; gap: 6px; align-items: center; } .frm .two .field { min-width: 0; }
-.sw-row { display: flex; gap: 8px; flex-wrap: wrap; } .colorb { width: 24px; height: 24px; border-radius: var(--r-sm); border: 1px solid var(--line); cursor: pointer; padding: 0; } .colorb.on { outline: 2px solid var(--accent); outline-offset: 1px; }
-.cap-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .cap-g button { height: 64px; border-radius: var(--r); border: 1px solid var(--line); background: #3b3d42; /* ui-rules: allow (caption preview surface) */ cursor: pointer; display: grid; place-items: center; font-size: 14px; } .cap-g button.on { border: 2px solid var(--accent); }
-.bg-g { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; } .bg-g button { aspect-ratio: 1; border-radius: var(--r); border: 1px solid var(--line); cursor: pointer; padding: 0; } .bg-g button.on { border: 2px solid var(--accent); }
+.sw-row { display: flex; gap: 8px; flex-wrap: wrap; } .colorb { width: 24px; height: 24px; border-radius: 2px; border: 1px solid var(--hair-strong); cursor: pointer; padding: 0; } .colorb.on { outline: 2px solid var(--accent-text); outline-offset: 1px; }
+.cap-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .cap-g button { height: 64px; border-radius: var(--r-btn); border: 1px solid var(--hair-strong); background: #3b3d42; /* ui-rules: allow (caption preview surface) */ cursor: pointer; display: grid; place-items: center; font-size: 14px; } .cap-g button.on { border: 2px solid var(--ink-2); }
+.bg-g { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; } .bg-g button { aspect-ratio: 1; border-radius: var(--r-btn); border: 1px solid var(--hair-strong); cursor: pointer; padding: 0; } .bg-g button.on { border: 2px solid var(--ink-2); }
 .set { display: flex; align-items: center; gap: 14px; padding: 8px 0; font-size: 13px; } .set .lab { flex: 1; }
-.thumbs { display: flex; gap: 12px; align-items: flex-start; } .thumbs img { width: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--line); }
-.eb { position: absolute; border: 1px dashed var(--accent); pointer-events: auto; cursor: move; box-sizing: border-box; touch-action: none; }
-.eb i { position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--accent); border-radius: var(--r-sm); } .eb i.nw { left: -6px; top: -6px; cursor: nwse-resize; } .eb i.ne { right: -6px; top: -6px; cursor: nesw-resize; } .eb i.sw { left: -6px; bottom: -6px; cursor: nesw-resize; } .eb i.se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.thumbs { display: flex; gap: 12px; align-items: flex-start; } .thumbs img { width: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--r-btn); background: var(--raised); border: 1px solid var(--hair-strong); }
+.eb { position: absolute; border: 1px dashed var(--ink-2); pointer-events: auto; cursor: move; box-sizing: border-box; touch-action: none; }
+.eb i { position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--ink-2); border-radius: 2px; } .eb i.nw { left: -6px; top: -6px; cursor: nwse-resize; } .eb i.ne { right: -6px; top: -6px; cursor: nesw-resize; } .eb i.sw { left: -6px; bottom: -6px; cursor: nesw-resize; } .eb i.se { right: -6px; bottom: -6px; cursor: nwse-resize; }
 #eov { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-.prog { height: 4px; background: var(--surface-3); border-radius: var(--r-sm); overflow: hidden; width: 160px; } .prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 300ms; }
+.prog { height: 4px; background: var(--selected); border-radius: 2px; overflow: hidden; width: 160px; } .prog i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 300ms; }
 </style></head><body>
 <header class="top"><a class="brand" id="brand" href="/"></a><a class="iconbtn" id="back" href="/" title="Back to the video" data-i="left"></a><h1 class="ttl" id="ttl"></h1><span class="st" id="st"></span><div class="grow"></div>
   <span id="prog" hidden style="display:flex;gap:10px;align-items:center"><span class="prog"><i id="progbar"></i></span><span class="st" id="progtxt"></span></span>
@@ -100,7 +101,7 @@ async function load(keepTab) {
   peaks = null; api(`/api/videos/${id}/peaks`).then((p) => { peaks = p; draw(); }).catch(() => {});
 }
 async function boot() {
-  const me = await api('/api/me'); UI.brand(me.brand); $('brand').innerHTML = UI.logo(me.brand);
+  const me = await api('/api/me'); UI.brand(me.brand); /* owner page: always lime */ $('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${esc(me.brand.name)}</span>`);
   try { await load(); } catch (e) { document.body.innerHTML = `<div class="gate"><h2>Can't edit this</h2><p>${esc(e.message)}</p><a class="btn pri" href="/">Back to the library</a></div>`; return; }
   const v = $('v'); v.src = `/media/${id}/video.mp4?v=${Date.now()}`; v.poster = `/media/${id}/thumb.jpg`;
   ctl = attach({ stage: $('stage'), video: v, vm: { ...vm, autoZoom: false }, noStats: true }); // no zoom in the editor: overlay handles need a still frame
@@ -143,8 +144,8 @@ function trims() { const m = merged(), a = m[0] && m[0].start <= 0.001 ? m[0].en
 function draw() {
   if (!dur) return;
   const dpr = Math.min(2, devicePixelRatio || 1), w = W(), h = 150; if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = h * dpr; } g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
-  const acc = css('--accent'), ink = css('--ink'), mute = css('--mute'), bad = css('--danger'), line = css('--line'), wash = css('--wash');
-  g.font = '11px "JetBrains Mono", ui-monospace, Menlo, monospace'; g.textBaseline = 'top';
+  const acc = css('--accent-text'), ink = css('--ink'), mute = css('--ink-3'), bad = css('--alert'), line = css('--hair-strong'), wash = css('--raised');
+  g.font = '11px "Geist Mono", ui-monospace, Menlo, monospace'; g.textBaseline = 'top';
   const steps = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600], step = steps.find((s) => (s / spanT()) * w >= 80) || 600;
   g.fillStyle = mute; g.strokeStyle = line; g.lineWidth = 1;
   for (let t = Math.ceil(tlv.t0 / step) * step; t <= tlv.t0 + spanT(); t += step) { const x = Math.round(t2x(t)) + .5; g.beginPath(); g.moveTo(x, 16); g.lineTo(x, 24); g.stroke(); const lb = mmss(t, step < 1 ? 2 : step < 1 ? 1 : 0), tw = g.measureText(lb).width, flip = x + 4 + tw > w - 2; g.textAlign = flip ? 'right' : 'left'; g.fillText(lb, flip ? x - 4 : x + 4, 3); g.textAlign = 'left'; }
@@ -153,10 +154,10 @@ function draw() {
   else { g.fillStyle = mute; g.fillText('Reading the sound…', 10, mid); }
   for (const c of merged()) { const x1 = t2x(c.start), x2 = t2x(c.end); if (x2 < 0 || x1 > w) continue; g.fillStyle = wash; g.globalAlpha = .82; g.fillRect(x1, top, x2 - x1, h - top - 8); g.globalAlpha = 1; g.strokeStyle = bad; g.lineWidth = 1; g.save(); g.beginPath(); g.rect(x1, top, x2 - x1, h - top - 8); g.clip(); for (let x = x1 - 150; x < x2 + 150; x += 8) { g.beginPath(); g.moveTo(x, h - 8); g.lineTo(x + 150, top); g.globalAlpha = .28; g.stroke(); } g.restore(); g.globalAlpha = 1; g.fillStyle = bad; g.fillRect(x1, top, 2, h - top - 8); g.fillRect(x2 - 2, top, 2, h - top - 8); }
   for (const s of splits) { const x = t2x(s); g.strokeStyle = ink; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x, top); g.lineTo(x, h - 8); g.stroke(); g.setLineDash([]); }
-  for (const ins of D.inserts) { const x = t2x(ins.at); g.fillStyle = acc; g.fillRect(x - 1, top, 3, h - top - 8); g.beginPath(); g.moveTo(x - 6, top); g.lineTo(x + 7, top); g.lineTo(x + .5, top + 10); g.fill(); }
-  const tr = trims(); for (const [t, left] of [[tr.a, true], [tr.b, false]]) { const x = t2x(t); g.fillStyle = acc; g.fillRect(left ? x - 8 : x, 16, 8, 12); g.fillRect(x - 1, 16, 2, h - 24); }
+  for (const ins of D.inserts) { const x = t2x(ins.at); g.fillStyle = ink; g.fillRect(x - 1, top, 3, h - top - 8); g.beginPath(); g.moveTo(x - 6, top); g.lineTo(x + 7, top); g.lineTo(x + .5, top + 10); g.fill(); }
+  const tr = trims(); for (const [t, left] of [[tr.a, true], [tr.b, false]]) { const x = t2x(t); g.fillStyle = ink; g.fillRect(left ? x - 8 : x, 16, 8, 12); g.fillRect(x - 1, 16, 2, h - 24); }
   if (sel) { const x1 = t2x(sel.a), x2 = t2x(sel.b); g.fillStyle = acc; g.globalAlpha = .22; g.fillRect(x1, top, x2 - x1, h - top - 8); g.globalAlpha = 1; g.fillRect(x1 - 2, top, 5, h - top - 8); g.fillRect(x2 - 3, top, 5, h - top - 8); }
-  const px = t2x($('v').currentTime || 0); g.strokeStyle = bad; g.lineWidth = 2; g.beginPath(); g.moveTo(px, 0); g.lineTo(px, h); g.stroke(); g.fillStyle = bad; g.beginPath(); g.moveTo(px - 6, 0); g.lineTo(px + 6, 0); g.lineTo(px, 9); g.fill();
+  const px = t2x($('v').currentTime || 0); g.strokeStyle = acc; g.lineWidth = 2; g.beginPath(); g.moveTo(px, 0); g.lineTo(px, h); g.stroke(); g.fillStyle = acc; g.beginPath(); g.moveTo(px - 6, 0); g.lineTo(px + 6, 0); g.lineTo(px, 9); g.fill();
 }
 let drag = null;
 cv.addEventListener('pointerdown', (e) => {
@@ -297,7 +298,7 @@ function tOverlays(p) {
   const list = ovList(), o = list.find((x) => x.id === ovSel), vars = [...new Set([...list.map((x) => x.text || ''), vm.cta?.text || '', vm.cta?.url || ''].join(' ').matchAll(/\{\{\s*(\w+)\s*\}\}/g).map((m) => m[1]))];
   p.innerHTML = `<div class="addrow"><button class="btn sm" data-add="text">${I('text')}Text</button><button class="btn sm" data-add="arrow">${I('arrow')}Arrow</button><button class="btn sm" data-add="box">${I('box')}Box</button><button class="btn sm" data-add="blur">${I('blur')}Blur box</button></div>
     ${list.map((x) => `<div class="ov ${x.id === ovSel ? 'on' : ''}" data-id="${x.id}"><span class="tile sm">${I({ text: 'text', arrow: 'arrow', box: 'box', blur: 'blur' }[x.type])}</span><div class="nm">${esc(x.type === 'text' ? x.text : OV_NAME[x.type])}<br><small>${mmss(x.start)}–${mmss(x.end)}</small></div></div>`).join('') || '<p class="hint">Add text, an arrow, a box or a blur over part of the video, from a start time to an end time. Drag it on the picture to place it.</p>'}
-    ${o ? `<div class="frm">${o.type === 'text' ? `<label>Text</label><input class="field" id="o-text" value="${esc(o.text)}"><label>Size</label><input class="field" id="o-size" type="number" min="1" max="12" step="0.5" value="${o.size || 4}"><label>Background</label><div class="sw-row" id="o-bg"><button class="colorb ${!o.bg ? 'on' : ''}" data-c="" title="None" style="background:var(--surface-3)"></button>${PALETTE.map((c) => `<button class="colorb ${o.bg === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
+    ${o ? `<div class="frm">${o.type === 'text' ? `<label>Text</label><input class="field" id="o-text" value="${esc(o.text)}"><label>Size</label><input class="field" id="o-size" type="number" min="1" max="12" step="0.5" value="${o.size || 4}"><label>Background</label><div class="sw-row" id="o-bg"><button class="colorb ${!o.bg ? 'on' : ''}" data-c="" title="None" style="background:var(--selected)"></button>${PALETTE.map((c) => `<button class="colorb ${o.bg === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
       ${o.type !== 'blur' ? `<label>Colour</label><div class="sw-row" id="o-col">${PALETTE.map((c) => `<button class="colorb ${o.color === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>` : ''}
       <label>Shows</label><div class="two"><input class="field" id="o-s" type="number" min="0" max="${dur}" step="0.1" value="${o.start}"><span>to</span><input class="field" id="o-e" type="number" min="0" max="${dur}" step="0.1" value="${o.end}"></div>
       <label></label><div class="two"><button class="btn sm" id="o-sp">Start = playhead</button><button class="btn sm" id="o-ep">End = playhead</button></div></div>
@@ -338,10 +339,10 @@ const patch = async (body) => { try { const r = await api(`/api/videos/${id}`, {
 const patchSoon = (() => { let t; return (b) => { clearTimeout(t); t = setTimeout(() => patch(b), 450); }; })();
 function tStyle(p) {
   const cta = vm.cta || { text: '', url: '' };
-  p.innerHTML = `<div class="sub">Captions</div><div class="set"><div class="lab">Show captions from the start<small style="display:block;color:var(--mute)">Viewers can still turn them off</small></div><input type="checkbox" class="sw" id="cp-on" ${vm.captionsDefault ? 'checked' : ''} ${vm.segments?.length ? '' : 'disabled'}></div>
+  p.innerHTML = `<div class="sub">Captions</div><div class="set"><div class="lab">Show captions from the start<small style="display:block;color:var(--ink-3)">Viewers can still turn them off</small></div><input type="checkbox" class="sw" id="cp-on" ${vm.captionsDefault ? 'checked' : ''} ${vm.segments?.length ? '' : 'disabled'}></div>
     <!-- ui-rules: allow (caption styles are user-chosen) --><div class="cap-g" id="cap-g">${[['classic', 'Classic'], ['bold', 'Bold'], ['yellow', 'Yellow'], ['minimal', 'Minimal'], ['mint', 'Mint'], ['blue', 'Blue']].map(([k, l]) => `<button data-k="${k}" class="${(vm.captionStyle === 'purple' ? 'blue' : vm.captionStyle || 'classic') === k ? 'on' : ''}"><span style="${CAPTION_STYLES[k]}">${l}</span></button>`).join('')}</div>
     <div class="sub">Background</div><!-- ui-rules: allow (video background presets are user-chosen) -->
-    <div class="bg-g" id="bg-g">${[['none', ''], ['blue', ''], ['mint', ''], ['sunset', ''], ['night', ''], ['aurora', '']].map(([k]) => `<button data-k="${k}" class="${(vm.background === 'purple' ? 'blue' : vm.background || 'none') === k ? 'on' : ''}" title="${k}" style="background:${BACKGROUNDS[k] || 'var(--surface-3)'}"></button>`).join('')}</div>
+    <div class="bg-g" id="bg-g">${[['none', ''], ['blue', ''], ['mint', ''], ['sunset', ''], ['night', ''], ['aurora', '']].map(([k]) => `<button data-k="${k}" class="${(vm.background === 'purple' ? 'blue' : vm.background || 'none') === k ? 'on' : ''}" title="${k}" style="background:${BACKGROUNDS[k] || 'var(--selected)'}"></button>`).join('')}</div>
     <div class="sub">Call-to-action button</div><p class="hint">A button on the player, shown in the last 8 seconds and whenever the video is paused.</p>
     <div class="frm"><label>Button text</label><input class="field" id="cta-t" value="${esc(cta.text)}" placeholder="Book a call"><label>Link</label><input class="field" id="cta-u" value="${esc(cta.url)}" placeholder="https://…"></div>
     <div class="actions" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" id="cta-x" ${vm.cta ? '' : 'disabled'}>Remove button</button></div>

@@ -10,7 +10,7 @@ const { page } = require('../util');
 
 // B14: while the owner previews as a viewer, "/" used to answer with a raw JSON 403 and they were stuck. Now it explains and offers the way back.
 const PREVIEW_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Previewing as a viewer · Kairos</title>
-<link rel="stylesheet" href="/static/app.css"></head><body><div class="gate"><h2>You're previewing as a viewer</h2><p>The library and settings are hidden while you look at Kairos the way a viewer does.</p>
+<link rel="stylesheet" href="/static/instrument.css"><link rel="stylesheet" href="/static/app.css"></head><body><div class="gate"><h2>You're previewing as a viewer</h2><p>The library and settings are hidden while you look at Kairos the way a viewer does.</p>
 <a class="btn pri" href="/stop-viewing-as">Back to owner view</a></div></body></html>`;
 
 function mount(app, ctx = {}) {

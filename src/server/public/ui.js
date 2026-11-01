@@ -1,4 +1,4 @@
-// Icons and small helpers shared by the web pages. Inline SVGs drawn for Kairos in one stroke style (24x24 grid, 1.75 px round strokes, set in app.css),
+// Icons and small helpers shared by the web pages. Inline SVGs drawn for Kairos in one stroke style (24x24 grid, 1.5 px round strokes, set in app.css),
 // in the spirit of the MIT-licensed Lucide set; no icon library is a dependency and nothing is fetched. Use: UI.i('share') -> '<svg class="i">…</svg>'.
 // A name with no icon renders an empty svg, so add new icons here (the foundation file), not inline in a page.
 (() => {
@@ -110,21 +110,42 @@
   // "7 minutes ago" style times, as shown under the title and on the cards
   const ago = (t) => { const s = (Date.now() - t) / 1000; if (s < 45) return 'just now'; const u = [[60, 'minute'], [3600, 'hour'], [86400, 'day'], [604800, 'week'], [2592000, 'month'], [31536000, 'year']]; let k = 0; while (k < u.length - 1 && s >= u[k + 1][0]) k++; const n = Math.floor(s / (k ? u[k][0] : 60)); return `${n} ${u[k][1]}${n === 1 ? '' : 's'} ago`; };
   const dur = (s) => (s < 60 ? `${Math.max(1, Math.round(s))} sec` : `${Math.round(s / 60)} min`);
-  // The owner's accent colour from Settings replaces --accent. The emerald default and the two earlier defaults (purple, then blue) count as "not chosen":
-  // the stylesheet's own palette stays in charge and any earlier override is cleared.
-  const DEFAULT_ACCENTS = ['#047857', '#7b5cf0', '#3267d4'];
-  const ACCENT_VARS = ['--accent', '--accent-d', '--accent-soft', '--tile', '--accent-ink'];
+  // The owner's accent colour from Settings is a SHARE-PAGE setting: it replaces --accent only on viewer-facing pages (watch page for a visitor who is not the owner,
+  // the password / email / private / expired gates, embed, space). Owner pages always use the Instrument lime, so they call brand(b) with no second argument.
+  // The lime default and the earlier defaults (emerald, purple, blue) count as "not chosen".
+  const DEFAULT_ACCENTS = ['#c6ff3d', '#047857', '#7b5cf0', '#3267d4'];
+  const ACCENT_VARS = ['--accent', '--accent-text', '--on-accent', '--accent-wash', '--sweep'];
   // Dark text on a light custom accent (white text on yellow is unreadable). Relative luminance per WCAG.
   const lum = (hex) => { const c = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
-  const brand = (b = {}) => {
+  const brand = (b = {}, viewerFacing = false) => {
     const root = document.documentElement.style, a = (b.accent || '').toLowerCase();
-    if (/^#[0-9a-f]{6}$/.test(a) && !DEFAULT_ACCENTS.includes(a)) {
-      root.setProperty('--accent', a); root.setProperty('--accent-d', `color-mix(in srgb, ${a}, black 16%)`);
-      root.setProperty('--accent-soft', `color-mix(in srgb, ${a}, white 91%)`); root.setProperty('--tile', `color-mix(in srgb, ${a}, white 84%)`);
-      root.setProperty('--accent-ink', lum(a) > 0.18 ? '#0f172a' : '#ffffff');
-    } else ACCENT_VARS.forEach((v) => root.removeProperty(v));
+    ACCENT_VARS.forEach((v) => root.removeProperty(v));
+    if (!viewerFacing || !/^#[0-9a-f]{6}$/.test(a) || DEFAULT_ACCENTS.includes(a)) return;
+    const L = lum(a), forced = document.documentElement.dataset.theme, light = forced ? forced === 'light' : window.matchMedia?.('(prefers-color-scheme: light)').matches;
+    root.setProperty('--accent', a); root.setProperty('--on-accent', L > 0.18 ? '#0B0B0C' : '#FFFFFF'); // ink on the fill: dark on a light accent, white on a dark one
+    // thin marks and links sit on the canvas, not on the fill: on light they need to be darker, on dark lighter, to stay readable
+    root.setProperty('--accent-text', light ? (L > 0.2 ? `color-mix(in srgb, ${a}, #000 48%)` : a) : (L < 0.1 ? `color-mix(in srgb, ${a}, #fff 45%)` : a));
+    root.setProperty('--sweep', `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect width='1' height='1' fill='%23${a.slice(1)}'/%3E%3C/svg%3E")`);
   };
-  // The brand mark: the Kairos pinwheel on an emerald square, or the owner's uploaded logo.
+  // The brand mark: the Kairos pinwheel in ink (no square), or the owner's uploaded logo. Pages add the mono KAIROS wordmark next to it.
   const logo = (b = {}) => (b.logo ? '<span class="logo" style="background:url(/branding/logo.png) center/cover"></span>' : `<span class="logo">${i('kairos')}</span>`);
-  window.UI = { brand, logo, i, P, esc, initials, fill, ago, dur };
+  // Numeric roll: <span data-roll="12" data-pad="2" data-rk="views"></span>. Counts tween from their last shown value to the new one; unchanged values are set at once,
+  // and reduced-motion users get the final number. The last value is remembered by data-rk so a re-render does not replay the roll.
+  const seen = new Map(), reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const fmtN = (n, pad) => String(Math.round(n)).padStart(pad, '0');
+  const roll = (root = document) => root.querySelectorAll('[data-roll]').forEach((el) => {
+    const to = Number(el.dataset.roll), pad = Number(el.dataset.pad || 0), key = el.dataset.rk || '', from = key && seen.has(key) ? seen.get(key) : 0;
+    if (!Number.isFinite(to)) return;
+    if (key) seen.set(key, to);
+    cancelAnimationFrame(el._raf);
+    if (from === to || reduced()) { el.textContent = fmtN(to, pad); return; }
+    el.textContent = fmtN(from, pad); const t0 = performance.now(), D = 380;
+    const step = (t) => { const k = Math.min(1, (t - t0) / D), e = 1 - (1 - k) ** 3; el.textContent = fmtN(from + (to - from) * e, pad); if (k < 1) el._raf = requestAnimationFrame(step); };
+    el._raf = requestAnimationFrame(step);
+  });
+  // A count as markup: UI.n(3, 2) -> '<span class="i-num" data-roll="3" data-pad="2">03</span>'. Pass a key to keep the roll from replaying on re-render.
+  const n = (v, pad = 0, key = '') => `<span class="i-num" data-roll="${Number(v) || 0}" data-pad="${pad}"${key ? ` data-rk="${esc(key)}"` : ''}>${fmtN(Number(v) || 0, pad)}</span>`;
+  // Staggered load: marks the children of `root` with --i (capped at 8) and the .i-stagger class.
+  const stagger = (root) => { if (!root) return; [...root.children].forEach((c, k) => c.style.setProperty('--i', Math.min(k, 8))); root.classList.add('i-stagger'); };
+  window.UI = { brand, logo, i, P, esc, initials, fill, ago, dur, roll, n, stagger };
 })();

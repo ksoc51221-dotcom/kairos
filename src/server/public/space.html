@@ -1,23 +1,23 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Space · Kairos</title><link rel="stylesheet" href="/static/app.css">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Space · Kairos</title><link rel="stylesheet" href="/static/instrument.css"><link rel="stylesheet" href="/static/app.css">
 <style>
 main{max-width:1100px;margin:0 auto;padding:32px 24px}
-h1{font:600 24px/32px var(--font);letter-spacing:-.02em;margin:4px 0 0}
+h1{font:600 28px/34px var(--sans);letter-spacing:-.02em;margin:4px 0 0}@media(max-width:640px){main{padding:20px 16px}h1{font-size:22px;line-height:28px}}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:24px}
 a.vc{display:block;overflow:hidden;padding:0}
-a.vc:hover{border-color:var(--line-strong)}
-.th{aspect-ratio:16/9;background:var(--stage) center/cover;border-bottom:1px solid var(--line-soft)}
+a.vc{transition:border-color var(--t-quick) var(--ease)}a.vc:hover{border-color:var(--hair-strong)}
+.th{aspect-ratio:16/9;background:var(--stage) center/cover;border-bottom:1px solid var(--hair)}
 .vb{padding:12px 14px}
-.t{font:500 14px/20px var(--font);color:var(--ink);display:flex;gap:6px;align-items:center}
-.t svg{width:14px;height:14px;flex:none;color:var(--mute)}
+.t{font:500 14px/20px var(--sans);color:var(--ink);display:flex;gap:6px;align-items:center}
+.t svg{width:14px;height:14px;flex:none;color:var(--ink-3)}
 .vb .meta{display:block;margin-top:6px}
-.empty{margin-top:24px;padding:24px;text-align:center}
+.empty{margin-top:24px;padding:48px 24px;text-align:center}
 </style></head><body>
-<header class="top"><a class="brand" href="/" id="brand"></a></header><main><span class="tag pri">Space</span><h1 id="n"></h1><div class="grid" id="g"></div></main>
+<header class="top"><a class="brand" href="/" id="brand"></a></header><main><span class="meta">Space</span><h1 id="n"></h1><div class="grid" id="g"></div></main>
 <script src="/static/ui.js"></script>
 <script>
-fetch('/api/me').then((r) => r.json()).then((me) => { UI.brand(me.brand); document.getElementById('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${UI.esc(me.brand.name)}</span>`); });
+fetch('/api/me').then((r) => r.json()).then((me) => { UI.brand(me.brand, true); document.getElementById('brand').innerHTML = UI.logo(me.brand) + (me.brand.hideBranding ? '' : `<span>${UI.esc(me.brand.name)}</span>`); });
 fetch('/api/space/' + location.pathname.split('/').pop()).then((r) => r.ok ? r.json() : Promise.reject()).then((s) => {
   document.getElementById('n').textContent = s.name; document.title = s.name + ' · Kairos';
-  document.getElementById('g').innerHTML = s.videos.map((v) => `<a class="card vc" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')"></div><div class="vb"><div class="t">${v.locked ? UI.i('lock') : ''}<span>${UI.esc(v.title)}</span></div><span class="meta">${v.locked ? 'Open it to unlock' : `${v.views} view${v.views === 1 ? '' : 's'} · ${UI.ago(v.createdAt)} · ${UI.dur(v.duration)}`}</span></div></a>`).join('') || '<div class="card empty meta" style="grid-column:1/-1">No videos in this space yet.</div>';
+  document.getElementById('g').innerHTML = s.videos.map((v) => `<a class="card vc" href="/v/${v.id}"><div class="th" style="background-image:url('/media/${v.id}/thumb.jpg')"></div><div class="vb"><div class="t">${v.locked ? UI.i('lock') : ''}<span>${UI.esc(v.title)}</span></div><span class="meta">${v.locked ? 'Open it to unlock' : `${String(v.views).padStart(2, '0')} view${v.views === 1 ? '' : 's'} · ${UI.ago(v.createdAt)} · ${UI.dur(v.duration)}`}</span></div></a>`).join('') || '<div class="empty meta" style="grid-column:1/-1">No videos · 00</div>'; UI.stagger(document.getElementById('g'));
 }).catch(() => (document.getElementById('n').textContent = 'Space not found'));
 </script></body></html>

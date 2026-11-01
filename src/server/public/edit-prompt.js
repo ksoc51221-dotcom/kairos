@@ -66,7 +66,7 @@
     function paint() {
       const had = host.querySelector('.ep-ta') && document.activeElement === host.querySelector('.ep-ta');
       if (!st.open) {
-        host.innerHTML = `<div class="ep"><button type="button" class="btn pri ep-open">${I('scissors')}<span>Describe an edit</span></button><p class="ep-hint">Say what to cut in your own words. You review every cut before it is added.</p></div>`;
+        host.innerHTML = `<div class="ep"><button type="button" class="btn ep-open" title="Say what to cut in your own words. You review every cut before it is added.">${I('scissors')}<span>Describe an edit</span></button></div>`;
       } else {
         const len = st.text.length;
         host.innerHTML = `<div class="ep"><div class="card pad ep-card">

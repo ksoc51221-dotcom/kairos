@@ -89,8 +89,8 @@
     function floatReaction(kind) {
       const k = KINDS[kind]; if (!k) return;
       const e = document.createElement('div'); e.className = 'fl';
-      e.style.cssText = `left:${10 + Math.random() * 70}%;display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;font:600 11px/14px var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap`;
-      e.innerHTML = `<span style="color:var(--accent);display:grid">${window.UI ? UI.i(k[0]) : ''}</span>${esc(k[1])}`; stage.appendChild(e); setTimeout(() => e.remove(), 1800);
+      e.style.cssText = `left:${10 + Math.random() * 70}%;display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface);color:var(--ink);border:1px solid var(--hair-strong);border-radius:4px;font:600 11px/14px var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap`;
+      e.innerHTML = `<span style="color:var(--ink);display:grid">${window.UI ? UI.i(k[0]) : ''}</span>${esc(k[1])}`; stage.appendChild(e); setTimeout(() => e.remove(), 1800);
     }
     let lastT = 0; video.addEventListener('timeupdate', () => { const t = video.currentTime; if (t > lastT && t - lastT < 1) (st.vm.reactionEvents || []).filter((r) => r.at > lastT && r.at <= t).forEach((r) => floatReaction(r.kind)); lastT = t; });
     video.addEventListener('seeked', () => { lastT = video.currentTime; });
