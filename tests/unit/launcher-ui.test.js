@@ -50,11 +50,11 @@ test('overlay windows: no emoji or pictographs in any renderer file', () => {
   for (const f of overlayFiles()) fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => assert.doesNotMatch(l, PICT, `${path.relative(R, f)}:${i + 1}`));
 });
 
-test('overlay windows: one palette (emerald + slate + red + amber), no blue or purple, no third-party fonts', () => {
+test('overlay windows: one palette (Instrument: ink + lime + alert red), no blue or purple, no third-party fonts', () => {
   const ui = fs.readFileSync(path.join(R, '..', 'shared', 'ui.css'), 'utf8');
-  assert.match(ui, /--accent:\s*#047857/); assert.match(ui, /--accent-lt:\s*#34d399/);
+  assert.match(ui, /--accent:\s*#C6FF3D/i); assert.match(ui, /--alert:\s*#FF5A4E/i); assert.match(ui, /--canvas:\s*#0B0B0C/i); // Instrument palette
   assert.doesNotMatch(ui, /--blue\b|display-p3/);
-  assert.match(ui, /--font:\s*"Geist"/); assert.match(ui, /--mono:\s*"JetBrains Mono"/);
+  assert.match(ui, /--font:\s*"Geist"/); assert.match(ui, /--mono:\s*"Geist Mono"/);
   const hue = (hex) => { // [hue in degrees, HSL saturation]
     const n = hex.length === 3 ? [...hex].map((c) => parseInt(c + c, 16)) : [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
     const [r, g, b] = n.map((v) => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
@@ -64,7 +64,8 @@ test('overlay windows: one palette (emerald + slate + red + amber), no blue or p
   };
   for (const f of overlayFiles()) {
     const text = fs.readFileSync(f, 'utf8');
-    assert.doesNotMatch(text, /@font-face|fonts\.googleapis|https?:\/\//, `${path.relative(R, f)}: nothing is downloaded`);
+    assert.doesNotMatch(text, /fonts\.googleapis|https?:\/\//, `${path.relative(R, f)}: nothing is downloaded`);
+    if (/@font-face/.test(text)) assert.ok(f.endsWith('ui.css') && !/url\((?!"\.\.\/server\/public\/fonts\/)/.test(text), 'the only @font-face is ui.css, loading the shipped local Geist files');
     for (const m of text.matchAll(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g)) {
       const [h, s] = hue(m[1]);
       assert.ok(!(s > 0.6 && h >= 190 && h <= 320) && !(s > 0.4 && h > 235 && h <= 320), `${path.relative(R, f)}: #${m[1]} is a blue, indigo or purple accent`); // slate (hue ~215, low saturation) is the neutral and is allowed

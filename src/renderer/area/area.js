@@ -6,7 +6,7 @@ function rect() { return a && b ? { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y)
 function draw() {
   x.clearRect(0, 0, c.width, c.height); x.fillStyle = SCRIM; x.fillRect(0, 0, c.width, c.height);
   const r = rect(); if (!r) return; x.clearRect(r.x, r.y, r.w, r.h);
-  x.strokeStyle = LINE; x.lineWidth = 2; x.setLineDash([8, 5]); x.strokeRect(r.x, r.y, r.w, r.h);
+  x.strokeStyle = 'rgba(0,0,0,.45)'; x.lineWidth = 3; x.strokeRect(r.x, r.y, r.w, r.h); x.strokeStyle = LINE; x.lineWidth = 1; x.strokeRect(r.x, r.y, r.w, r.h); // 1 px ink line on a dark rim: reads on light and dark screens
   size.style.display = 'block'; size.textContent = `${Math.round(r.w)} × ${Math.round(r.h)}`; size.style.left = r.x + 'px'; size.style.top = Math.max(0, r.y - 24) + 'px';
 }
 c.onmousedown = (e) => { drag = true; a = { x: e.clientX, y: e.clientY }; b = a; };

@@ -81,7 +81,7 @@ function gLoad() {
     .catch((e) => { gs.error = String(e && e.message || e); console.error('gesture recognizer failed to load: ' + gs.error); gs.loading = null; });
   return gs.loading;
 }
-function holdRing(p, stop) { hold.dataset.k = stop ? 'stop' : ''; hold.style.setProperty('--p', Math.round(p * 360) + 'deg'); hold.style.opacity = p > 0 ? '1' : '0'; }
+function holdRing(p, stop) { hold.dataset.k = stop ? 'stop' : ''; hold.style.setProperty('--p', Math.round(p * 360) + 'deg'); hold.style.opacity = p > 0 ? '1' : '0'; hold.classList.toggle('fired', p >= 1); }
 // The pill under the camera does two jobs: a result ("Paused", "Gestures on…") that stays for a moment, and a live hint while a sign is being held.
 // A result on screen wins over the hint.
 let toastT, toastUntil = 0, hinting = false;

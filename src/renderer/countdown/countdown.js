@@ -4,12 +4,13 @@ KairosIcons.fill(document);
 // This window is created hidden while the launcher is open (B26). It starts counting only when main sends countdown:begin.
 let left = 3, over = false, timer = null;
 function restartRing() { const a = $('arc'); a.style.animation = 'none'; void a.getBoundingClientRect(); a.style.animation = ''; }
+function roll() { const n = $('n'); n.style.animation = 'none'; void n.getBoundingClientRect(); n.style.animation = ''; }
 function begin() {
   clearInterval(timer); left = 3; over = false; $('n').textContent = '3';
   $('tip').textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
   document.body.classList.remove('out'); document.body.classList.remove('go'); void document.body.offsetWidth; document.body.classList.add('go'); restartRing();
   requestAnimationFrame(() => requestAnimationFrame(() => spool.send('countdown:painted'))); // first frame with the countdown on it
-  timer = setInterval(() => { left--; if (left <= 0) end('countdown:done'); else { $('n').textContent = left; restartRing(); } }, 1000);
+  timer = setInterval(() => { left--; if (left <= 0) end('countdown:done'); else { $('n').textContent = left; roll(); restartRing(); } }, 1000);
 }
 // How the countdown ends decides what main does next: done/skip start recording, cancel undoes the start.
 function end(channel) {
