@@ -1,0 +1,72 @@
+/* Kairos "Instrument" foundation: the same tokens, type and motion as Margin (margin/design-refs/REDESIGN-3-INSTRUMENT.md).
+   Canonical copy. extension/lib/kairos.css and src/shared/ui.css repeat these values (they cannot import across folders / are dark-only),
+   so change all three together. Dark is primary; light is its inversion and follows the system unless <html data-theme> forces one.
+
+   Accent budget: at most ~3 lime marks per screen (focus ring, the 2px selection / now bar, one primary button). Everything else is ink.
+   On light, lime is for fills only: thin lime marks, links and 2px bars use --accent-text (#4A6B00). Never a low-alpha lime wash over black. */
+@font-face { font-family: "Geist"; src: url("fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Geist"; src: url("fonts/Geist-Italic-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "Geist Mono"; src: url("fonts/GeistMono-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+
+:root {
+  color-scheme: dark;
+  --canvas: #0B0B0C; --surface: #131315; --raised: #1B1B1E; --selected: #242428;
+  --hair: rgba(255, 255, 255, .08); --hair-strong: rgba(255, 255, 255, .16);
+  --ink: #F2F2EE; --ink-2: #A3A3A8; --ink-3: #838389;
+  --accent: #C6FF3D; --accent-text: #C6FF3D; --on-accent: #0B0B0C; --accent-wash: rgba(198, 255, 61, .10);
+  --alert: #FF5A4E;
+  --scrim: rgba(0, 0, 0, .55);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, .4);
+  --stage: #000;
+  /* type */
+  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* shape */
+  --r-chip: 4px; --r-btn: 6px; --r-panel: 8px;
+  /* motion */
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --t-quick: 140ms; --t-snappy: 220ms; --t-smooth: 380ms;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --canvas: #F6F6F3; --surface: #FFFFFF; --raised: #EDEDE9; --selected: #E3E3DE;
+    --hair: rgba(0, 0, 0, .09); --hair-strong: rgba(0, 0, 0, .18);
+    --ink: #0B0B0C; --ink-2: #52525A; --ink-3: #6A6A71;
+    --accent-text: #4A6B00; --accent-wash: rgba(198, 255, 61, .28);
+    --alert: #C8321F;
+    --scrim: rgba(11, 11, 12, .35);
+    --shadow-pop: 0 12px 32px rgba(0, 0, 0, .14);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --canvas: #F6F6F3; --surface: #FFFFFF; --raised: #EDEDE9; --selected: #E3E3DE;
+  --hair: rgba(0, 0, 0, .09); --hair-strong: rgba(0, 0, 0, .18);
+  --ink: #0B0B0C; --ink-2: #52525A; --ink-3: #6A6A71;
+  --accent-text: #4A6B00; --accent-wash: rgba(198, 255, 61, .28);
+  --alert: #C8321F; --scrim: rgba(11, 11, 12, .35); --shadow-pop: 0 12px 32px rgba(0, 0, 0, .14);
+}
+
+/* ---- type helpers ---- */
+.i-label { font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.i-meta { font: 400 11px/14px var(--mono); letter-spacing: .04em; color: var(--ink-3); }
+.i-num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+kbd, .i-kbd { font: 400 10.5px/14px var(--mono); color: var(--ink-2); border: 1px solid var(--hair-strong); border-radius: 3px; padding: 0 4px; background: none; }
+
+/* ---- motion primitives (opt-in classes; JS adds .i-in to animate) ---- */
+@keyframes i-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes i-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes i-slide { from { opacity: 0; transform: translateX(12px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes i-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes i-sweep { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes i-blink { 50% { opacity: .25; } }
+/* stagger: give children style="--i:N" (N capped at 8 by the JS) */
+.i-stagger > * { animation: i-rise var(--t-smooth) var(--ease) both; animation-delay: calc(min(var(--i, 0), 8) * 30ms); }
+.i-pop { animation: i-pop var(--t-snappy) var(--ease) both; }
+.i-slide { animation: i-slide var(--t-smooth) var(--ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 120ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 120ms !important; }
+  .i-stagger > *, .i-pop, .i-slide { animation-name: i-fade !important; }
+}
