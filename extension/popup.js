@@ -16,7 +16,7 @@ async function init() {
   if (site) {
     chrome.runtime.sendMessage({ t: 'ensureLauncher', tabId: tab.id }).catch(() => {});   // opening the popup also repairs a tab that has no button yet
     $('site').checked = !disabledSites.includes(site);
-    $('siteLabel').textContent = 'Show the Kairos button on ' + site;
+    $('siteLabel').textContent = 'Button on ' + site;
     $('site').onchange = async () => {
       const cur = (await chrome.storage.local.get('disabledSites')).disabledSites || [];
       await chrome.storage.local.set({ disabledSites: $('site').checked ? cur.filter((s) => s !== site) : [...new Set([...cur, site])] });
@@ -37,7 +37,7 @@ function paint() {
   $('idle').hidden = live; $('live').hidden = !live;
   $('live').classList.toggle('paused', state.phase === 'paused');
   $('pause').hidden = state.phase === 'paused'; $('resume').hidden = state.phase !== 'paused';
-  $('phase').textContent = { countdown: 'Starting...', recording: 'Recording', paused: 'Paused', saving: 'Saving...' }[state.phase] || '';
+  $('phase').textContent = { countdown: 'Starting', recording: 'Recording', paused: 'Paused', saving: 'Saving' }[state.phase] || '';
   clearInterval(timer);
   const tickTime = () => { $('time').textContent = C.formatTime(C.elapsedMs(state, Date.now())); };
   tickTime();

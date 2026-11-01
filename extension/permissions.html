@@ -5,22 +5,22 @@
 <link rel="stylesheet" href="lib/kairos.css">
 <style>
   body { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
-  main { width: min(480px, 100%); padding: 32px; background: var(--surface); border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 12px 40px rgba(2, 6, 23, .5); }
-  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; color: var(--accent-lt); font-weight: 700; letter-spacing: .02em; }
-  .logo svg { width: 28px; height: 28px; }
-  h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.2; color: var(--ink-strong); }
-  p { margin: 0 0 18px; color: var(--ink); }
+  main { width: min(440px, 100%); padding: 28px 0 0; border-top: 1px solid var(--hair-strong); }
+  main > * { animation: i-rise var(--t-smooth) var(--ease) both; animation-delay: calc(var(--i, 0) * 30ms); }
+  .brand { margin-bottom: 28px; }
+  h1 { margin: 0 0 6px; font: 600 18px/24px var(--sans); }
+  p { margin: 0 0 20px; color: var(--ink-2); font-size: 14px; line-height: 22px; }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  .state { margin: 0 0 18px; padding: 12px 14px; border-radius: var(--r); background: var(--raised); border: 1px solid var(--line); }
-  .state.bad { background: #450a0a; border-color: #7f1d1d; color: #fecaca; }
-  .state.good { background: #022c22; border-color: #065f46; color: #7bd8b1; }
+  .state { margin: 0 0 20px; padding: 10px 12px; border-radius: var(--r-btn); border: 1px solid var(--hair-strong); font: 400 12px/18px var(--mono); color: var(--ink); }
+  .state.bad { border-color: var(--alert); color: var(--alert); }
+  .state.good { border-left: 2px solid var(--accent-text); }
 </style>
 <main>
-  <div class="logo"><span data-icon="kairos"></span> Kairos</div>
-  <h1 id="title">Allow camera and microphone</h1>
-  <p id="why">Your browser asks once. Kairos records on this device only: nothing is uploaded.</p>
+  <div class="brand" style="--i:0"><span data-icon="kairos"></span><span class="wm">KAIROS</span></div>
+  <h1 id="title" style="--i:1">Allow camera and microphone</h1>
+  <p id="why" style="--i:2" title="Your browser asks once. Nothing is uploaded.">Asked once. Recorded on this device only.</p>
   <div id="state" class="state" hidden></div>
-  <div class="actions">
+  <div class="actions" style="--i:3">
     <button class="btn primary" id="again">Allow access</button>
     <button class="btn" id="nomic" hidden>Record without microphone</button>
     <button class="btn" id="settings" hidden>Open site settings</button>

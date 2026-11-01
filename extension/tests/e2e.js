@@ -63,8 +63,8 @@ const server = http.createServer((req, res) => {
   check('hovering shows the red, person and monitor buttons', await L('[data-act="disable"]').isVisible() && await L('[data-act="camera"]').isVisible() && await L('[data-act="screen"]').isVisible());
   await L('[data-act="camera"]').hover(); await sleep(200);
   await page.screenshot({ path: path.join(OUT, 'launcher.png'), clip: { x: 0, y: 360, width: 420, height: 340 } });
-  const colors = await page.evaluate(() => { const r = document.querySelector('kairos-recorder').shadowRoot; const bg = (s) => getComputedStyle(r.querySelector(s)).backgroundColor; return { off: bg('[data-act="disable"]'), cam: bg('[data-act="camera"]'), scr: bg('[data-act="screen"]') }; });
-  check('power button is red, the other two are not', colors.off === 'rgb(220, 38, 38)' && colors.cam !== colors.off && colors.scr !== colors.off, JSON.stringify(colors));
+  const colors = await page.evaluate(() => { const r = document.querySelector('kairos-recorder').shadowRoot; const fg = (s) => getComputedStyle(r.querySelector(s)).color; return { off: fg('[data-act="disable"]'), cam: fg('[data-act="camera"]'), scr: fg('[data-act="screen"]') }; });
+  check('power button is alert red, the other two are ink', colors.off === 'rgb(255, 90, 78)' && colors.cam !== colors.off && colors.scr !== colors.off, JSON.stringify(colors));
 
   console.log('the strictest page rules');
   const strict = await ctx.newPage();
@@ -72,7 +72,7 @@ const server = http.createServer((req, res) => {
   await strict.goto(A + 'strict');
   await strict.waitForSelector('kairos-recorder', { state: 'attached', timeout: 8000 }).catch(() => {});
   const look = await strict.evaluate(() => { const h = document.querySelector('kairos-recorder'); if (!h) return null; const pill = h.shadowRoot.querySelector('.pill'); return { bg: getComputedStyle(pill).backgroundColor, h: Math.round(pill.getBoundingClientRect().height), violations: window.__v }; });
-  check('no inline styles + Trusted Types: the launcher is drawn properly and breaks no page rule', !!look && look.bg === 'rgb(4, 120, 87)' && look.h === 60 && look.violations.length === 0, JSON.stringify(look));
+  check('no inline styles + Trusted Types: the launcher is drawn properly and breaks no page rule', !!look && look.bg === 'rgb(11, 11, 12)' && look.h === 60 && look.violations.length === 0, JSON.stringify(look));
   await strict.close();
 
   console.log('tabs that have no button yet');

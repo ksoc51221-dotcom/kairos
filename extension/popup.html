@@ -5,31 +5,31 @@
 <link rel="stylesheet" href="popup.css">
 <body>
   <header>
-    <span class="logo"><span data-icon="kairos"></span> Kairos</span>
-    <button class="link" id="library"><span data-icon="library"></span> Library</button>
+    <span class="brand"><span data-icon="kairos"></span><span class="wm">KAIROS</span></span>
+    <button class="link" id="library" title="Open your recordings"><span data-icon="library"></span> Library</button>
   </header>
 
   <section id="idle">
-    <div class="modes">
-      <button class="row" data-mode="both"><span data-icon="video"></span><span class="label">Screen + Cam<small>Your screen with a camera bubble</small></span></button>
-      <button class="row" data-mode="screen"><span data-icon="monitor"></span><span class="label">Screen only<small>Tab, window or full screen</small></span></button>
-      <button class="row" data-mode="camera"><span data-icon="person"></span><span class="label">Camera only<small>Just you</small></span></button>
+    <div class="modes i-stagger">
+      <button class="row" data-mode="both" style="--i:0" title="Your screen with a camera bubble"><span data-icon="video"></span><span class="name">Screen + Cam</span><span class="enter">↵</span></button>
+      <button class="row" data-mode="screen" style="--i:1" title="Tab, window or full screen"><span data-icon="monitor"></span><span class="name">Screen only</span><span class="enter">↵</span></button>
+      <button class="row" data-mode="camera" style="--i:2" title="Just you"><span data-icon="person"></span><span class="name">Camera only</span><span class="enter">↵</span></button>
     </div>
     <label class="toggle"><input type="checkbox" id="mic"><span>Record my microphone</span></label>
-    <label class="toggle" id="siteRow"><input type="checkbox" id="site"><span id="siteLabel">Show the Kairos button on this site</span></label>
-    <p class="note" id="siteNote" hidden>The Kairos button cannot appear on this kind of page. The three options above still work.</p>
+    <label class="toggle" id="siteRow"><input type="checkbox" id="site"><span id="siteLabel">Button on this site</span></label>
+    <p class="note label" id="siteNote" hidden title="The Kairos button cannot appear on this kind of page. The three options above still work.">No page button here</p>
   </section>
 
   <section id="live" hidden>
-    <div class="clock"><span class="dot"></span><span class="mono" id="time">0:00</span><span id="phase">Recording</span></div>
+    <div class="clock"><span class="dot"></span><span class="mono" id="time">0:00</span><span class="label" id="phase">Recording</span></div>
     <div class="actions">
       <button class="btn" id="pause"><span data-icon="pause"></span> Pause</button>
       <button class="btn" id="resume" hidden><span data-icon="play"></span> Resume</button>
-      <button class="btn primary stop" id="stop"><span data-icon="stop"></span> Stop</button>
+      <button class="btn danger solid stop" id="stop"><span data-icon="stop"></span> Stop</button>
     </div>
   </section>
 
-  <p class="foot">Shortcuts: <kbd>⌥⇧P</kbd> pause · <kbd>⌥⇧S</kbd> stop</p>
+  <p class="foot label"><kbd>⌥⇧P</kbd> pause · <kbd>⌥⇧S</kbd> stop</p>
   <script src="lib/core.js"></script>
   <script src="lib/icons.js"></script>
   <script src="popup.js"></script>

@@ -1,32 +1,30 @@
-body { width: 320px; padding: 14px; background: var(--surface); }
-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-lt); letter-spacing: .02em; }
-.logo svg { width: 24px; height: 24px; }
-.link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r); color: var(--ink); font-weight: 600; font-size: 13px; }
-.link:hover { background: var(--raised); }
-.link svg { width: 18px; height: 18px; }
-.modes { display: grid; gap: 8px; margin-bottom: 12px; }
-.row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 11px 14px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r); text-align: left; transition: background 120ms var(--ease); }
-.row:hover { background: var(--raised-hover); }
-.row > svg, .row > span:first-child svg { width: 24px; height: 24px; color: var(--accent-lt); }
-.row .label { display: grid; font-weight: 700; color: var(--ink-strong); font-size: 14px; }
-.row .label small { font-weight: 400; color: var(--ink-2); font-size: 12px; }
-.toggle { display: flex; align-items: center; gap: 10px; min-height: 34px; font-size: 13px; cursor: pointer; }
-.toggle input { appearance: none; flex: none; width: 34px; height: 20px; margin: 0; border-radius: 4px; background: #172033; border: 1px solid var(--line); position: relative; cursor: pointer; }
-.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 2px; background: var(--ink-2); transition: transform 120ms var(--ease), background 120ms var(--ease); }
-.toggle input:checked { background: var(--accent); border-color: var(--accent); }
-.toggle input:checked::after { transform: translateX(14px); background: #fff; }
+body { width: 320px; padding: 14px 14px 12px; background: var(--surface); }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--hair); animation: i-fade var(--t-smooth) var(--ease) both; }
+.link { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: var(--r-btn); color: var(--ink-2); font-weight: 500; font-size: 13px; transition: background var(--t-quick) var(--ease), color var(--t-quick) var(--ease); }
+.link:hover { background: var(--raised); color: var(--ink); }
+.link svg { width: 16px; height: 16px; }
+.modes { display: grid; margin-bottom: 10px; border-top: 1px solid var(--hair); }
+.row { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--hair); text-align: left; transition: background var(--t-quick) var(--ease); }
+.row:hover { background: var(--raised); }
+.row:focus-visible { outline-offset: -2px; }
+.row > span:first-child svg { width: 20px; height: 20px; color: var(--ink-2); transition: color var(--t-quick) var(--ease); }
+.row:hover > span:first-child svg { color: var(--ink); }
+.row .name { flex: 1; font-weight: 600; font-size: 14px; color: var(--ink); }
+.row .enter { font: 400 12px var(--mono); color: var(--ink-3); opacity: 0; transform: translateX(-4px); transition: opacity var(--t-quick) var(--ease), transform var(--t-quick) var(--ease); }
+.row:hover .enter, .row:focus-visible .enter { opacity: 1; transform: none; }
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 32px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.toggle:hover { color: var(--ink); }
+.toggle input { appearance: none; flex: none; width: 30px; height: 18px; margin: 0; border-radius: var(--r-chip); background: none; border: 1px solid var(--hair-strong); position: relative; cursor: pointer; transition: border-color var(--t-quick) var(--ease); }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 2px; background: var(--ink-3); transition: transform var(--t-quick) var(--ease), background var(--t-quick) var(--ease); }
+.toggle input:checked { border-color: var(--ink-2); }
+.toggle input:checked::after { transform: translateX(12px); background: var(--ink); }
 .toggle input:disabled { opacity: .45; cursor: default; }
-.note { margin: 4px 0 0; color: var(--ink-2); font-size: 12px; }
-.clock { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; }
-.clock .mono { font-size: 24px; font-weight: 600; color: var(--ink-strong); }
-.clock span:last-child { color: var(--ink-2); }
-.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); animation: pulse 1.2s ease-in-out infinite; }
-.paused .dot { background: #f59e0b; animation: none; }
-@keyframes pulse { 50% { opacity: .35; } }
+.note { margin: 4px 0 0; }
+.clock { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.clock .mono { font-size: 24px; line-height: 28px; font-weight: 500; color: var(--ink); }
+.clock .label { margin-left: auto; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--alert); animation: i-blink 1.2s ease-in-out infinite; }
+.paused .dot { background: var(--ink-3); animation: none; }
 .actions { display: flex; gap: 8px; }
 .actions .btn { flex: 1; }
-.btn.stop { background: var(--rec); border-color: #991b1b; }
-.btn.stop:hover { background: #ef4444; }
-.foot { margin: 12px 0 0; font-size: 12px; color: var(--ink-2); }
-kbd { font: 600 11px var(--mono); padding: 2px 5px; border-radius: 3px; background: var(--raised); border: 1px solid var(--line); color: var(--ink); }
+.foot { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--hair); }

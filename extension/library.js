@@ -1,4 +1,4 @@
-// The recordings page: a grid of what the extension saved on this device, and a player with download, rename and delete.
+// The recordings page: titles-only rows of what the extension saved on this device, and a player with download, rename and delete.
 const C = self.KairosCore, DB = self.KairosDB;
 KairosIcons.fill();
 const $ = (id) => document.getElementById(id);
@@ -26,7 +26,7 @@ async function recoverOrphans() {
   }
 }
 
-// ---- thumbnails: drawn once from the video itself, then saved ----
+// ---- thumbnails: drawn once from the video itself, then saved (only needed for the GRID view) ----
 function makeThumb(rec) {
   return new Promise((resolve) => {
     const v = document.createElement('video');
@@ -44,31 +44,64 @@ function makeThumb(rec) {
   });
 }
 
+// ---- view: ROWS (default) or GRID ----
+let VIEW = 'rows';
+try { if (localStorage.getItem('kairosLibView') === 'grid') VIEW = 'grid'; } catch { /* storage may be blocked */ }
+function setView(v) {
+  VIEW = v; try { localStorage.setItem('kairosLibView', v); } catch { /* ignore */ }
+  paintToggle(); showList();
+}
+function paintToggle() {
+  $('viewRows').setAttribute('aria-pressed', String(VIEW === 'rows')); $('viewGrid').setAttribute('aria-pressed', String(VIEW === 'grid'));
+  $('grid').classList.toggle('as-grid', VIEW === 'grid');
+}
+
 // ---- list ----
+const pad2 = (n) => String(n).padStart(2, '0');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)');
+// number roll: the count climbs from 0 to n once (skipped under reduced motion)
+function roll(node, n, fmt) {
+  if (REDUCED.matches || n < 2) { node.textContent = fmt(n); return; }
+  const t0 = performance.now(), dur = 420;
+  const step = (t) => { const k = Math.min(1, (t - t0) / dur); node.textContent = fmt(Math.round(n * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+const MODE_ICON = { both: 'video', screen: 'monitor', camera: 'person' };
 async function showList() {
   $('playerView').hidden = true; $('listView').hidden = false;
   const video = $('video'); video.pause(); video.removeAttribute('src'); video.load(); releaseUrls();
   await recoverOrphans().catch(() => {});
   const recs = await DB.listRecordings();
   const total = recs.reduce((n, r) => n + (r.size || 0), 0);
-  $('summary').textContent = recs.length ? `${recs.length} recording${recs.length === 1 ? '' : 's'} · ${C.formatBytes(total)} on this device` : '';
+  const sum = $('summary');
+  if (recs.length) { roll(sum, recs.length, (n) => `${pad2(n)} ${recs.length === 1 ? 'RECORDING' : 'RECORDINGS'} · ${C.formatBytes(total)}`); } else sum.textContent = '';
   $('empty').hidden = recs.length > 0; $('heading').hidden = recs.length === 0;
-  const grid = $('grid'); grid.replaceChildren();
-  for (const r of recs) grid.appendChild(card(r));
+  const grid = $('grid'); grid.replaceChildren(); grid.classList.add('i-stagger'); paintToggle();
+  recs.forEach((r, i) => { const c = card(r); c.style.setProperty('--i', Math.min(i, 8)); grid.appendChild(c); });
 }
 function card(r) {
-  const c = el('article', 'card');
-  const thumb = el('button', 'thumb'); thumb.setAttribute('aria-label', 'Play ' + r.title);
-  if (r.thumb) thumb.style.backgroundImage = `url(${url(r.thumb)})`;
-  else makeThumb(r).then(async (b) => { if (!b) return; thumb.style.backgroundImage = `url(${url(b)})`; const fresh = await DB.getRecording(r.id); if (fresh) { fresh.thumb = b; await DB.putRecording(fresh); } });
-  thumb.append(el('span', 'mode', C.MODES[r.mode] ? C.MODES[r.mode].label : ''), el('span', 'dur', C.formatTime(r.durationMs || 0)));
-  thumb.onclick = () => { location.hash = '#/v/' + r.id; };
-  const body = el('div', 'body'); body.append(el('div', 'name', r.title), el('div', 'sub', metaOf(r)));
+  const c = el('article', VIEW === 'grid' ? 'card tile' : 'card');
+  if (VIEW === 'grid') {
+    const thumb = el('button', 'thumb'); thumb.setAttribute('aria-label', 'Play ' + r.title);
+    if (r.thumb) thumb.style.backgroundImage = `url(${url(r.thumb)})`;
+    else makeThumb(r).then(async (b) => { if (!b) return; thumb.style.backgroundImage = `url(${url(b)})`; const fresh = await DB.getRecording(r.id); if (fresh) { fresh.thumb = b; await DB.putRecording(fresh); } });
+    thumb.append(el('span', 'dur', C.formatTime(r.durationMs || 0)));
+    thumb.onclick = () => { location.hash = '#/v/' + r.id; };
+    const body = el('div', 'body'); body.append(el('div', 'name', r.title), el('div', 'when', when(r.createdAt)));
+    const tl = el('div', 'tools');
+    const dl = el('button', 'icon-btn'); dl.title = 'Download'; dl.setAttribute('aria-label', 'Download'); dl.innerHTML = KairosIcons.svg('download'); dl.onclick = () => download(r);
+    const del = el('button', 'icon-btn danger'); del.title = 'Delete'; del.setAttribute('aria-label', 'Delete'); del.innerHTML = KairosIcons.svg('trash'); del.onclick = () => remove(r);
+    tl.append(dl, del); c.title = metaOf(r); c.append(thumb, body, tl);
+    return c;
+  }
+  const open = el('button', 'open'); open.setAttribute('aria-label', 'Play ' + r.title); open.onclick = () => { location.hash = '#/v/' + r.id; };
+  const glyph = el('span', 'glyph'); glyph.innerHTML = KairosIcons.svg(MODE_ICON[r.mode] || 'film');
+  c.title = metaOf(r);
   const tools = el('div', 'tools');
   const dl = el('button', 'icon-btn'); dl.title = 'Download'; dl.setAttribute('aria-label', 'Download'); dl.innerHTML = KairosIcons.svg('download'); dl.onclick = () => download(r);
   const del = el('button', 'icon-btn danger'); del.title = 'Delete'; del.setAttribute('aria-label', 'Delete'); del.innerHTML = KairosIcons.svg('trash'); del.onclick = () => remove(r);
   tools.append(dl, del);
-  c.append(thumb, body, tools);
+  c.append(open, glyph, el('span', 'name', r.title), el('span', 'dur', C.formatTime(r.durationMs || 0)), el('span', 'when', when(r.createdAt)), el('span', 'enter', '↵'), tools);
   return c;
 }
 
@@ -77,8 +110,20 @@ function download(r) {
   a.href = url(r.blob); a.download = C.safeFileName(r.title) + '.' + r.ext;
   document.body.appendChild(a); a.click(); a.remove();
 }
+function confirmDelete(r) {
+  return new Promise((resolve) => {
+    const d = el('dialog', 'confirm');
+    const h = el('h2', null, `Delete "${r.title}"?`), p = el('p', 'label', 'Cannot be undone');
+    const actions = el('div', 'row-actions'), no = el('button', 'btn', 'Cancel'), yes = el('button', 'btn danger solid', 'Delete');
+    actions.append(no, yes); d.append(h, p, actions);
+    let out = false;
+    no.onclick = () => d.close(); yes.onclick = () => { out = true; d.close(); };
+    d.addEventListener('close', () => { d.remove(); resolve(out); });
+    document.body.appendChild(d); d.showModal(); no.focus();
+  });
+}
 async function remove(r) {
-  if (!confirm(`Delete "${r.title}"? This cannot be undone.`)) return;
+  if (!(await confirmDelete(r))) return;
   await DB.deleteRecording(r.id);
   if (location.hash.startsWith('#/v/')) location.hash = '#/'; else showList();
 }
@@ -95,7 +140,7 @@ async function showPlayer(id) {
   v.onloadedmetadata = () => { if (v.duration === Infinity) { v.currentTime = 1e101; v.ontimeupdate = () => { v.ontimeupdate = null; v.currentTime = 0; }; } };
   const t = $('title'); t.value = r.title;
   t.onchange = async () => { r.title = t.value.trim() || r.title; t.value = r.title; const fresh = await DB.getRecording(id); fresh.title = r.title; await DB.putRecording(fresh); };
-  $('metaLine').textContent = metaOf(r) + ' · ' + C.formatTime(r.durationMs || 0) + (r.hasAudio === false ? ' · no sound' : '');
+  $('metaLine').textContent = (metaOf(r) + ' · ' + C.formatTime(r.durationMs || 0) + (r.hasAudio === false ? ' · no sound' : '')).toUpperCase();
   $('download').onclick = () => download(r);
   $('delete').onclick = () => remove(r);
   document.title = r.title + ' · Kairos';
@@ -109,6 +154,7 @@ function route() {
   $('welcome').hidden = h !== '#/welcome';
   return showList();
 }
+$('viewRows').onclick = () => setView('rows'); $('viewGrid').onclick = () => setView('grid');
 $('dismiss').onclick = () => { location.hash = '#/'; };
 $('setup').onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL('permissions.html?need=camera,mic&mode=setup') });
 $('tryit').onclick = () => chrome.tabs.create({ url: 'https://example.com/' });   // any ordinary website shows the button; this one is empty and always there

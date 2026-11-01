@@ -23,8 +23,18 @@
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
 
   // ---- mount / unmount ----
+  // A @font-face inside a shadow root is ignored, so Geist Mono is registered on the page itself (once). If the page's CSP refuses it the launcher falls back to the system mono.
+  function loadMonoFont() {
+    try {
+      if (document.getElementById('kairos-font')) return;
+      const st = document.createElement('style'); st.id = 'kairos-font';
+      st.textContent = `@font-face{font-family:"Geist Mono";src:url("${chrome.runtime.getURL('fonts/GeistMono-Variable.woff2')}") format("woff2");font-weight:100 900;font-display:swap}`;
+      (document.head || document.documentElement).appendChild(st);
+    } catch { /* cosmetic only */ }
+  }
   function mount() {
     if (host) return;
+    loadMonoFont();
     host = document.createElement('kairos-recorder');
     host.style.cssText = 'all: initial;';
     root = host.attachShadow({ mode: 'open' });

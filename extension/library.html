@@ -6,47 +6,39 @@
 <link rel="stylesheet" href="library.css">
 <body>
   <header class="top">
-    <a class="logo" href="#/"><span data-icon="kairos"></span> Kairos</a>
-    <span class="summary" id="summary"></span>
+    <a class="brand" href="#/"><span data-icon="kairos"></span><span class="wm">KAIROS</span></a>
+    <span class="summary meta" id="summary"></span>
+    <span class="seg" role="group" aria-label="View"><button id="viewRows" aria-pressed="true">ROWS</button><button id="viewGrid" aria-pressed="false">GRID</button></span>
   </header>
 
   <main id="listView">
     <section class="welcome" id="welcome" hidden>
       <h1>Kairos is ready</h1>
-      <p class="lead">Look at the <b>bottom left</b> of any website, the tabs you already have open included. This is what to look for:</p>
+      <p class="lead" title="Chrome keeps extensions out of its own pages (New Tab, chrome:// pages, the Web Store). Pin Kairos to your toolbar for the same three choices there. Your browser asks for camera and microphone access once; everything stays on this device.">Look at the bottom left of any website.</p>
       <div class="demo" aria-hidden="true">
-        <span class="demo-pill"><span data-icon="kairos"></span></span>
-        <span class="demo-hint">hover it to reveal</span>
-        <span class="demo-orb off" data-icon="power"></span><span class="demo-orb" data-icon="person"></span><span class="demo-orb" data-icon="monitor"></span>
+        <span class="demo-pill" title="Records your screen with a camera bubble. Drag the dots on its left to move it."><span data-icon="kairos"></span></span>
+        <span class="demo-hint label">Hover to reveal</span>
+        <span class="demo-orb off" data-icon="power" title="Hides Kairos on that site"></span><span class="demo-orb" data-icon="person" title="Camera only"></span><span class="demo-orb" data-icon="monitor" title="Screen only"></span>
       </div>
-      <ol>
-        <li>The green pill records your screen with a camera bubble. Hover it for <b>camera only</b> (person), <b>screen only</b> (monitor), or the <b>red button</b> that hides Kairos on that site. Drag the dots on its left to move it.</li>
-        <li>Chrome keeps extensions out of its own pages (the New Tab page, <code>chrome://</code> pages, the Web Store). Pin Kairos to your toolbar (puzzle icon) for the same three choices there.</li>
-        <li>Your browser asks for camera and microphone access once. Everything stays on this device.</li>
-      </ol>
-      <div class="row-actions"><button class="btn primary" id="tryit"><span data-icon="video"></span> Show me the button</button><button class="btn" id="setup"><span data-icon="mic"></span> Allow camera and microphone now</button><button class="btn" id="dismiss">Not now</button></div>
+      <div class="row-actions"><button class="btn primary" id="tryit"><span data-icon="video"></span> Show me the button</button><button class="btn" id="setup" title="Your browser asks once. Everything stays on this device."><span data-icon="mic"></span> Allow camera and mic</button><button class="btn" id="dismiss">Not now</button></div>
     </section>
 
-    <h1 class="h" id="heading">Your recordings</h1>
-    <div class="empty" id="empty" hidden>
-      <p>No recordings yet.</p>
-      <p class="note">Press the green button on any website, or use the Kairos icon in the toolbar.</p>
+    <h1 class="h" id="heading">Recordings</h1>
+    <div class="empty" id="empty" hidden title="Press the Kairos button on any website, or use the toolbar icon.">
+      <span class="empty-glyph" data-icon="film"></span>
+      <p class="label">No recordings · 00</p>
     </div>
-    <div class="grid" id="grid"></div>
-    <p class="note storage">Recordings are stored in this browser only. Clearing site data for this extension or removing it deletes them, so download the ones you want to keep.</p>
-    <aside class="promo">
-      <b>Need to record other apps, or want automatic blurring of secrets and AI notes?</b>
-      <span>The Kairos Mac app does that, all on your own computer.</span>
-      <a class="btn" href="https://github.com/ksoc51221-dotcom/kairos/releases/latest" target="_blank" rel="noopener">Get Kairos for Mac <span data-icon="external"></span></a>
-    </aside>
+    <div class="list" id="grid"></div>
+    <p class="storage label" title="Recordings are stored in this browser only. Clearing site data for this extension or removing it deletes them, so download the ones you want to keep.">Stored in this browser only · download what you keep</p>
+    <a class="promo label" href="https://github.com/ksoc51221-dotcom/kairos/releases/latest" target="_blank" rel="noopener" title="Records other apps, blurs secrets and writes AI notes, all on your own computer.">Kairos for Mac <span data-icon="external"></span></a>
   </main>
 
   <main id="playerView" hidden>
-    <a class="back" href="#/">&larr; All recordings</a>
+    <a class="back label" href="#/">&larr; All recordings</a>
     <div class="stage"><video id="video" controls playsinline></video></div>
-    <div class="meta">
+    <div class="meta-wrap">
       <input id="title" class="title-input" aria-label="Title" maxlength="120">
-      <div class="meta-line" id="metaLine"></div>
+      <div class="meta-line meta" id="metaLine"></div>
       <div class="row-actions">
         <button class="btn primary" id="download"><span data-icon="download"></span> Download</button>
         <button class="btn danger" id="delete"><span data-icon="trash"></span> Delete</button>
