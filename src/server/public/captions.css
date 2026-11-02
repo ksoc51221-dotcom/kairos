@@ -1,0 +1,27 @@
+/* Captions ("Clean"): a soft blurred pill, Geist 500, no per-line black boxes. Styles: .clean (default) / .bold / .minimal. Spec: docs/development/INSTRUMENT.md */
+#cap { position: absolute; left: 6%; right: 6%; bottom: 7%; z-index: 2; pointer-events: none; container-type: inline-size; text-align: center; line-height: 1.3; transition: transform var(--t-snappy, 220ms) var(--ease, cubic-bezier(.22, 1, .36, 1)); }
+#cap.emb { bottom: 9%; } .stage:hover #cap.emb { transform: translateY(-40px); } /* embed uses the native controls bar: lift clear of it */
+#cap .cl { display: flex; justify-content: center; animation: cap-in 180ms cubic-bezier(.23, 1, .32, 1) both; }
+#cap .cl.out { animation: cap-out 140ms ease-out both; }
+@keyframes cap-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes cap-out { to { opacity: 0; } }
+#cap .cp { --cap-fs: clamp(13px, 2.6cqw, 26px); font: 500 var(--cap-fs)/1.3 var(--sans, "Geist", system-ui, sans-serif); letter-spacing: -.01em; color: #F2F2EE; max-width: min(100%, 34em); text-wrap: balance; overflow-wrap: anywhere; padding: .38em .85em; border-radius: 8px; }
+/* Clean: ink on rgba(11,11,12,.64) over blur. Worst case (pure white frame) composites to ~#7B7B7B-ish = 5.4:1 (see report). */
+#cap .cp.clean { background: rgba(11, 11, 12, .64); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+/* Bold: heavier, larger, solid pill. */
+#cap .cp.bold { font-weight: 700; font-size: calc(var(--cap-fs) * 1.2); letter-spacing: -.015em; background: rgba(11, 11, 12, .8); }
+/* Minimal: no pill, layered shadow only. */
+#cap .cp.minimal { position: relative; isolation: isolate; font-size: max(12px, calc(var(--cap-fs) * .88)); padding: .6em 1.5em; border-radius: 0; background: none; text-shadow: 0 1px 3px rgba(11, 11, 12, .9), 0 0 8px rgba(11, 11, 12, .7); }
+/* no visible pill: a blurred scrim melts into the frame (text sits inside its opaque core: >= .94 of .72 alpha, ~5.7:1 on pure white) */
+#cap .cp.minimal::before { content: ""; position: absolute; inset: -.2em; z-index: -1; background: rgba(11, 11, 12, .72); filter: blur(.5em); border-radius: 1em; }
+/* Owner-chosen colours from the editor (yellow / mint / blue) keep their look, on the Clean shape. */
+#cap .cp.o-yellow { background: rgba(11, 11, 12, .8); color: #ffe14d; font-weight: 700; -webkit-backdrop-filter: none; backdrop-filter: none; }
+#cap .cp.o-mint { background: #22c08a; color: #06281d; font-weight: 700; border-radius: 99px; -webkit-backdrop-filter: none; backdrop-filter: none; text-shadow: none; }
+#cap .cp.o-blue { background: #3267d4; color: #fff; font-weight: 700; border-radius: 99px; -webkit-backdrop-filter: none; backdrop-filter: none; text-shadow: none; }
+/* Word timing (only when the transcript carries it): the current word gets the one lime accent. */
+#cap .w { background: linear-gradient(#C6FF3D, #C6FF3D) 0 100% / 0 2px no-repeat; padding-bottom: .12em; } /* ui-rules: allow (a flat 2px underline drawn as a background, not a visual gradient) */
+#cap .w.now { background-size: 100% 2px; }
+@media (prefers-reduced-motion: reduce) { #cap .cl { animation: cap-fade 140ms ease-out both; } #cap, .stage:hover #cap.emb { transition: none; } .stage:hover #cap.emb { transform: translateY(-40px); } }
+@keyframes cap-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) { #cap .cp.clean { background: rgba(11, 11, 12, .9); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { #cap .cp.clean { background: rgba(11, 11, 12, .8); } }

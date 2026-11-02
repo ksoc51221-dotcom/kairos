@@ -4,7 +4,7 @@
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const LANGS = ['Arabic', 'Bengali', 'Bulgarian', 'Chinese', 'Croatian', 'Czech', 'Danish', 'Dutch', 'Estonian', 'Filipino', 'Finnish', 'French', 'German', 'Greek', 'Hebrew', 'Hindi', 'Hungarian', 'Indonesian', 'Italian', 'Japanese', 'Korean', 'Latvian', 'Lithuanian', 'Malay', 'Norwegian', 'Persian', 'Polish', 'Portuguese', 'Romanian', 'Russian', 'Serbian', 'Slovak', 'Slovenian', 'Spanish', 'Swahili', 'Swedish', 'Tamil', 'Thai', 'Turkish', 'Ukrainian', 'Urdu', 'Vietnamese', 'Afrikaans', 'Catalan', 'Icelandic', 'Irish', 'Maltese', 'Welsh', 'Albanian', 'Armenian', 'Basque', 'Georgian'];
-  const CAPTION_STYLES = { classic: 'background:rgba(0,0,0,.72);color:#fff;padding:6px 14px;border-radius:8px;font-weight:500', bold: 'color:#fff;font-weight:800;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);font-size:1.25em;letter-spacing:.2px', yellow: 'color:#ffe14d;font-weight:800;text-shadow:0 2px 0 #000,0 0 6px #000;font-size:1.2em', minimal: 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:500', mint: 'background:#22c08a;color:#06281d;padding:6px 14px;border-radius:99px;font-weight:700', blue: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700', purple: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700' }; // `purple` is the old name of `blue` ui-rules: allow (owner-chosen caption styles)
+  const CAPTION_STYLES = { classic: 'background:rgba(11,11,12,.64);color:#F2F2EE;padding:6px 14px;border-radius:8px;font-weight:500;letter-spacing:-.01em', bold: 'color:#fff;font-weight:800;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);font-size:1.25em;letter-spacing:.2px', yellow: 'color:#ffe14d;font-weight:800;text-shadow:0 2px 0 #000,0 0 6px #000;font-size:1.2em', minimal: 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);font-weight:500', mint: 'background:#22c08a;color:#06281d;padding:6px 14px;border-radius:99px;font-weight:700', blue: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700', purple: 'background:#3267d4;color:#fff;padding:6px 14px;border-radius:99px;font-weight:700' }; // `purple` is the old name of `blue` ui-rules: allow (owner-chosen caption styles)
   const BACKGROUNDS = { none: '', blue: 'linear-gradient(135deg,#3267d4,#9bb8f2)', purple: 'linear-gradient(135deg,#3267d4,#9bb8f2)', mint: 'linear-gradient(135deg,#22c08a,#8ff0c9)', sunset: 'linear-gradient(135deg,#ff8a5c,#3267d4)', night: 'linear-gradient(135deg,#14161a,#2a3a6a)', aurora: 'linear-gradient(135deg,#3267d4,#22c08a)' }; // `purple` is the old name of `blue` ui-rules: allow (owner-chosen video backgrounds)
 
   const viewer = () => { try { return JSON.parse(localStorage.getItem('spool_viewer') || '{}'); } catch { return {}; } };
@@ -61,10 +61,42 @@
         }).join('');
       }
     }
+    // Caption looks. Base styles (Clean default, Bold, Minimal) are the viewer's choice (localStorage, CC menu); an owner-chosen look from the editor
+    // (classic/bold/minimal map to the base styles; yellow/mint/blue keep their colours on top of Clean) applies until the viewer picks one.
+    const CAP_KEY = 'kairos_cap_style', BASES = ['clean', 'bold', 'minimal'], OWNER_BASE = { classic: 'clean', bold: 'bold', minimal: 'minimal' }, OWNER_TINT = { yellow: 'yellow', mint: 'mint', blue: 'blue', purple: 'blue' };
+    const pref = () => { if (!(controls || embed)) return null; try { const v = localStorage.getItem(CAP_KEY); return BASES.includes(v) ? v : null; } catch { return null; } }; // the editor preview always shows the owner's own choice
+    const capLook = () => { const o = st.vm.captionStyle, p = pref(); return { base: p || OWNER_BASE[o] || (OWNER_TINT[o] ? 'clean' : 'clean'), tint: p ? '' : OWNER_TINT[o] || '' }; };
+    if (embed) cap.classList.add('emb');
+    window.addEventListener('resize', () => { cap.dataset.t = ''; }); // re-fit the pill to the new width
+    const norm = (s) => (Array.isArray(s.words) && s.words.length && s.words.every((w) => isFinite(w.start ?? w.s)) ? s.words.map((w) => ({ t: String(w.text ?? w.word ?? w.w ?? ''), s: +(w.start ?? w.s), e: +(w.end ?? w.e ?? (w.start ?? w.s)) })) : null); // per-word timing only if the transcript carries it
+    let capTok = 0, capWords = null, capCur = -2;
     function renderCaption(t) {
-      if (!st.caps) { cap.innerHTML = ''; return; }
+      if (!st.caps) { if (cap.dataset.t) { cap.innerHTML = ''; cap.dataset.t = ''; } return; }
       const s = st.caps.find((x) => t >= x.start && t <= Math.max(x.end, x.start + 1)); const txt = s ? s.text : '';
-      if (cap.dataset.t !== txt) { cap.dataset.t = txt; cap.innerHTML = txt ? `<span style="${CAPTION_STYLES[st.vm.captionStyle] || CAPTION_STYLES.classic}">${esc(txt)}</span>` : ''; }
+      const look = capLook(), lk = `${look.base}|${look.tint}|${txt}`;
+      if (cap.dataset.t !== lk) {
+        cap.dataset.t = lk; const tok = ++capTok; capCur = -2; capWords = s ? norm(s) : null;
+        const old = cap.firstElementChild;
+        if (old && !txt) { old.classList.add('out'); setTimeout(() => { if (tok === capTok) cap.innerHTML = ''; }, 160); return; }
+        const inner = capWords ? capWords.map((w, i) => `<span class="w" data-i="${i}">${esc(w.t)}</span>`).join(' ') : esc(txt);
+        cap.innerHTML = txt ? `<div class="cl"><span class="cp ${look.base}${look.tint ? ' o-' + look.tint : ''}">${inner}</span></div>` : '';
+        const cp = cap.querySelector('.cp'); if (cp) { // text-wrap: balance evens the lines but leaves the box at full width: shrink the pill to the widest line
+          const r = document.createRange(); r.selectNodeContents(cp); const rs = [...r.getClientRects()]; const cs = getComputedStyle(cp);
+          const lines = {}; rs.forEach((x) => { const k = Math.round(x.top / 4), l = lines[k] || (lines[k] = [1e9, 0]); l[0] = Math.min(l[0], x.left); l[1] = Math.max(l[1], x.right); }); // nested spans give overlapping rects: take each line's left-to-right extent
+          if (Object.keys(lines).length > 1) cp.style.width = Math.ceil(Math.max(...Object.values(lines).map((l) => l[1] - l[0])) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 1) + 'px';
+        }
+      }
+      if (capWords) { let i = -1; for (let k = 0; k < capWords.length; k++) if (t >= capWords[k].s) i = k; if (i !== capCur) { capCur = i; cap.querySelectorAll('.w').forEach((e) => e.classList.toggle('now', +e.dataset.i === i)); } }
+    }
+    // caption-style switch in the CC menu (watch page only), shown while captions are on
+    if (controls) {
+      const cc = $('cc'); if (cc) {
+        const sel = document.createElement('select'); sel.className = cc.className; sel.id = 'ccs'; sel.setAttribute('aria-label', 'Caption style'); sel.hidden = true;
+        sel.innerHTML = BASES.map((b) => `<option value="${b}">${b[0].toUpperCase() + b.slice(1)}</option>`).join(''); cc.after(sel);
+        sel.onchange = () => { try { localStorage.setItem(CAP_KEY, sel.value); } catch {} };
+        const sync = () => { sel.hidden = !st.caps; if (document.activeElement !== sel) sel.value = capLook().base; };
+        setInterval(sync, 300);
+      }
     }
     // ---- cursor effects, drawn at playback time from the recorded cursor feed (Phase 2). The OS cursor is already in the video; this adds the
     // highlight ring, click ripples and auto-zoom on top, so they cost nothing while recording and can be switched off per video. ----
