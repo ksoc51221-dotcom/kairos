@@ -236,7 +236,7 @@
           if (title || summary) cards.push({ kind: 'meta', title, summary, cs: { status: 'open', picked: new Set([title && 'title', summary && 'summary'].filter(Boolean)) } });
         } else if (c.kind === 'chapters') {
           const ch = (a) => (Array.isArray(a) ? a : []).map((x) => ({ start: +x.start, title: String(x.title ?? '') })).filter((x) => Number.isFinite(x.start) && x.start >= 0 && x.title);
-          const proposed = ch(c.proposed); if (proposed.length) cards.push({ kind: 'chapters', proposed, current: ch(c.current), notes: strs(c.notes), cs: { status: 'open' } });
+          const proposed = ch(c.proposed).filter((x) => !(d > 0 && x.start >= d)).sort((a, b) => a.start - b.start).filter((x, i, a) => !i || x.start !== a[i - 1].start); if (proposed.length) cards.push({ kind: 'chapters', proposed, current: ch(c.current), notes: strs(c.notes), cs: { status: 'open' } });
         } else if (c.kind === 'doc' && typeof c.id === 'string') cards.push({ kind: 'doc', id: c.id, label: String(c.label ?? c.id), blurb: String(c.blurb ?? ''), cached: c.cached && typeof c.cached === 'object' ? { at: +c.cached.at || 0, stale: !!c.cached.stale } : null, cs: { status: 'open' } });
       }
       const chips = (Array.isArray(r && r.suggestions) ? r.suggestions : []).filter((x) => x && typeof x.text === 'string' && typeof x.label === 'string' && x.text.length <= MAX).slice(0, 3).map((x) => ({ label: x.label, text: x.text }));

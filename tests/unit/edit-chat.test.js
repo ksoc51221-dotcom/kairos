@@ -212,3 +212,11 @@ test('an applied, discarded or out-of-date card collapses to one line and cannot
   assert.match(h({ status: 'open', picked: new Set([0]) }), /class="btn pri" data-act="apply"/, 'the newest open card has the lime button');
   assert.doesNotMatch(h({ status: 'open', picked: new Set([0]) }, { ...env, primary: 'm9-9' }), /class="btn pri" data-act="apply"/);
 });
+
+test('cleanChapters drops out-of-range, negative, NaN, empty and sorts/dedupes', () => {
+  const out = chat.cleanChapters([
+    { start: 118, title: 'Past the end' }, { start: -3, title: 'Negative' }, { start: 'abc', title: 'NaN' },
+    { start: 40, title: 'Middle' }, { start: 0, title: 'Intro' }, { start: 41, title: 'Too close' }, { start: 20, title: '  ' }, { start: 75, title: 'At end' },
+  ], 75);
+  assert.deepEqual(out, [{ start: 0, title: 'Intro' }, { start: 40, title: 'Middle' }]);
+});

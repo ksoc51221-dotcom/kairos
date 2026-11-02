@@ -239,7 +239,7 @@ function cleanChapters(list, duration) {
   const out = [];
   for (const c of Array.isArray(list) ? list : []) {
     const start = +(c && c.start), title = clean(c && c.title, 50).replace(/^["'\s]+|["'\s]+$/g, '');
-    if (!Number.isFinite(start) || start < 0 || start >= duration || !title) continue;
+    if (!Number.isFinite(start) || start < 0 || (duration > 0 && start >= duration) || !title) continue;
     out.push({ start: r1(start), title });
   }
   out.sort((a, b) => a.start - b.start);
