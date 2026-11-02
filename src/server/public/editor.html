@@ -111,7 +111,9 @@ async function boot() {
 // "Describe an edit": proposals the owner ticks are merged into the editor's own cut list, saved through the same PUT edits path as every other cut
 function mountPrompt() {
   if (!window.EditPrompt) return;
-  EditPrompt.mount($('epHost'), { videoId: id, api, getDuration: () => dur, getDraft: () => D.cuts.map((c) => ({ ...c })), seek: (t) => { $('v').currentTime = Math.max(0, t); $('v').play().catch(() => {}); }, icon: I, esc, fmt, toast,
+  EditPrompt.mount($('epHost'), { videoId: id, api, getDuration: () => dur, getDraft: () => D.cuts.map((c) => ({ ...c })), seek: (t) => { $('v').currentTime = Math.max(0, t); $('v').play().catch(() => {}); }, icon: I, esc, fmt, toast, collapsible: true, getVM: () => vm,
+    onVM: (nv) => { if (nv && nv.id) { Object.assign(vm, nv); $('ttl').textContent = vm.title; document.title = `Edit · ${vm.title}`; } },
+    onBleep: (nv) => { Object.assign(vm, nv, { busy: true }); refresh(true); if (rp) rp.refresh(); },
     saveDraft: async (cuts) => { const next = { ...D, cuts: cuts.map((c) => ({ start: round3(c.start), end: round3(c.end), kind: c.kind || 'prompt' })) }; commit(next); clearTimeout(saveT); await put(`/api/videos/${id}/edits`, D); $('st').textContent = 'Draft saved'; },
     onSaved: () => { prop.silence = null; prop.filler = null; refresh(); } });
   // "Bleep speech": it reads the view model itself (stage, undo, result). A bleep, an undo or a delete changes the sound, the transcript and the captions, so the page loads them again.

@@ -17,6 +17,11 @@ function mount(app) {
     const v = store.get(q.params.id); if (!v) return res.sendStatus(404);
     const b = q.body, patch = {};
     if (typeof b.title === 'string') { patch.title = b.title.slice(0, 200); patch.titleAuto = false; }
+    if (typeof b.summary === 'string') patch.summary = b.summary.replace(/\s+/g, ' ').trim().slice(0, 800); // the chat's reviewed summary (the owner ticked and applied it)
+    if (Array.isArray(b.chapters)) { // same: at most 12, inside the video, in order
+      patch.chapters = b.chapters.map((c) => ({ start: Math.round(Math.max(0, +c?.start) * 10) / 10, title: String(c?.title ?? '').replace(/\s+/g, ' ').trim().slice(0, 60) }))
+        .filter((c) => Number.isFinite(c.start) && c.title && (!(v.duration > 0) || c.start < v.duration)).sort((x, y) => x.start - y.start).slice(0, 12);
+    }
     if ('folder' in b) patch.folder = b.folder || null;
     if (Array.isArray(b.tags)) patch.tags = b.tags.map((t) => String(t).trim().toLowerCase().slice(0, 30)).filter(Boolean).slice(0, 12);
     if (Array.isArray(b.spaces)) patch.spaces = b.spaces.map(String);

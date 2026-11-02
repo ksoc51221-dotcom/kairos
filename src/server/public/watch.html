@@ -341,7 +341,7 @@ function renderEdit(p) {
   if (me.owner && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !busy) loadAnalysis();
   const sil = an?.silenceSeconds ?? null, fil = an?.fillerCount ?? null, cuts = draft().length, applying = /^Applying edits/.test(vm.stage || '');
   const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"${sub && !/</.test(sub) ? ` title="${esc(sub)}"` : ''}><span class="tile sm ${disabled ? 'off' : ''}">${I(icon)}</span><div class="grow"><div class="olab">${label}</div>${sub && /</.test(sub) ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
-  p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div>${busy ? '<div class="osub">Describing an edit opens when the video is not being processed.</div>' : '<div id="epHost"></div>'}</section>
+  p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div><div id="epHost"></div></section>
     ${cuts || vm.edits?.inserts?.length ? `<div class="apply" title="Nothing changes until you apply them; the previous version is kept so you can undo once."><div class="meta"><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` · ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready</b></div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
     ${vm.canUndo && vm.undoKind !== 'redact' ? `<div class="apply"><div class="meta"><b>Edits applied</b></div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
     ${vm.editError && !/^Could not bleep/.test(vm.editError) ? `<div class="err">${esc(vm.editError)}</div>` : ''}
@@ -352,7 +352,9 @@ function renderEdit(p) {
     ${opt('captions', 'Add stylized captions', 'Shown from the first second, in the style you pick in the editor', !!vm.captionsDefault, !(vm.segments || []).length, 'captions')}</div></section>
     <section class="sec"><div class="sl">More</div><a class="btn" href="/edit/${id}">${I('scissors')}Edit and enhance video</a><button class="btn" id="genDoc">${I('doc')}Generate a document</button></section>`;
   const eh = $('epHost');
-  if (eh && me.owner && window.EditPrompt) EditPrompt.mount(eh, { videoId: id, api, getDuration: () => vm.duration || 0, getDraft: draft, saveDraft: saveCuts, seek, icon: I, esc, fmt, toast, onSaved: () => {} });
+  if (eh && me.owner && window.EditPrompt) EditPrompt.mount(eh, { videoId: id, api, getDuration: () => vm.duration || 0, getDraft: draft, saveDraft: saveCuts, seek, icon: I, esc, fmt, toast, getVM: () => vm, onSaved: () => {},
+    onVM: (nv) => { takeVM(nv && nv.id ? nv : { ...vm, ...nv }); lastKey = ''; render(); }, // a reviewed title / summary / chapters landed (PATCH answers with the new view model)
+    onBleep: (nv) => { takeVM({ ...vm, ...nv }); an = null; anFor = ''; lastKey = ''; render(); } }); // same as the Bleep speech panel: a bleep started
   // "Bleep speech": it reads the current view model itself (stage, undo, result); after a bleep starts, or Undo / Delete, it hands back the new one
   const rh = $('rpHost');
   if (rh && me.owner && window.RedactPrompt) RedactPrompt.mount(rh, { videoId: id, api, getVM: () => vm, getDuration: () => vm.duration || 0, getTime: () => $('v').currentTime, seek, icon: I, esc, fmt, toast,

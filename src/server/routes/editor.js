@@ -15,6 +15,7 @@ const { proposeRambles } = require('../../agents/rambles');
 const { interpretEdit, EditIntentError } = require('../../agents/edit-intent');
 const { interpretRedact, listSentences, sanitizeRanges } = require('../../agents/redact-intent');
 const redactJob = require('../../agents/redact-job');
+const editChat = require('../../agents/edit-chat');
 const { runFfmpeg, hasAudioStream } = require('../../pipeline/encode');
 const { frameAt } = require('../../agents/media');
 
@@ -123,6 +124,31 @@ function mount(app, ctx) {
     if (busy(v)) return res.status(409).json({ error: 'Wait for the current job to finish' });
     if (!redactJob.finalizeRedaction(v.id)) return res.status(404).json({ error: 'There is no unbleeped copy to delete.' });
     cache.clear(); res.json(viewModel(store.get(v.id), true));
+  });
+
+  // "Describe an edit" as a chat: one message (plus the last few turns) in, a reply and REVIEWABLE proposal cards out. Like the two describe routes above it
+  // never changes the video, its draft or its notes: the page sends what the owner ticks to the existing endpoints (PUT edits, redact/apply, PATCH the video,
+  // actions/:id). The routing and every capability it reaches live in agents/edit-chat.js; this route only checks who is asking and what state the video is in.
+  const chatting = new Set();
+  app.post('/api/videos/:id/chat', own, async (q, res) => {
+    const v = video(q, res); if (!v) return;
+    const b = q.body && typeof q.body === 'object' ? q.body : {};
+    const text = typeof b.text === 'string' ? b.text.trim() : '';
+    if (!text || text.length > editChat.MAX_TEXT) return res.status(400).json({ error: `Write a message of 1 to ${editChat.MAX_TEXT} characters.` });
+    if (v.status !== 'ready') return res.status(409).json({ error: 'This video is still being processed. Try again in a moment.' });
+    if (chatting.has(v.id)) return res.status(409).json({ error: 'Still working on your last message for this video.' });
+    chatting.add(v.id);
+    try {
+      const file = path.join(store.videoDir(v.id), 'video.mp4');
+      res.json(await editChat.chat({
+        text, history: b.history,
+        video: { id: v.id, title: v.title, duration: v.duration, segments: v.segments || [], words: v.words || null, summary: v.summary || '', chapters: v.chapters || [], shareable: v.shareable === true, guide: v.guide || null, actions: v.actions || null },
+        env: { busy: busy(v), redactBusy: redactable(v), silence: () => cached(v.id, 'silence', async () => silenceCuts(await detectSilences(file, v.duration))) },
+      }));
+    } catch (e) {
+      if (e instanceof editChat.ChatError) res.status(e.status).json({ error: e.message });
+      else res.status(500).json({ error: 'Could not work out that message. Try again.' });
+    } finally { chatting.delete(v.id); }
   });
 
   // the edit list (a draft until Apply)
