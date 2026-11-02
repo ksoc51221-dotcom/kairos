@@ -9,7 +9,7 @@ body.sizing #cam video, body.holding #cam video { transition: filter var(--t-pop
 #ring { pointer-events: none; }
 /* Camera zoom: chips on top of the picture, only while recording. Only the chips are no-drag (a no-drag region is a hole in the bubble's drag area even when it is transparent), so they are not in the layout until they are needed. */
 #zbar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 4; }
-.zb { display: none; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: var(--r-cell); background: var(--glass); box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--glass-line); font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); white-space: nowrap; cursor: pointer; -webkit-app-region: no-drag; }
+.zb { display: none; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: var(--r-cell); background: var(--glass); box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--glass-line); font: 500 12px/1 var(--font); color: var(--ink); white-space: nowrap; cursor: pointer; -webkit-app-region: no-drag; }
 .zb i { display: grid; } .zb svg.i { width: 14px; height: 14px; stroke-width: 1.5; }
 body.live:hover #zin, body.live.hover #zin, body.selecting #zin { display: flex; }
 body.zoomed #zout { display: flex; }
@@ -18,14 +18,15 @@ body.selecting #sel { display: block; }
 #selbox { position: absolute; display: none; box-sizing: border-box; border: 1px solid var(--ink); border-radius: 4px; background: rgba(242, 242, 238, .12); box-shadow: 0 0 0 1px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(0, 0, 0, .35); pointer-events: none; }
 #ret { position: absolute; z-index: 2; width: 34px; height: 34px; margin: -17px 0 0 -17px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid var(--ink); box-shadow: 0 0 0 1px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(0, 0, 0, .35); pointer-events: none; display: none; } /* where the zoom sign is pointing */
 #ret.on { display: block; }
-/* Hand gestures (Phase 8): a thin ring just outside the camera (track ink @ .3, progress lime, stop = alert red, a dark rim so it reads on light and dark screens) fills clockwise while a sign is held; when the command fires the ring is full lime with one short scale beat, then a small pill says what happened.
+/* Hand gestures (Phase 8): a thin ring just outside the camera (track ink @ .3, progress ink, stop = alert red, a dark rim so it reads on light and dark screens) fills clockwise while a sign is held; when the command fires the ring is full lime with one short scale beat, then a small pill says what happened.
    Both live inside this window, which is content-protected and never takes focus, so neither is recorded and neither steals the keyboard (B28). */
 #hold { position: absolute; left: 6px; top: 6px; box-sizing: border-box; padding: 3px; pointer-events: none; opacity: 0; transition: opacity 120ms var(--ease);
-  background: conic-gradient(from 0deg, var(--hc, var(--accent)) var(--p, 0deg), transparent 0), linear-gradient(var(--track, rgba(242, 242, 238, .3)), var(--track, rgba(242, 242, 238, .3))); /* ui-rules: allow (progress ring over its track, flat colours) lime while a sign is held, alert red for stop */
+  background: conic-gradient(from 0deg, var(--hc, var(--ink)) var(--p, 0deg), transparent 0), linear-gradient(var(--track, rgba(242, 242, 238, .3)), var(--track, rgba(242, 242, 238, .3))); /* ui-rules: allow (progress ring over its track, flat colours) lime while a sign is held, alert red for stop */
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, .75)) drop-shadow(0 0 .5px rgba(0, 0, 0, .75)); /* thin dark rim: the ink track stays visible on a white screen */
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; } /* ui-rules: allow (mask, not a colour) */
 #hold[data-k="stop"] { --hc: var(--alert); --track: color-mix(in srgb, var(--alert), transparent 70%); }
-#hold.fired { --p: 360deg; animation: beat 220ms var(--ease); }   /* the command went through: full ring, one scale beat */
+#hold.fired { --p: 360deg; --hc: var(--accent); animation: beat 220ms var(--ease); }   /* the command went through: full ring, one scale beat */
+#hold.fired[data-k="stop"] { --hc: var(--alert); }   /* a fired stop stays red */
 @keyframes beat { 0% { transform: scale(1); } 40% { transform: scale(1.045); } 100% { transform: scale(1); } }
 #toast { position: absolute; left: 10px; height: 36px; display: flex; justify-content: center; align-items: flex-end; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity var(--t-pop) var(--ease), transform var(--t-pop) var(--ease); }
 #toast.on { opacity: 1; transform: none; }
@@ -53,6 +54,6 @@ body:hover #panel, body.hover #panel { opacity: 1; pointer-events: auto; transfo
 #shapes button.on { background: var(--selected); color: var(--ink); }
 
 .ph { display: flex; align-items: center; gap: 4px; margin: -4px 0 6px -6px; }
-.ph b { font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.ph b { font: 500 12px/16px var(--font); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
 .pick { display: flex; align-items: center; gap: 2px; height: 34px; font: 400 12.5px/1 var(--font); color: var(--ink-2); }
 .pick span { width: 44px; } .pick em { flex: 1; text-align: center; font-style: normal; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -1,23 +1,36 @@
-/* 3-2-1 over a dimmed screen: a canvas disc with the mono number, an ink ring that drains in lime, an X icon to cancel on its left, a skip icon to start now on its right, a tip line under it.
-   The thin ring around the disc drains once per second; the whole overlay fades out over 120 ms. */
+/* 3-2-1 over a dimmed screen: a canvas disc with the mono number, an ink ring that drains, an X icon to cancel on its left, a skip icon to start now on its right, a tip line under it.
+   The thin ring around the disc drains once per second; each tick's digit scales 1.15 -> 1 and fades in over 220 ms, holds, then fades out in ~143 ms (65% of the enter); the overlay fades out over 143 ms. Reduced motion: opacity only. */
 html, body { height: 100%; overflow: hidden; }
 body { display: grid; place-items: center; align-content: center; gap: 22px; background: var(--scrim); visibility: hidden; }
 body.go { visibility: visible; }
 body.go #stage { animation: pop var(--t-pop) var(--ease); }
-body.out { opacity: 0; transition: opacity 120ms var(--ease); }
+body.out { opacity: 0; transition: opacity 143ms ease-out; }
 @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 #stage { display: flex; align-items: center; gap: 44px; }
 #wrap { position: relative; width: 280px; height: 280px; display: grid; place-items: center; }
 #ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 #ring circle { fill: none; stroke-width: 1; }
 #ring .track { stroke: var(--countdown-ring); }
-#ring .arc { stroke: var(--accent); stroke-width: 1.5; stroke-linecap: butt; stroke-dasharray: 100; stroke-dashoffset: 0; animation: drain 1s linear forwards; }
+#ring .arc { stroke: var(--ink); stroke-width: 1.5; stroke-linecap: butt; stroke-dasharray: 100; stroke-dashoffset: 0; animation: drain 1s linear forwards; }
 @keyframes drain { to { stroke-dashoffset: 100; } }
 #disc { width: 264px; height: 264px; border-radius: 50%; display: grid; place-items: center; background: var(--glass); box-shadow: inset 0 0 0 1px var(--hair-strong), var(--shadow-pop); }
-#n { display: block; font: 300 168px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.04em; color: var(--ink); animation: roll-in 380ms var(--ease) both; }
+#n { display: block; font: 300 168px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.04em; color: var(--ink); animation: tick 1s linear both; }
+@keyframes tick {
+  0% { opacity: 0; transform: scale(1.15); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+  22% { opacity: 1; transform: scale(1); animation-timing-function: linear; }
+  85.7% { opacity: 1; transform: scale(1); animation-timing-function: ease-out; }
+  100% { opacity: 0; transform: scale(1); }
+}
+@keyframes tick-fade { 0% { opacity: 0; } 22% { opacity: 1; } 85.7% { opacity: 1; } 100% { opacity: 0; } }
 .side { width: 138px; height: 138px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); border: 1px solid var(--hair-strong);
-  background: var(--glass); transition: background var(--t-hover) var(--ease), transform var(--t-hover) var(--ease); }
+  background: var(--glass); transition: background var(--t-hover) var(--ease), transform 120ms var(--ease); }
 .side:hover { background: var(--selected); }
-.side:active { transform: scale(.96); }
+.side:active { transform: scale(.97); }
 .side .i { width: 48px; height: 48px; stroke-width: 1.5; }
 .tip { margin: 0; padding: 10px 16px; border-radius: var(--r-btn); background: var(--glass); color: var(--ink-2); font: 400 14px/1.3 var(--font); box-shadow: inset 0 0 0 1px var(--hair-strong), var(--shadow-pop); }
+@media (prefers-reduced-motion: reduce) {
+  #n { animation: tick-fade 1s linear both !important; }
+  #ring .arc { animation: drain 1s linear forwards !important; }
+  body.go #stage { animation: none !important; }
+  body.out { transition: opacity 143ms linear !important; }
+}

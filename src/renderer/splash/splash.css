@@ -1,10 +1,10 @@
-/* The mark fades in, holds, and fades away: 2.2 s in all (main closes the window at 2.4 s). No script: ink pinwheel and a mono wordmark with a 2px lime bar, on canvas. */
+/* The mark fades in, holds, and fades away: 2.2 s in all (main closes the window at 2.4 s). No script: ink pinwheel and a mono wordmark with a 2px ink bar, on canvas. */
 html, body { height: 100%; margin: 0; overflow: hidden; background: transparent; }
 body { display: grid; place-items: center; }
 #logo { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 36px 44px 30px; border-radius: var(--r-panel); background: var(--canvas); box-shadow: inset 0 0 0 1px var(--hair-strong); opacity: 0; animation: splash 2200ms var(--ease) forwards; }
 #mark { width: 72px; height: 72px; color: var(--ink); }
 #word { font: 500 13px/1 var(--mono); letter-spacing: .32em; text-indent: .32em; color: var(--ink); }
-#bar { display: block; width: 44px; height: 2px; background: var(--accent); transform-origin: 0 50%; animation: sweep 700ms var(--ease) 500ms both; }
+#bar { display: block; width: 44px; height: 2px; background: var(--ink); transform-origin: 0 50%; animation: sweep 700ms var(--ease) 500ms both; }
 @keyframes sweep { from { transform: scaleX(0); } to { transform: none; } }
 @keyframes splash {
   0%   { opacity: 0; transform: scale(.96); }

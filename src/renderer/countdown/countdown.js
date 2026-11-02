@@ -16,7 +16,7 @@ function begin() {
 function end(channel) {
   if (over) return; over = true; clearInterval(timer);
   document.body.classList.add('out');
-  setTimeout(() => spool.send(channel), 120); // let the fade finish before the window closes
+  setTimeout(() => spool.send(channel), 143); // let the fade finish before the window closes
 }
 spool.on('countdown:begin', begin);
 $('cancel').onclick = () => end('countdown:cancel');

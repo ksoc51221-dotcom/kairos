@@ -14,7 +14,9 @@ html, body { height: 100%; overflow: hidden; }
 .rec .key:hover { background: color-mix(in srgb, var(--alert), white 10%); }
 .paused .key { color: var(--key-ink); }
 
-#time { margin: 5px 0 6px; font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; color: var(--ink); }
+#time { display: flex; align-items: center; gap: 5px; margin: 5px 0 6px; font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; color: var(--ink); }
+#time::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--alert); flex: none; }  /* static: no pulse */
+.paused #time::before { background: var(--ink-3); }
 
 #bar .icon-btn { color: var(--ink-2); }
 #bar .icon-btn:hover { color: var(--ink); }
@@ -26,7 +28,7 @@ html, body { height: 100%; overflow: hidden; }
 #panel { position: absolute; left: 72px; top: 8px; width: 244px; padding: 14px; opacity: 0; transform: scale(.96); transform-origin: 0 24px; pointer-events: none;
   transition: opacity var(--t-pop) var(--ease), transform var(--t-pop) var(--ease); }
 #panel.show { opacity: 1; transform: none; pointer-events: auto; }
-#panel h4 { margin: 0 0 8px; font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+#panel h4 { margin: 0 0 8px; font: 500 12px/16px var(--font); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
 #panel p { margin: 0 0 10px; }
 #swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .sw { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background-clip: padding-box; box-shadow: 0 0 0 1px var(--hair-strong); transition: transform var(--t-hover) var(--ease); }
