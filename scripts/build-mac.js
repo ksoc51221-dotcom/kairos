@@ -66,10 +66,12 @@ function dry() {
 }
 
 async function build() {
+  // @electron/packager also looks for an optional Icon Composer "icon.icon" and warns when it is missing; we ship the .icns, so drop only that warning.
+  const warn = console.warn; console.warn = (m, ...r) => { if (!/with extension ".icon"/.test(String(m))) warn(m, ...r); };
   const { packager } = require('@electron/packager');
   const [dir] = await packager({
     dir: root, name: 'Kairos', platform: 'darwin', arch: 'arm64', out: path.join(root, 'dist'), overwrite: true, asar: false,
-    appBundleId: 'app.hermes.recorder', icon: path.join(root, 'assets', 'icon'), extendInfo: path.join(__dirname, 'Info.extend.plist'), ignore: IGNORE,
+    appBundleId: 'app.hermes.recorder', icon: path.join(root, 'assets', 'icon.icns'), extendInfo: path.join(__dirname, 'Info.extend.plist'), ignore: IGNORE,
   });
   const app = path.join(dir, 'Kairos.app');
   const want = process.env.SPOOL_SIGN || 'Spool Dev';
