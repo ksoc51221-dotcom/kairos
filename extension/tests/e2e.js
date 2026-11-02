@@ -1,5 +1,5 @@
 // End-to-end check of the Kairos extension in a real Chromium: loads it unpacked and drives the launcher with real mouse clicks.
-//   PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core node extension/tests/e2e.js
+//   npm run test:ext:e2e   (optional: PLAYWRIGHT_CORE=/path/to/playwright-core, PLAYWRIGHT_CHROMIUM=/path/to/Chromium binary)
 // What it covers: launcher and its three buttons, per-site turn-off (and undo), the countdown (and Esc), the camera bubble on a page with a strict
 // Content-Security-Policy, pause/resume, the control bar, saving to the library, and the saved file. What it cannot cover: Chrome's native screen
 // picker (nobody can click it from a script), so the "screen" is an animated test pattern the recorder draws when the test sets __testFakeScreen.
@@ -9,7 +9,21 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 let chromium;
-try { ({ chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core')); } catch { console.error('This test needs playwright-core and its Chromium: npm i --no-save playwright-core && npx playwright-core install chromium  (or point PLAYWRIGHT_CORE at an install)'); process.exit(2); }
+try { ({ chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core')); } catch { console.error('This test needs playwright-core and its Chromium: npm i -D playwright-core  (or point PLAYWRIGHT_CORE at an install)'); process.exit(2); }
+
+// Find a full Chromium (extensions do not work in the headless shell): env override, playwright's own build, else the newest one in the cache.
+const chromiumPath = () => {
+  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  try { const p = chromium.executablePath(); if (p && fs.existsSync(p)) return p; } catch {}
+  const cache = path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright');
+  try {
+    const dirs = fs.readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d)).sort((a, b) => parseInt(b.slice(9), 10) - parseInt(a.slice(9), 10));
+    for (const d of dirs) { const p = path.join(cache, d, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'); if (fs.existsSync(p)) return p; }
+  } catch {}
+  return null;
+};
+const CHROMIUM = chromiumPath();
+if (!CHROMIUM) { console.error('No Chromium found. Install one with: npx playwright-core install chromium  (or set PLAYWRIGHT_CHROMIUM=/path/to/Chromium)'); process.exit(2); }
 
 const EXT = path.resolve(__dirname, '..');
 const FFMPEG = (() => { try { return require(path.resolve(EXT, '..', 'node_modules', 'ffmpeg-static')); } catch { return null; } })();
@@ -36,8 +50,8 @@ const server = http.createServer((req, res) => {
   const A = `http://127.0.0.1:${port}/`, B = `http://localhost:${port}/`;   // two different "sites" for the per-site switch
 
   const ctx = await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), 'kairos-profile-')), {
-    channel: 'chromium', headless: true, viewport: { width: 1100, height: 700 },
-    args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`, '--use-fake-ui-for-media-stream', '--auto-select-desktop-capture-source=Entire screen', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'],
+    executablePath: CHROMIUM, headless: false, viewport: { width: 1100, height: 700 },
+    args: ['--headless=new', `--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`, '--use-fake-ui-for-media-stream', '--auto-select-desktop-capture-source=Entire screen', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'],
   });
   let sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent('serviceworker');
   const extId = new URL(sw.url()).host;
