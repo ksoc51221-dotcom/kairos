@@ -177,6 +177,15 @@ function cutProposals(res) {
   })).filter((p) => Number.isFinite(p.start) && Number.isFinite(p.end) && p.end > p.start);
 }
 const near = (a, b) => Math.abs(a - b) < 0.05;
+// Cuts must fit the video: clamp to [0, duration], drop any that start at/after the end or end up empty, merge overlaps (the earlier cut keeps its label).
+function cleanCuts(list, duration) {
+  const out = [];
+  const fit = (Array.isArray(list) ? list : []).map((p) => ({ ...p, start: r1(Math.max(0, +p.start)), end: r1(duration > 0 ? Math.min(+p.end, duration) : +p.end) }))
+    .filter((p) => Number.isFinite(p.start) && Number.isFinite(p.end) && p.end > p.start && !(duration > 0 && p.start >= duration))
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  for (const p of fit) { const last = out[out.length - 1]; if (last && p.start <= last.end) last.end = Math.max(last.end, p.end); else out.push(p); }
+  return out;
+}
 
 async function runCuts(actions, ctx) {
   const cards = [], proposals = [], notes = new Set(); let tried = 0, firstErr = null;
@@ -195,9 +204,9 @@ async function runCuts(actions, ctx) {
       cards.push(note(e instanceof EditIntentError ? e.message : 'Could not work out that cut. Try again.', 'warn'));
     }
   }
-  if (proposals.length) {
-    proposals.sort((a, b) => a.start - b.start || a.end - b.end);
-    const list = proposals.slice(0, MAX_CUTS), removed = list.reduce((s, p) => s + p.end - p.start, 0);
+  const fitted = cleanCuts(proposals, ctx.video.duration);
+  if (fitted.length) {
+    const list = fitted.slice(0, MAX_CUTS), removed = list.reduce((s, p) => s + p.end - p.start, 0);
     cards.unshift({ kind: 'cuts', summary: `${list.length} ${list.length === 1 ? 'cut' : 'cuts'}, ${r1(removed)} s if you keep them all.`, proposals: list, notes: [...notes].slice(0, 6) });
   }
   return { cards, failed: !proposals.length && tried > 0 && firstErr ? firstErr : null };
@@ -388,6 +397,6 @@ async function chat({ text, history, video, env = {}, deps = {} } = {}) {
 }
 
 module.exports = {
-  chat, route, normalizePlan, heuristicPlan, routerPrompt, sanitizeHistory, cleanAnswer, cleanChapters, scrub, chips,
+  chat, route, normalizePlan, heuristicPlan, routerPrompt, sanitizeHistory, cleanAnswer, cleanChapters, cleanCuts, scrub, chips,
   CHIPS, TYPES, ChatError, MAX_TEXT, MAX_TURNS, ROUTER_SCHEMA, ROUTER_SYSTEM,
 };

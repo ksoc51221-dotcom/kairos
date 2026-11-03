@@ -220,3 +220,13 @@ test('cleanChapters drops out-of-range, negative, NaN, empty and sorts/dedupes',
   ], 75);
   assert.deepEqual(out, [{ start: 0, title: 'Intro' }, { start: 40, title: 'Middle' }]);
 });
+
+test('cleanCuts clamps to the duration, drops past-the-end and empty cuts, merges overlaps', () => {
+  const out = chat.cleanCuts([
+    { start: 88, end: 91.3, label: 'past the end' },
+    { start: 70, end: 80, label: 'runs over' },
+    { start: 10, end: 14, label: 'a' }, { start: 12, end: 16, label: 'b' },
+    { start: 30, end: 30, label: 'empty' }, { start: -2, end: 1, label: 'negative' },
+  ], 75);
+  assert.deepEqual(out.map((c) => [c.start, c.end, c.label]), [[0, 1, 'negative'], [10, 16, 'a'], [70, 75, 'runs over']]);
+});

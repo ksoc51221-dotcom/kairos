@@ -228,7 +228,8 @@
         if (!c || typeof c !== 'object') continue;
         if (c.kind === 'note') cards.push({ kind: 'note', tone: c.tone === 'warn' ? 'warn' : 'info', text: String(c.text ?? '') });
         else if (c.kind === 'cuts' || c.kind === 'bleeps') {
-          const ps = (Array.isArray(c.proposals) ? c.proposals : []).map((p) => ({ start: +p.start, end: +p.end, kind: p.kind === 'silence' || p.kind === 'filler' ? p.kind : 'prompt', label: String(p.label ?? ''), reason: String(p.reason ?? ''), text: String(p.text ?? ''), source: p.source === 'model' ? 'model' : 'rule', check: p.check === true })).filter((p) => Number.isFinite(p.start) && Number.isFinite(p.end) && p.end > p.start);
+          const ps = (Array.isArray(c.proposals) ? c.proposals : []).map((p) => ({ start: +p.start, end: +p.end, kind: p.kind === 'silence' || p.kind === 'filler' ? p.kind : 'prompt', label: String(p.label ?? ''), reason: String(p.reason ?? ''), text: String(p.text ?? ''), source: p.source === 'model' ? 'model' : 'rule', check: p.check === true })).filter((p) => Number.isFinite(p.start) && Number.isFinite(p.end) && p.end > p.start)
+          if (c.kind === 'cuts') { const fit = ps.map((p) => ({ ...p, start: Math.max(0, p.start), end: d > 0 ? Math.min(p.end, d) : p.end })).filter((p) => p.end > p.start && !(d > 0 && p.start >= d)).sort((a, b) => a.start - b.start || a.end - b.end); ps.length = 0; for (const p of fit) { const l = ps[ps.length - 1]; if (l && p.start <= l.end) l.end = Math.max(l.end, p.end); else ps.push(p); } } // same guard as the server: clamp, drop, merge
           if (ps.length) cards.push({ kind: c.kind, proposals: ps, notes: strs(c.notes), dur: d, cs: { status: 'open', picked: new Set(ps.map((p, i) => (p.check ? -1 : i)).filter((i) => i >= 0)), rewrite: true } });
         } else if (c.kind === 'meta') {
           const f = (x) => (x && typeof x.proposed === 'string' && x.proposed ? { current: String(x.current ?? ''), proposed: x.proposed } : null);
