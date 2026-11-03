@@ -347,7 +347,7 @@ function renderEdit(p) {
   if (me.owner && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !busy) loadAnalysis();
   const sil = an?.silenceSeconds ?? null, fil = an?.fillerCount ?? null, cuts = draft().length, applying = /^Applying edits/.test(vm.stage || '');
   const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"${sub && !/</.test(sub) ? ` title="${esc(sub)}"` : ''}><div class="grow"><div class="olab">${label}</div>${sub && /</.test(sub) ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
-  p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div><div id="epHost"></div></section>
+  p.innerHTML = `<section class="sec"><div id="epHost"></div></section>
     ${cuts || vm.edits?.inserts?.length ? `<div class="apply" title="Nothing changes until you apply them; the previous version is kept so you can undo once."><div class="meta"><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` · ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready</b></div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
     ${vm.canUndo && vm.undoKind !== 'redact' ? `<div class="apply"><div class="meta"><b>Edits applied</b></div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
     ${vm.editError && !/^Could not bleep/.test(vm.editError) ? `<div class="err">${esc(vm.editError)}</div>` : ''}

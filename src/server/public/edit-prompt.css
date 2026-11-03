@@ -54,6 +54,7 @@
 /* ---- "Describe an edit" as a chat (edit-prompt.js). The .ep-* rules above style the lists inside the cards. ---- */
 .ch { gap: 8px; }
 .ch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.ch-head > .tag { font: 500 13px/20px var(--sans); color: var(--ink-2); }   /* the one header: "Assistant" + New chat */
 .ch-tools { display: flex; align-items: center; gap: 4px; }
 .ch-tools .iconbtn { width: 26px; height: 26px; }
 .ch-tools .iconbtn svg.i { width: 16px; height: 16px; }
@@ -78,9 +79,12 @@
 .ch-exb { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 6px 10px; text-align: left; border-radius: var(--r-btn); font-size: 13px; line-height: 20px; color: var(--ink); }
 .ch-exb .meta { flex: none; width: 40px; }
 
-.ch-card { display: flex; flex-direction: column; gap: 8px; padding: 0; }
+.ch-card { display: flex; flex-direction: column; gap: 8px; padding: 16px 0 0; margin-top: 18px; border-top: 1px solid var(--hair); }   /* each proposal group: 24px above a hairline */
 .ch-card.done { gap: 4px; }
 .ch-ch { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ch-ch > .tag { font: 600 13px/20px var(--sans); color: var(--ink); }
+.ch-m.bot:not(:first-child) { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--hair); }   /* each assistant turn: 24px (with the thread gap) above a hairline */
+.ch-card .ch-act { margin-top: 4px; }
 .ch-state { margin: 0; font: 400 12px/18px var(--sans); color: var(--ink-2); }
 .ch-note .callout { margin: 0; }
 .ch-card .ep-list { max-height: 240px; }
