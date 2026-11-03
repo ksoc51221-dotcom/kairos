@@ -1,6 +1,6 @@
 // CSS for the in-page launcher, recording bar, countdown, camera bubble and toast. It lives in a shadow root, so the page's own CSS cannot restyle it
 // and ours cannot leak out. Tokens are the Instrument set from lib/kairos.css, always dark: this floats over arbitrary sites.
-// Near-black pill, hairline rim, ink icons. Record/stop/destructive = alert red. Hover = lime ring. Fonts: Geist Mono is registered on the page by
+// Near-black pill, hairline rim, ink icons. Record/stop/destructive = alert red. Hover = neutral ring. Fonts: Geist Mono is registered on the page by
 // content.js (a @font-face cannot live in a shadow root); until it loads, or if the page's CSP refuses it, the system mono is used.
 self.__kairosCss = `
 :host { all: initial; }
@@ -17,7 +17,7 @@ self.__kairosCss = `
   font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: antialiased;
 }
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 [hidden] { display: none !important; }
 svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 svg.i .f { fill: currentColor; stroke: none; }
@@ -35,40 +35,41 @@ svg.i .f { fill: currentColor; stroke: none; }
 .launcher:hover .stack, .launcher:focus-within .stack { opacity: 1; transform: none; pointer-events: auto; }
 .orb { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink); background: var(--canvas);
   box-shadow: 0 0 0 1px var(--hair-strong), var(--pop); transition: box-shadow 140ms var(--ease), transform 140ms var(--ease); }
-.orb:hover { box-shadow: 0 0 0 2px var(--accent), var(--pop); transform: scale(1.05); }
+.orb:hover { box-shadow: 0 0 0 2px var(--ink-2), var(--pop); transform: scale(1.05); }
+.orb:active { transform: scale(.97); }
 .orb.off { color: var(--alert); }
 .tip { position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 6px 9px; border-radius: 6px;
-  background: var(--canvas); color: var(--ink); font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; box-shadow: 0 0 0 1px var(--hair-strong); opacity: 0; pointer-events: none; transition: opacity 140ms var(--ease); }
+  background: var(--canvas); color: var(--ink); font: 500 12px/16px var(--sans); box-shadow: 0 0 0 1px var(--hair-strong); opacity: 0; pointer-events: none; transition: opacity 140ms var(--ease); }
 .orb:hover .tip, .orb:focus-visible .tip { opacity: 1; }
 .pill { position: relative; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: var(--canvas); color: var(--ink);
   box-shadow: 0 0 0 1px var(--hair-strong), var(--pop); transition: box-shadow 140ms var(--ease), transform 140ms var(--ease); }
 .pill svg.i { width: 34px; height: 34px; }
 .pill::after { content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--alert); }
-.pill:hover { box-shadow: 0 0 0 2px var(--accent), var(--pop); }
+.pill:hover { box-shadow: 0 0 0 2px var(--ink-2), var(--pop); }
 .pill:active { transform: scale(.97); }
 .launcher.busy .pill, .launcher.busy .orb { opacity: .55; pointer-events: none; }
 
 .bar { display: flex; align-items: center; gap: 4px; height: 52px; padding: 0 8px 0 18px; border-radius: 26px; background: var(--canvas); box-shadow: 0 0 0 1px var(--hair-strong), var(--pop); animation: pop 220ms var(--ease) both; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--alert); animation: blink 1.2s ease-in-out infinite; }
-.bar.paused .dot { background: var(--ink-3); animation: none; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--alert); }
+.bar.paused .dot { background: var(--ink-3); }
 .time { min-width: 50px; margin: 0 8px 0 10px; font: 500 14px/1 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
-.tool { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--ink); transition: background 140ms var(--ease), box-shadow 140ms var(--ease); }
+.tool { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--ink); transition: background-color 140ms var(--ease), box-shadow 140ms var(--ease), transform 140ms var(--ease); }
 .tool:hover { background: var(--selected); }
+.tool:active { transform: scale(.97); }
 .tool.stop { background: var(--alert); color: var(--canvas); }
-.tool.stop:hover { background: var(--alert); box-shadow: 0 0 0 2px var(--accent); }
+.tool.stop:hover { background: var(--alert); box-shadow: 0 0 0 2px var(--ink); }
 .bar.saving .tool, .bar.saving .dot { display: none; }
 .bar.collapsed { padding: 0; width: 22px; height: 22px; justify-content: center; opacity: .55; animation: none; }
 .bar.collapsed > :not(.dot):not(.expand) { display: none; }
 .bar.collapsed .expand { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
 .bar:not(.collapsed) .expand { display: none; }
-@keyframes blink { 50% { opacity: .25; } }
 @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 
 /* ---- countdown ---- */
 .countdown { position: fixed; inset: 0; z-index: 1; display: grid; place-items: center; background: rgba(0, 0, 0, .55); }
 .countdown .n { width: 168px; height: 168px; display: grid; place-items: center; border-radius: 50%; background: var(--canvas); box-shadow: 0 0 0 1px var(--hair-strong), var(--pop);
   font: 500 84px/1 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; animation: beat 1s var(--ease) infinite; }
-.countdown .hint { position: absolute; bottom: 14%; font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.countdown .hint { position: absolute; bottom: 14%; font: 500 13px/18px var(--sans); color: var(--ink-2); }
 @keyframes beat { 0% { transform: scale(.92); opacity: .5; } 25% { transform: scale(1); opacity: 1; } }
 
 /* ---- camera bubble ---- */
@@ -81,7 +82,8 @@ svg.i .f { fill: currentColor; stroke: none; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 14px; max-width: min(560px, calc(100vw - 32px));
   padding: 10px 10px 10px 16px; border-radius: 8px; background: var(--canvas); box-shadow: 0 0 0 1px var(--hair-strong), var(--pop); font: 400 13px/18px var(--sans); color: var(--ink); animation: toast-in 220ms var(--ease) both; }
 .toast.error { box-shadow: 0 0 0 1px var(--alert), var(--pop); }
-.toast button { padding: 7px 10px; border-radius: 6px; box-shadow: 0 0 0 1px var(--hair-strong); font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); transition: background 140ms var(--ease); }
+.toast button { padding: 7px 10px; border-radius: 6px; box-shadow: 0 0 0 1px var(--hair-strong); font: 500 13px/18px var(--sans); color: var(--ink); transition: background-color 140ms var(--ease), transform 140ms var(--ease); }
+.toast button:active { transform: scale(.97); }
 .toast button:hover { background: var(--selected); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) scale(.96); } to { opacity: 1; transform: translateX(-50%); } }
 

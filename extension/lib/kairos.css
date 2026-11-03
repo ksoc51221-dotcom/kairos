@@ -1,6 +1,6 @@
 /* Kairos "Instrument" tokens for the extension's own pages (popup, library, permissions, bubble).
    Same values as src/server/public/instrument.css (the extension cannot import outside its folder), so change both together.
-   Dark first; light follows the system. Accent budget: at most ~3 lime marks per screen (focus ring, 2px bar, one primary button).
+   Dark first; light follows the system. Accent budget: lime on one primary button per screen; everything else (focus ring, wordmark bar, selection bars) is neutral ink.
    The in-page launcher (content/styles.js) carries its own dark-only copy because it lives in a shadow root. */
 @font-face { font-family: "Geist"; src: url("../fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
 @font-face { font-family: "Geist Mono"; src: url("../fonts/GeistMono-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
@@ -14,7 +14,7 @@
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --r-chip: 4px; --r-btn: 6px; --r-panel: 8px;
-  --ease: cubic-bezier(.22, 1, .36, 1);
+  --ease: cubic-bezier(.23, 1, .32, 1);
   --t-quick: 140ms; --t-snappy: 220ms; --t-smooth: 380ms;
 }
 @media (prefers-color-scheme: light) {
@@ -31,28 +31,28 @@ html, body { margin: 0; background: var(--canvas); color: var(--ink); font: 400 
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
 a { color: var(--ink); text-decoration-color: var(--hair-strong); text-underline-offset: 3px; }
 a:hover { text-decoration-color: var(--ink); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 [hidden] { display: none !important; }
 svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 svg.i .f { fill: currentColor; stroke: none; }
 
 /* type */
 .mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.label { font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
-.meta { font: 400 11px/14px var(--mono); letter-spacing: .04em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-kbd { font: 400 10.5px/14px var(--mono); color: var(--ink-2); border: 1px solid var(--hair-strong); border-radius: 3px; padding: 0 4px; }
+.label { font: 500 12px/16px var(--sans); color: var(--ink-2); }
+.meta { font: 400 12px/16px var(--sans); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+kbd { font: 400 12px/16px var(--mono); color: var(--ink-2); border: 1px solid var(--hair-strong); border-radius: 3px; padding: 0 4px; }
 
-/* brand: pinwheel in ink + mono wordmark with a 2px lime bar */
+/* brand: pinwheel in ink + wordmark with a neutral 2px bar */
 .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; }
 .brand svg.i { width: 20px; height: 20px; }
-.brand .wm { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/16px var(--mono); letter-spacing: .12em; }
-.brand .wm::before { content: ""; width: 2px; height: 16px; background: var(--accent-text); }
+.brand .wm { display: inline-flex; align-items: center; gap: 8px; font: 600 13px/16px var(--sans); }
+.brand .wm::before { content: ""; width: 2px; height: 16px; background: var(--ink); }
 
 /* buttons: one primary (lime) per screen, danger = alert red */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; padding: 0 14px; border-radius: var(--r-btn); border: 1px solid var(--hair-strong); font: 600 13px/18px var(--sans); color: var(--ink);
-  transition: background var(--t-quick) var(--ease), border-color var(--t-quick) var(--ease), transform var(--t-quick) var(--ease), opacity var(--t-quick) var(--ease); }
+  transition: background-color var(--t-quick) var(--ease), border-color var(--t-quick) var(--ease), transform var(--t-quick) var(--ease), opacity var(--t-quick) var(--ease); }
 .btn:hover { background: var(--raised); }
-.btn:active { transform: scale(.98); }
+.btn:active { transform: scale(.97); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn.primary:hover { background: var(--accent); opacity: .9; }
 .btn.danger { color: var(--alert); }
@@ -65,6 +65,7 @@ kbd { font: 400 10.5px/14px var(--mono); color: var(--ink-2); border: 1px solid 
 @keyframes i-slide { from { opacity: 0; transform: translateX(12px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes i-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes i-blink { 50% { opacity: .25; } }
+@keyframes i-out { to { opacity: 0; transform: translateY(-4px); } }
 .i-stagger > * { animation: i-rise var(--t-smooth) var(--ease) both; animation-delay: calc(min(var(--i, 0), 8) * 30ms); }
 .i-pop { animation: i-pop var(--t-snappy) var(--ease) both; }
 .i-slide { animation: i-slide var(--t-smooth) var(--ease) both; }
