@@ -143,9 +143,27 @@
     const step = (t) => { const k = Math.min(1, (t - t0) / D), e = 1 - (1 - k) ** 3; el.textContent = fmtN(from + (to - from) * e, pad); if (k < 1) el._raf = requestAnimationFrame(step); };
     el._raf = requestAnimationFrame(step);
   });
-  // A count as markup: UI.n(3, 2) -> '<span class="i-num" data-roll="3" data-pad="2">03</span>'. Pass a key to keep the roll from replaying on re-render.
+  // A count as markup: UI.n(3) -> '<span class="i-num" data-roll="3">3</span>'. Pass a key to keep the roll from replaying on re-render.
   const n = (v, pad = 0, key = '') => `<span class="i-num" data-roll="${Number(v) || 0}" data-pad="${pad}"${key ? ` data-rk="${esc(key)}"` : ''}>${fmtN(Number(v) || 0, pad)}</span>`;
   // Staggered load: marks the children of `root` with --i (capped at 8) and the .i-stagger class.
   const stagger = (root) => { if (!root) return; [...root.children].forEach((c, k) => c.style.setProperty('--i', Math.min(k, 8))); root.classList.add('i-stagger'); };
-  window.UI = { brand, logo, i, P, esc, initials, fill, ago, dur, roll, n, stagger };
+  // Stacked toasts (Sonner style): newest in front, older ones scaled .95 and offset 14px behind it, at most 3 visible. Timeout or swipe (sideways/down) dismisses.
+  // Only transform and opacity animate. Reduced-motion users get the same stack without the slide.
+  const toast = (msg, o = {}) => {
+    const err = typeof o === 'boolean' ? o : !!o.err;
+    let host = document.getElementById('toasts');
+    if (!host) { host = document.createElement('div'); host.id = 'toasts'; host.className = 'toasts'; host.setAttribute('role', 'status'); host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
+    const el = document.createElement('div'); el.className = 'toast' + (err ? ' err' : ''); el.textContent = String(msg ?? '');
+    const layout = () => { [...host.children].filter((c) => !c._gone).reverse().forEach((c, k) => { c.style.setProperty('--k', k); c.dataset.hide = k >= 3 ? '1' : ''; }); };
+    const kill = () => { if (el._gone) return; el._gone = true; clearTimeout(el._t); el.classList.add('out'); layout(); setTimeout(() => { el.remove(); layout(); }, 160); };
+    host.appendChild(el); layout(); requestAnimationFrame(() => el.classList.add('in'));
+    el._t = setTimeout(kill, o.ms || 2800);
+    let x0 = null, y0 = 0;
+    el.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; clearTimeout(el._t); try { el.setPointerCapture(e.pointerId); } catch {} });
+    el.addEventListener('pointermove', (e) => { if (x0 === null) return; const dx = e.clientX - x0, dy = Math.max(0, e.clientY - y0); el.style.setProperty('--dx', dx + 'px'); el.style.setProperty('--dy', dy + 'px'); });
+    const end = (e) => { if (x0 === null) return; const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null; if (Math.abs(dx) > 60 || dy > 40) kill(); else { el.style.setProperty('--dx', '0px'); el.style.setProperty('--dy', '0px'); el._t = setTimeout(kill, 1800); } };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    return kill;
+  };
+  window.UI = { toast, brand, logo, i, P, esc, initials, fill, ago, dur, roll, n, stagger };
 })();

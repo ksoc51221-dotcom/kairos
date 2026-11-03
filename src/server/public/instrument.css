@@ -2,7 +2,7 @@
    Canonical copy. extension/lib/kairos.css and src/shared/ui.css repeat these values (they cannot import across folders / are dark-only),
    so change all three together. Dark is primary; light is its inversion and follows the system unless <html data-theme> forces one.
 
-   Accent budget: at most ~3 lime marks per screen (focus ring, the 2px selection / now bar, one primary button). Everything else is ink.
+   Accent budget: ONE lime mark per screen, the primary button. Focus rings, selection bars, tab underlines, the logo bar and Share are neutral (--ink).
    On light, lime is for fills only: thin lime marks, links and 2px bars use --accent-text (#4A6B00). Never a low-alpha lime wash over black. */
 @font-face { font-family: "Geist"; src: url("fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
 @font-face { font-family: "Geist"; src: url("fonts/Geist-Italic-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
@@ -24,8 +24,8 @@
   /* shape */
   --r-chip: 4px; --r-btn: 6px; --r-panel: 8px;
   /* motion */
-  --ease: cubic-bezier(.22, 1, .36, 1);
-  --t-quick: 140ms; --t-snappy: 220ms; --t-smooth: 380ms;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1); --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --t-quick: 140ms; --t-snappy: 200ms; --t-smooth: 250ms; --t-exit: 130ms;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
@@ -49,15 +49,15 @@
 }
 
 /* ---- type helpers ---- */
-.i-label { font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
-.i-meta { font: 400 11px/14px var(--mono); letter-spacing: .04em; color: var(--ink-3); }
+.i-label { font: 500 12px/16px var(--sans); color: var(--ink-2); }
+.i-meta { font: 400 12px/16px var(--sans); color: var(--ink-3); }
 .i-num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-kbd, .i-kbd { font: 400 10.5px/14px var(--mono); color: var(--ink-2); border: 1px solid var(--hair-strong); border-radius: 3px; padding: 0 4px; background: none; }
+kbd, .i-kbd { font: 400 12px/16px var(--mono); color: var(--ink-2); border: 1px solid var(--hair-strong); border-radius: 3px; padding: 0 4px; background: none; }
 
 /* ---- motion primitives (opt-in classes; JS adds .i-in to animate) ---- */
 @keyframes i-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes i-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
-@keyframes i-slide { from { opacity: 0; transform: translateX(12px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes i-slide { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
 @keyframes i-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes i-sweep { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes i-blink { 50% { opacity: .25; } }

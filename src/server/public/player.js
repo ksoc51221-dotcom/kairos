@@ -92,9 +92,9 @@
     if (controls) {
       const cc = $('cc'); if (cc) {
         const sel = document.createElement('select'); sel.className = cc.className; sel.id = 'ccs'; sel.setAttribute('aria-label', 'Caption style'); sel.hidden = true;
-        sel.innerHTML = BASES.map((b) => `<option value="${b}">${b[0].toUpperCase() + b.slice(1)}</option>`).join(''); cc.after(sel);
+        sel.innerHTML = BASES.map((b) => `<option value="${b}">${b[0].toUpperCase() + b.slice(1)}</option>`).join(''); cc.after(sel); selectMenu(sel, { label: 'Caption style', icon: 'text' });
         sel.onchange = () => { try { localStorage.setItem(CAP_KEY, sel.value); } catch {} };
-        const sync = () => { sel.hidden = !st.caps; if (document.activeElement !== sel) sel.value = capLook().base; };
+        const sync = () => { sel.hidden = !st.caps; sel.value = capLook().base; };
         setInterval(sync, 300);
       }
     }
@@ -121,7 +121,7 @@
     function floatReaction(kind) {
       const k = KINDS[kind]; if (!k) return;
       const e = document.createElement('div'); e.className = 'fl';
-      e.style.cssText = `left:${10 + Math.random() * 70}%;display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface);color:var(--ink);border:1px solid var(--hair-strong);border-radius:4px;font:600 11px/14px var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap`;
+      e.style.cssText = `left:${10 + Math.random() * 70}%;display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface);color:var(--ink);border:1px solid var(--hair-strong);border-radius:4px;font:500 12px/16px var(--sans);white-space:nowrap`;
       e.innerHTML = `<span style="color:var(--ink);display:grid">${window.UI ? UI.i(k[0]) : ''}</span>${esc(k[1])}`; stage.appendChild(e); setTimeout(() => e.remove(), 1800);
     }
     let lastT = 0; video.addEventListener('timeupdate', () => { const t = video.currentTime; if (t > lastT && t - lastT < 1) (st.vm.reactionEvents || []).filter((r) => r.at > lastT && r.at <= t).forEach((r) => floatReaction(r.kind)); lastT = t; });
@@ -132,6 +132,51 @@
     }
     if (vm.type !== 'image') api(`/api/v/${vm.id}/track`).then((t) => { st.track = t; fx.setTrack(t); }).catch(() => {});
     return { setVM(v) { st.vm = v; ctaUpdate(); fx.invalidate(); if (pc) pc.marks(); }, floatReaction, setCaptions, get caps() { return st.caps; } };
+  }
+
+
+  // ---- ghost button + popover menu that fronts a hidden <select> (CC, speed, caption style). The select stays the source of truth, so every existing
+  // `.value` / `onchange` keeps working; the menu is role=menu with menuitemradio rows (Enter/Space/ArrowDown opens, arrows/Home/End move, Esc closes and returns focus). ----
+  function selectMenu(sel, { label, icon, short } = {}) {
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn sm ghost pc-menu'; btn.id = sel.id + 'Btn';
+    btn.setAttribute('aria-haspopup', 'menu'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', label || sel.getAttribute('aria-label') || '');
+    sel.after(btn); sel.classList.add('sel-src'); sel.tabIndex = -1;
+    const text = () => { const o = sel.selectedOptions[0]; const t = short ? short(sel.value, o) : (o ? o.textContent : ''); return (icon && window.UI ? UI.i(icon) : '') + (t ? `<span>${esc(t)}</span>` : ''); };
+    let shown = null, menu = null;
+    const paint = () => { const k = sel.value + '|' + sel.hidden; if (k === shown) return; shown = k; btn.innerHTML = text(); btn.hidden = sel.hidden; btn.title = (label || '') + (sel.selectedOptions[0] ? ': ' + sel.selectedOptions[0].textContent : ''); };
+    // keep the button in step with programmatic changes (value set by the page, hidden toggled by the caption sync)
+    setInterval(() => { if (!menu) paint(); }, 250); paint();
+    new MutationObserver(() => { shown = null; paint(); }).observe(sel, { childList: true, subtree: true });
+    const items = () => [...menu.querySelectorAll('[role=menuitemradio]')];
+    function close(refocus) { if (!menu) return; menu.remove(); menu = null; btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', away, true); window.removeEventListener('resize', close); if (refocus) btn.focus(); shown = null; paint(); }
+    function away(e) { if (menu && !menu.contains(e.target) && !btn.contains(e.target)) close(false); }
+    function pick(o) { sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); close(true); }
+    function open(focusLast) {
+      if (menu) return close(true);
+      menu = document.createElement('div'); menu.className = 'pop pc-pop'; menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', label || '');
+      const row = (o) => `<button type="button" role="menuitemradio" class="mi" tabindex="-1" aria-checked="${o.value === sel.value}" data-v="${esc(o.value)}"><span class="ck">${o.value === sel.value && window.UI ? UI.i('check') : ''}</span><span>${esc(o.textContent)}</span></button>`;
+      menu.innerHTML = [...sel.children].map((c) => (c.tagName === 'OPTGROUP' ? `<div class="mh" role="presentation">${esc(c.label)}</div>${[...c.children].map(row).join('')}` : row(c))).join('');
+      document.body.appendChild(menu);
+      const r = btn.getBoundingClientRect(), mh = Math.min(menu.offsetHeight, 280), up = r.top > mh + 16 || r.top > innerHeight - r.bottom;
+      menu.style.left = Math.max(8, Math.min(innerWidth - menu.offsetWidth - 8, r.right - menu.offsetWidth)) + 'px';
+      menu.style.top = (up ? Math.max(8, r.top - mh - 6) : r.bottom + 6) + 'px'; menu.style.maxHeight = '280px'; menu.style.transformOrigin = up ? 'bottom right' : 'top right';
+      btn.setAttribute('aria-expanded', 'true');
+      const list = items(), cur = list.find((x) => x.getAttribute('aria-checked') === 'true') || list[0];
+      (focusLast ? list[list.length - 1] : cur).focus(); cur.scrollIntoView({ block: 'nearest' });
+      menu.onclick = (e) => { const b = e.target.closest('[role=menuitemradio]'); if (b) pick({ value: b.dataset.v }); };
+      menu.onkeydown = (e) => {
+        const l = items(), i = l.indexOf(document.activeElement);
+        const go = { ArrowDown: l[(i + 1) % l.length], ArrowUp: l[(i - 1 + l.length) % l.length], Home: l[0], End: l[l.length - 1] }[e.key];
+        if (go) { e.preventDefault(); go.focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
+        else if (e.key === 'Tab') close(false);
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (i >= 0) pick({ value: l[i].dataset.v }); }
+      };
+      document.addEventListener('pointerdown', away, true); window.addEventListener('resize', close);
+    }
+    btn.onclick = () => open(false);
+    btn.onkeydown = (e) => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); open(e.key === 'ArrowUp'); } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); open(false); } };
+    return btn;
   }
 
   const KINDS = { good: ['check-circle', 'Looks good'], question: ['help-circle', 'Question'], issue: ['alert-triangle', 'Problem'], idea: ['lightbulb', 'Idea'], key: ['flag', 'Key moment'] };
@@ -259,5 +304,5 @@
     }
     return { setTrack, invalidate, frame };
   }
-  window.SP = { $, fmt, esc, api, viewer, setViewer, vars, fill, gateUI, attach, LANGS, CAPTION_STYLES, BACKGROUNDS };
+  window.SP = { selectMenu, $, fmt, esc, api, viewer, setViewer, vars, fill, gateUI, attach, LANGS, CAPTION_STYLES, BACKGROUNDS };
 })();

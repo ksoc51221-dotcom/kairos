@@ -3,14 +3,14 @@
 /* Watch page: workstation layout (media canvas left, 460px inspector right). Tokens and components come from app.css; this block holds the page-only rules. */
 :root { --vb: 0px; }
 .wk { height: calc(100vh - var(--topbar-h) - var(--vb)); }
-.viewas { background: var(--selected); color: var(--ink); text-align: center; font: 400 10.5px/16px var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--hair); } .viewas a { text-decoration: underline; text-underline-offset: 3px; margin-left: 8px; }
+.viewas { background: var(--selected); color: var(--ink); text-align: center; font: 500 13px/20px var(--sans); padding: 9px 8px; border-bottom: 1px solid var(--hair); } .viewas a { text-decoration: underline; text-underline-offset: 3px; margin-left: 8px; }
 /* Privacy Guard: one hairline row, shield glyph + mono status + mono counts */
-.guard { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border: 1px solid var(--hair); border-radius: var(--r-btn); font: 400 10.5px/16px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.guard { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 0; font: 500 13px/20px var(--sans); color: var(--ink-2); }
 .guard > svg.i { width: 16px; height: 16px; color: var(--ink); }
 .guard .gl { color: var(--ink); font-weight: 500; } .guard .gs { margin-left: auto; color: var(--ink-2); font-variant-numeric: tabular-nums; } .guard .gs b { font-weight: 500; color: var(--ink); }
 @media (max-width: 640px) { .guard .gs { margin-left: 0; flex-basis: 100%; } }
 /* top bar */
-#title { font: 600 16px/24px var(--sans); letter-spacing: -.01em; border: 1px solid transparent; background: transparent; color: var(--ink); width: min(340px, 28vw); min-width: 100px; padding: 2px 6px; border-radius: var(--r-btn); text-overflow: ellipsis; }
+#title { font: 600 15px/22px var(--sans); letter-spacing: -.005em; border: 1px solid transparent; background: transparent; color: var(--ink); width: min(340px, 28vw); min-width: 100px; padding: 2px 6px; border-radius: var(--r-btn); text-overflow: ellipsis; }
 #title:not([readonly]):hover { background: var(--raised); border-color: var(--hair); } #title:focus { outline: none; border-color: var(--hair-strong); background: var(--surface); }
 #by { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; }
 .by2 { display: none; }
@@ -22,7 +22,7 @@
 .strip .sep { color: var(--ink-3); }
 @media (max-width: 640px) { .strip .sep { display: none; } }
 #proc { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; background: var(--stage); z-index: 6; font-size: 13px; padding: 16px; }
-.psteps, .pfail { width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px; } .psteps h3, .pfail h3 { margin: 0; font: 600 16px/24px var(--sans); letter-spacing: -.01em; }
+.psteps, .pfail { width: min(380px, 100%); display: flex; flex-direction: column; gap: 12px; } .psteps h3, .pfail h3 { margin: 0; font: 600 15px/22px var(--sans); letter-spacing: -.01em; }
 .psteps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; } .psteps li { display: flex; gap: 12px; align-items: flex-start; color: #A3A3A8; } .psteps li.on { color: #fff; } .psteps li.done { color: #D4D4D8; }
 .psteps small { display: flex; align-items: center; gap: 8px; margin-top: 2px; font: 400 12px/16px var(--sans); color: #A3A3A8; } .psteps b { font-weight: 500; }
 .pn { width: 20px; height: 20px; flex: none; border: 1px solid rgba(255,255,255,.3); border-radius: 2px; display: grid; place-items: center; } .psteps li.on .pn { border-color: #fff; } .psteps li.done .pn { background: #fff; border-color: #fff; color: #0B0B0C; } .pn svg.i { width: 14px; height: 14px; } .pn .spin { width: 10px; height: 10px; border-width: 2px; border-color: rgba(255,255,255,.3); border-top-color: #fff; }
@@ -34,36 +34,40 @@
 .pframe { display: flex; flex-direction: column; gap: 8px; }
 .pframe:fullscreen { background: #000; gap: 0; } .pframe:fullscreen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:fullscreen .pc { border-radius: 0; border-width: 1px 0 0; }
 .pframe:-webkit-full-screen { background: #000; gap: 0; } .pframe:-webkit-full-screen .stage { flex: 1; border-radius: 0; aspect-ratio: auto; } .pframe:-webkit-full-screen .pc { border-radius: 0; border-width: 1px 0 0; }
-.pc { border: 1px solid var(--hair); border-radius: var(--r-btn); padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
-.pc .scrub { height: 24px; touch-action: none; } .pc .scrub:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.pc { padding: 4px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.pc .scrub { height: 24px; touch-action: none; } .pc .scrub:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .pc .scrub .thumb { top: 3px; }
 .pc-marks { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; } .pc-mk { position: absolute; top: 2px; width: 1px; height: 5px; margin-left: -.5px; background: var(--ink-3); } .pc-mk.r { background: var(--ink); }
 .pc-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .pc-time { white-space: nowrap; font-variant-numeric: tabular-nums; } .pc-time b { color: var(--ink); }
 .pc-vol { width: 72px; height: 24px; accent-color: var(--ink); }
 .markers { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rbar { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
-.rb { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 8px; border: 1px solid var(--hair-strong); background: none; border-radius: var(--r-chip); color: var(--ink); font: 400 11px/16px var(--mono); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background var(--t-quick) var(--ease), transform var(--t-quick) var(--ease); } .rb:active { transform: scale(.96); }
-.rb:hover { background: var(--raised); } .rb svg.i { width: 15px; height: 15px; color: var(--ink); } .rb .n { font: 400 11px/14px var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); } .rb .n.z { color: var(--ink-3); }
-.rb.cm-b { margin-left: auto; } .rb.cm-b svg.i { color: var(--ink); }
+.rb { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid var(--hair); background: none; border-radius: var(--r-btn); color: var(--ink-2); font: 500 13px/16px var(--sans); cursor: pointer; transition: background var(--t-quick) var(--ease), color var(--t-quick) var(--ease), transform var(--t-quick) var(--ease); } .rb:active { transform: scale(.97); }
+.rb:hover { background: var(--raised); color: var(--ink); } .rb svg.i { width: 15px; height: 15px; } .rb .n { font: 500 12px/16px var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+@media (max-width: 640px) { .rb .rl { display: none; } .rb { padding: 0 8px; } .rb.cm-b .rl { display: none; } }
+.rb.cm-b { margin-left: auto; } .rb.cm-b svg.i { color: inherit; }
 .notes { display: flex; flex-direction: column; gap: 8px; } .notes:empty { display: none; }
 .callout .tag { display: block; margin-bottom: 2px; } .callout.warn .tag { color: var(--ink); } .callout.ok .tag { color: var(--ink); } .callout.bad .tag { color: var(--alert); }
 .imgview { display: grid; place-items: center; } .imgview img { max-width: 100%; max-height: 70vh; }
 /* inspector */
-.wk-side { min-height: 0; } .wk-body.panel { gap: 20px; }
+.wk-side { min-height: 0; } .wk-body.panel { gap: 16px; }
+.wk-sub { border-bottom: 0; padding-bottom: 0; } .wk-sub:empty { display: none; }
+.wk-body .card, .wk-body .card.pad { border: 0; background: none; padding: 0; box-shadow: none; }
 .sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.sl { font: 500 10.5px/14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+.sl { font: 500 13px/20px var(--sans); color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
 .sl .grow { text-align: right; }
-.opts { border: 1px solid var(--hair); border-radius: var(--r-panel); }
-.opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--hair); } .opt:last-child { border-bottom: 0; } .opt.off { color: var(--ink-3); }
+.opts { display: flex; flex-direction: column; gap: 4px; }
+.opt { display: flex; align-items: center; gap: 12px; padding: 6px 0; } .opt.off { color: var(--ink-3); }
 .olab { font-weight: 500; } .osub { color: var(--ink-3); font-size: 12px; line-height: 18px; margin-top: 2px; }
-.apply { border: 1px solid var(--hair-strong); box-shadow: inset 2px 0 0 var(--accent-text); border-radius: var(--r-btn); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.apply { display: flex; flex-direction: column; gap: 8px; }
+.wk-side:has(.ch-card .btn.pri) #applyBtn.pri { background: transparent; border-color: var(--hair-strong); color: var(--ink); font-weight: 500; }
 .apply .r { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .cms { display: flex; flex-direction: column; gap: 16px; }
 .cm { display: flex; gap: 10px; } .cm .avatar { width: 28px; height: 28px; } .cm b { font-weight: 600; }
-.cm .at { color: var(--ink); font: 500 11px/16px var(--mono); cursor: pointer; margin-left: 8px; letter-spacing: .02em; } .cm p { margin: 2px 0 0; line-height: 20px; overflow-wrap: anywhere; } .men { color: var(--ink); font-weight: 600; }
+.cm .at { color: var(--ink); font: 500 12px/16px var(--mono); cursor: pointer; margin-left: 8px; letter-spacing: .02em; } .cm p { margin: 2px 0 0; line-height: 20px; overflow-wrap: anywhere; } .men { color: var(--ink); font-weight: 600; }
 .tr { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; } .tr .tstamp { cursor: pointer; flex: none; }
 .empty { color: var(--ink-3); text-align: center; margin: 24px 0; }
-.chaps { display: flex; flex-direction: column; gap: 4px; } .chap { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--hair-strong); background: var(--surface); border-radius: var(--r-btn); padding: 6px 10px; cursor: pointer; font: 400 13px/20px var(--sans); } .chap:hover { border-color: var(--ink-2); }
+.chaps { display: flex; flex-direction: column; gap: 4px; } .chap { display: flex; align-items: center; gap: 8px; text-align: left; border: 0; background: none; border-radius: var(--r-btn); padding: 6px 8px; margin: 0 -8px; cursor: pointer; font: 400 13px/20px var(--sans); } .chap:hover { background: var(--raised); }
 .chap .tstamp { flex: none; cursor: pointer; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tasks { margin: 0; padding-left: 18px; line-height: 20px; } .tasks li + li { margin-top: 4px; }
@@ -75,20 +79,26 @@
 .ghead { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .kvs3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .heat { display: flex; align-items: flex-end; height: 56px; gap: 1px; cursor: pointer; } .heat i { flex: 1; background: var(--ink-3); border-radius: 1px 1px 0 0; min-height: 2px; transition: background var(--t-quick) var(--ease); } .heat i:hover { background: var(--ink); }
-table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padding: 6px 4px; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; } th { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
-.act { padding: 6px 0; border-bottom: 1px solid var(--hair); } .act small { color: var(--ink-3); display: block; font: 500 11px/14px var(--mono); letter-spacing: .02em; margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; } td, th { padding: 6px 4px; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; } th { font: 500 12px/16px var(--sans); color: var(--ink-3); }
+.act { padding: 6px 0; border-bottom: 1px solid var(--hair); } .act small { color: var(--ink-3); display: block; font: 400 12px/16px var(--sans); margin-top: 2px; }
 .set { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); } .set .lab { flex: 1; min-width: 0; } .set small { display: block; color: var(--ink-3); font-size: 12px; line-height: 18px; }
 .set .field { width: auto; max-width: 200px; }
 .md { white-space: pre-wrap; word-break: break-word; font: 400 12px/18px var(--mono); background: var(--raised); border: 1px solid var(--hair); border-radius: var(--r-btn); padding: 10px 12px; margin: 8px 0; max-height: 320px; overflow: auto; }
 .stepper.docs::before, .stepper.docs .node { display: none; } .stepper.docs .stp { padding-left: 0; }
-.stepper.docs { gap: 0; border-top: 1px solid var(--hair); } .stepper.docs .stp > .card { border: 0; border-bottom: 1px solid var(--hair); border-radius: 0; box-shadow: none; background: none; padding: 10px 0; } .stepper.docs .stp.on > .card { border-color: var(--hair); box-shadow: none; }
+.stepper.docs { gap: 0; } .stepper.docs .stp > .card { border: 0; border-radius: 0; box-shadow: none; background: none; padding: 10px 0; } .stepper.docs .stp.on > .card { border-color: var(--hair); box-shadow: none; }
 details.mcp > summary { cursor: pointer; list-style: none; color: var(--ink-3); font: 500 12px/16px var(--sans); padding: 6px 0 0; } details.mcp > summary::-webkit-details-marker { display: none; } details.mcp > summary::before { content: '+'; display: inline-block; width: 14px; font-family: var(--mono); } details.mcp[open] > summary::before { content: '–'; } details.mcp > summary:hover { color: var(--ink); } details.mcp .code { margin-top: 8px; }
 .code.row > span { min-width: 0; word-break: normal; overflow-wrap: anywhere; }
 .axrow { display: flex; align-items: center; gap: 10px; } .axrow .lab { flex: 1; min-width: 0; font-weight: 500; } .axrow small { display: block; color: var(--ink-3); font-weight: 400; font-size: 12px; line-height: 16px; margin-top: 2px; }
-.axbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; } .prev dt { font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); margin-top: 12px; } .prev dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.axbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; } .prev dt { font: 500 12px/16px var(--sans); color: var(--ink-3); margin-top: 12px; } .prev dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 .pop { position: absolute; z-index: 60; padding: 4px; min-width: 180px; }
 .pop .mi { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; text-align: left; padding: 7px 10px; border-radius: var(--r-btn); font: 500 12px/16px var(--sans); cursor: pointer; white-space: nowrap; color: var(--ink); } .pop .mi:hover { background: var(--raised); } .pop .mi.danger { color: var(--alert); } .pop .mi svg { color: var(--ink-3); }
 .fade { animation: fadein 150ms var(--ease); } @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* player menus: 28px ghost buttons that open a popover (see SP.selectMenu in player.js) */
+.pc-menu { min-width: 28px; gap: 4px; padding: 0 6px; } .pc-menu[hidden] { display: none; } .pc-menu svg.i { width: 16px; height: 16px; } .pc-menu span { font: 500 12px/16px var(--sans); font-variant-numeric: tabular-nums; }
+.pc-pop { position: fixed; z-index: 70; min-width: 148px; overflow-y: auto; border-radius: 8px; padding: 4px; animation: i-pop var(--t-snappy) var(--ease) both; }
+.pc-pop .mh { padding: 8px 10px 4px; font: 500 12px/16px var(--sans); color: var(--ink-3); }
+.pc-pop .mi { gap: 8px; font: 500 13px/20px var(--sans); } .pc-pop .mi .ck { width: 16px; height: 16px; flex: none; display: grid; place-items: center; } .pc-pop .mi .ck svg.i { width: 14px; height: 14px; color: var(--ink); }
+.pc-pop .mi:focus-visible, .pc-pop .mi:focus { outline: none; background: var(--selected); } .pc-pop .mi[aria-checked=true] { font-weight: 600; }
 @media (max-width: 1040px) { .wk { flex-direction: column; height: auto; } .wk-canvas { overflow: visible; border-right: 0; } .wk-side { width: 100%; border-top: 1px solid var(--hair); overflow: visible; min-height: 480px; } .wk-body { overflow: visible; } }
 @media (max-width: 640px) { .wk-canvas > .in { padding: 12px; } .rb.cm-b { margin-left: 0; } }
 /* share modal */
@@ -96,19 +106,19 @@ details.mcp > summary { cursor: pointer; list-style: none; color: var(--ink-3); 
 .sm .to { margin-top: 14px; position: relative; }
 .sm .sug, .sm .got { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; } .sm .sug button, .sm .got span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hair-strong); background: var(--surface); border-radius: var(--r-btn); padding: 4px 10px; font: 500 12px/18px var(--sans); cursor: pointer; }
 .sm .got span { cursor: default; background: var(--selected); border-color: transparent; padding: 3px 4px 3px 10px; } .sm .got span button { border: 0; background: none; cursor: pointer; display: grid; place-items: center; padding: 2px; color: var(--ink-3); }
-.sm h5 { margin: 20px 0 8px; font: 500 11px/14px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); } .sm h5 small { display: block; margin-top: 4px; font: 400 12px/16px var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.sm h5 { margin: 20px 0 8px; font: 500 13px/20px var(--sans); color: var(--ink-2); } .sm h5 small { display: block; margin-top: 4px; font: 400 12px/16px var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink-3); }
 .sm .acc { display: flex; align-items: center; gap: 12px; } .sm .acc b { display: inline-flex; align-items: center; gap: 4px; font: 600 13px/20px var(--sans); cursor: pointer; border: 0; background: none; padding: 0; } .sm .acc small { display: block; color: var(--ink-3); font-size: 12px; margin-top: 2px; }
 .sm .ft { display: flex; align-items: center; gap: 16px; margin: 20px -24px -20px; padding: 12px 24px; border-top: 1px solid var(--hair); background: var(--raised); flex-wrap: wrap; } .sm .ft .go { margin-left: auto; }
 .sm .ft button.t, .sm .ft label.t { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font: 500 12px/16px var(--sans); cursor: pointer; padding: 0; } .sm .ft input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--ink); margin: 0; }
 .sm .more { margin-top: 12px; padding: 12px; background: var(--raised); border: 1px solid var(--hair); border-radius: var(--r-btn); } .sm .pwrow { margin-top: 10px; }
 .sm .note { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--ink-3); } .sm .note.w { color: var(--ink); } .sm .note.e { color: var(--alert); }
-.sm .more a:not(.btn) { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; } .sm .more a:not(.btn):hover { color: var(--ink); } /* links in the public-link block read as links (the global reset makes them plain text) */
+.sm .more a:not(.btn) { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; } .sm .more a:not(.btn):hover { color: var(--ink); } /* links in the public-link block read as links (the global reset makes them plain text) */
 </style></head><body>
 <div id="viewas" class="viewas" hidden>You are previewing this as a viewer sees it. <a href="/stop-viewing-as">Back to owner view</a></div>
 <header class="top"><a class="brand" href="/" id="brand"></a>
   <nav class="topnav" id="nav" hidden><a href="/">Library</a><a href="/#/settings">Settings</a></nav><span class="vsep"></span>
   <h1 class="sr" id="h1"></h1><input id="title" spellcheck="false" aria-label="Title"><span class="meta" id="by"></span><div class="grow"></div>
-  <div class="acts"><span id="ownerBtns" hidden style="display:contents"><button class="btn" id="planBtn" hidden><span data-i="list"></span><span class="lbl">Action plan</span></button><span class="split"><button class="btn pri" id="share"><span data-i="share"></span><span class="lbl">Share</span></button><button class="btn" id="copy" title="Copy link" aria-label="Copy link" data-i="link"></button></span>
+  <div class="acts"><span id="ownerBtns" hidden style="display:contents"><button class="btn" id="planBtn" hidden><span data-i="list"></span><span class="lbl">Action plan</span></button><span class="split"><button class="btn" id="share"><span data-i="share"></span><span class="lbl">Share</span></button><button class="btn" id="copy" title="Copy link" aria-label="Copy link" data-i="link"></button></span>
     <button class="iconbtn" id="moreBtn" title="More" aria-label="More" data-i="more"></button><a class="avatar" id="who" href="/#/settings" title="Settings"></a></span>
   <button class="btn pri" id="vcopy" hidden aria-label="Copy link"><span data-i="link"></span><span class="lbl">Copy link</span></button></div></header>
 <div id="root"><div class="wk"><main class="wk-canvas"><div class="in">
@@ -126,19 +136,19 @@ details.mcp > summary { cursor: pointer; list-style: none; color: var(--ink-3); 
 </div></main>
 <aside class="wk-side"><div class="tabs" id="tabs"></div><div class="wk-sub" id="sub"></div><div class="wk-body panel" id="panel"><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:56px"></div><div class="skeleton" style="height:56px"></div></div>
   <form class="wk-foot" id="form"><div class="inwrap"><input class="field" id="ctext" placeholder="Comment at the current time… use @name to mention" autocomplete="off"><button class="send" aria-label="Send comment" data-i="send"></button></div></form></aside></div></div>
-<div id="modal" class="modal" hidden></div><div id="toast" class="toast"></div>
+<div id="modal" class="modal" hidden></div>
 <script src="/static/csrf.js"></script><script src="/static/ui.js"></script><script src="/static/player.js"></script><script src="/static/edit-prompt.js"></script><script src="/static/redact-prompt.js"></script>
 <script>
 const { $, fmt, esc, api, viewer, setViewer, gateUI, attach, LANGS } = SP, { i: I } = UI;
 const id = location.pathname.split('/').pop();
 const KINDS = [['good', 'Looks good', 'check-circle'], ['question', 'Question', 'help-circle'], ['issue', 'Problem', 'alert-triangle'], ['idea', 'Idea', 'lightbulb'], ['key', 'Key moment', 'flag']];
 let me = { owner: false }, vm, ctl, tab = null, loaded = false, lastKey = '', an = null, anFor = '';
-const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 1800); };
+const toast = (m) => UI.toast(m);
 const now = () => $('v')?.currentTime || 0; // B10: screenshots replace #v with an <img>
 const copied = (btn) => { const t = btn.innerHTML; btn.textContent = 'Copied'; setTimeout(() => (btn.innerHTML = t), 1400); }; // U16
 const seek = (t) => { const v = $('v'); if (!v) return; v.currentTime = t; v.play(); };
 const mentions = (t) => esc(t).replace(/@(\w+)/g, '<span class="men">@$1</span>');
-const plural = (n, w) => `${String(n).padStart(2, '0')} ${w}${n === 1 ? '' : 's'}`;
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const patch = async (body) => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body }); ctl?.setVM(vm); lastKey = ''; render(); };
 
 async function boot() {
@@ -159,6 +169,7 @@ async function boot() {
 function setupCC() {
   $('cc').innerHTML = '<option value="">CC: off</option><option value="original">Captions</option><optgroup label="Translate (local AI)">' + LANGS.map((l) => `<option>${l}</option>`).join('') + '</optgroup>';
   $('cc').onchange = async () => { const v = $('cc').value; try { if (v && v !== 'original') toast(`Translating to ${v}… first time takes a moment`); await ctl.setCaptions(v || null); } catch (e) { toast(e.message); $('cc').value = ''; } };
+  SP.selectMenu($('cc'), { label: 'Captions', icon: 'cc', short: (v, o) => (!v ? '' : v === 'original' ? 'On' : o.textContent) });
 }
 // U3: the server pushes "this video changed" over one event stream, and the page refetches only then. No timer, so nothing is rebuilt for no reason.
 let refetching = false, again = false;
@@ -198,7 +209,7 @@ function renderTabs() {
     $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => go(b.dataset.t));
   }
   let on = null; $('tabs').querySelectorAll('button').forEach((b) => { const is = b.dataset.t === tab; b.classList.toggle('on', is); if (is) on = b; if (b.dataset.t === 'generate') { const busy = me.owner && vm.stage && vm.stage !== 'done'; b.querySelector('.dot')?.remove(); if (busy) b.insertAdjacentHTML('beforeend', '<span class="dot pulse"></span>'); } });
-  if (on) { const ind = $('tabs').querySelector('.ind'); ind.style.width = on.offsetWidth + 'px'; ind.style.transform = `translateX(${on.offsetLeft}px)`; }
+  if (on) { const ind = $('tabs').querySelector('.ind'); ind.style.transform = `translateX(${on.offsetLeft}px) scaleX(${on.offsetWidth})`; }
 }
 function go(t) { scrollOf[tab] = $('panel').scrollTop; tab = t; lastKey = ''; $('panel').dataset.k = ''; render(); $('panel').scrollTop = scrollOf[tab] || 0; const pl = $('panel'); pl.classList.remove('i-slide'); void pl.offsetWidth; pl.classList.add('i-slide'); }
 // the inspector sub-header: a real fact on the left, small neutral badges (only true ones) on the right
@@ -248,21 +259,16 @@ function renderGuard() {
   let h = '';
   if (ready && vm.status !== 'failed' && !(me.owner && vm.shareable === false)) {
     const b = vm.redactionCount || 0, a = me.owner ? vm.speechRedactions || 0 : 0;
-    const parts = [b ? `${UI.n(b, 2, 'g-blur')} BLURRED` : '', a ? `${UI.n(a, 2, 'g-bleep')} BLEEPED` : ''].filter(Boolean);
-    h = `<div class="guard" role="status" title="${me.owner ? 'Checked on this computer before anyone could watch.' : 'Checked before you could watch.'}">${I('shield-check')}<span class="gl">PRIVACY GUARD · CLEARED</span><span class="gs">${parts.length ? parts.join(' · ') : 'NOTHING TO HIDE'}</span></div>`;
+    const parts = [b ? `${UI.n(b, 0, 'g-blur')} blurred` : '', a ? `${UI.n(a, 0, 'g-bleep')} bleeped` : ''].filter(Boolean);
+    h = `<div class="guard" role="status" title="${me.owner ? 'Checked on this computer before anyone could watch.' : 'Checked before you could watch.'}">${I('shield-check')}<span class="gl">Privacy Guard · cleared</span><span class="gs">${parts.length ? parts.join(' · ') : 'Nothing to hide'}</span></div>`;
   }
   if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
   UI.roll(el);
 }
 function renderMetrics() {
-  const kv = (k, v) => `<div><span class="k">${k}</span><span class="v">${typeof v === 'number' ? UI.n(v, 2, 'm-' + k) : v}</span></div>`, c = [];
-  const reacts = Object.values(vm.reactions || {}).reduce((a, n) => a + n, 0), vs = (vm.viewers || []).filter((x) => !x.owner);
-  if (vm.type !== 'image' && vm.duration) c.push(kv('Duration', fmt(vm.duration)));
-  if (vm.width && vm.height) c.push(kv('Resolution', `${vm.width}×${vm.height}`));
+  const kv = (k, v) => `<div><span class="k">${k}</span><span class="v">${typeof v === 'number' ? UI.n(v, 0, 'm-' + k) : v}</span></div>`, c = [];
+  const vs = (vm.viewers || []).filter((x) => !x.owner);
   c.push(kv('Views', vm.views));
-  if (vm.comments.length) c.push(kv('Comments', vm.comments.length));
-  if (reacts) c.push(kv('Markers', reacts));
-  if (vm.chapters?.length) c.push(kv('Chapters', vm.chapters.length));
   if (me.owner && vs.length && vm.duration) c.push(kv('Avg. watched', Math.round(vs.reduce((a, x) => a + Math.min(1, x.maxT / vm.duration), 0) / vs.length * 100) + '%'));
   if (me.owner && an?.silenceSeconds > 0) c.push(kv('Silence found', an.silenceSeconds + 's'));
   const h = c.join(''); if ($('metrics').dataset.h !== h) { $('metrics').dataset.h = h; $('metrics').innerHTML = h; }
@@ -283,7 +289,7 @@ function renderNotes() {
 }
 // U15: the count goes up the instant you click; the server's answer replaces it a moment later (and corrects it if the write failed)
 function drawReactions() {
-  const html = KINDS.map(([k, l, ic]) => `<button class="rb" data-k="${k}" title="Mark this moment: ${l}" aria-label="${l}">${I(ic)}<span class="n${vm.reactions[k] ? '' : ' z'}">${UI.n(vm.reactions[k] || 0, 2, 'rx-' + k)}</span></button>`).join('') + `<button class="rb cm-b" id="cfocus" title="Comment at the current time">${I('comment')}COMMENT</button>`;
+  const html = KINDS.map(([k, l, ic]) => `<button class="rb" data-k="${k}" title="Mark this moment: ${l}" aria-label="${l}${vm.reactions[k] ? ', ' + vm.reactions[k] : ''}">${I(ic)}<span class="rl">${l}</span>${vm.reactions[k] ? `<span class="n">${UI.n(vm.reactions[k], 0, 'rx-' + k)}</span>` : ''}</button>`).join('') + `<button class="rb cm-b" id="cfocus" title="Comment at the current time" aria-label="Comment at the current time">${I('comment')}<span class="rl">Comment</span></button>`;
   if ($('react').dataset.h === html) return; $('react').dataset.h = html; $('react').innerHTML = html; UI.roll($('react'));
   const react = async (k) => {
     const at = now(), before = vm.reactions[k] || 0;
@@ -340,7 +346,7 @@ function renderEdit(p) {
   const busy = !!(vm.stage && vm.stage !== 'done');
   if (me.owner && anFor !== `${id}:${vm.duration}:${vm.words ? 1 : 0}` && !busy) loadAnalysis();
   const sil = an?.silenceSeconds ?? null, fil = an?.fillerCount ?? null, cuts = draft().length, applying = /^Applying edits/.test(vm.stage || '');
-  const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"${sub && !/</.test(sub) ? ` title="${esc(sub)}"` : ''}><span class="tile sm ${disabled ? 'off' : ''}">${I(icon)}</span><div class="grow"><div class="olab">${label}</div>${sub && /</.test(sub) ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
+  const opt = (icon, label, sub, checked, disabled, key) => `<div class="opt ${disabled ? 'off' : ''}"${sub && !/</.test(sub) ? ` title="${esc(sub)}"` : ''}><div class="grow"><div class="olab">${label}</div>${sub && /</.test(sub) ? `<div class="osub">${sub}</div>` : ''}</div><input type="checkbox" class="sw" data-sw="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"></div>`;
   p.innerHTML = `<section class="sec"><div class="sl">Describe an edit</div><div id="epHost"></div></section>
     ${cuts || vm.edits?.inserts?.length ? `<div class="apply" title="Nothing changes until you apply them; the previous version is kept so you can undo once."><div class="meta"><b>${plural(cuts, 'cut')}${vm.edits?.inserts?.length ? ` · ${plural(vm.edits.inserts.length, 'insert')}` : ''} ready</b></div><div class="r"><button class="btn pri sm" id="applyBtn" ${applying ? 'disabled' : ''}>${applying ? esc(vm.stage) : 'Apply edits'}</button><a class="btn sm" href="/edit/${id}">Review in the editor</a></div></div>` : ''}
     ${vm.canUndo && vm.undoKind !== 'redact' ? `<div class="apply"><div class="meta"><b>Edits applied</b></div><div class="r"><button class="btn sm" id="undoBtn">Undo the last edit</button></div></div>` : ''}
@@ -453,6 +459,7 @@ $('form').onsubmit = async (e) => { e.preventDefault(); const text = $('ctext').
 $('title').onchange = async () => { vm = await api(`/api/videos/${id}`, { method: 'PATCH', body: { title: $('title').value } }); };
 $('title').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
 $('speed').onchange = () => { if ($('v')) $('v').playbackRate = +$('speed').value; };
+SP.selectMenu($('speed'), { label: 'Playback speed', short: (v) => (v === '1' ? '1×' : v + '×') });
 $('later').onclick = () => patch({ watchLater: !vm.watchLater });
 const copyLink = async () => { await navigator.clipboard.writeText(location.href.split('?')[0]); toast('Link copied'); };
 $('proc').addEventListener('click', async (e) => { const b = e.target.closest('[data-p]'); if (!b) return; if (b.dataset.p === 'del') return deleteVideo();
