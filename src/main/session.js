@@ -1,7 +1,7 @@
 // Recording session: idle → preparing → countdown → recording ⇄ paused → stopping → saved.
 // Owns the overlay windows (bubble, controls, countdown, outline, pen, ring, notes), the cursor feed and the recording shortcuts, and writes
 // the recorder's chunks to disk as they arrive (B3). The hidden recorder window owns the actual streams and the clock; this module directs it.
-const { app, screen, shell, dialog, desktopCapturer } = require('electron');
+const { app, screen, dialog, desktopCapturer } = require('electron');
 const { EventEmitter } = require('events');
 const path = require('path');
 const fs = require('fs');
@@ -433,7 +433,7 @@ async function finish({ timeline, stats } = {}) {
       console.log('SELFTEST_DONE', s.id, s.dir);
       if (events.listenerCount('processed')) events.emit('processed', { id: s.id, dir: s.dir, timeline: tl }); else app.quit();
     });
-  if (!config.SELFTEST) shell.openExternal(config.ownerOrigin(`/v/${s.id}`));
+  if (!config.SELFTEST) require('./library-window').showLibrary(`/v/${s.id}`);
   return s.id;
 }
 

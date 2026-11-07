@@ -13,6 +13,7 @@
     "test:e2e": "bash tests/e2e/selftest.sh",
     "build:mac:dry": "node scripts/build-mac.js --dry",
     "test:ext:e2e": "node extension/tests/e2e.js",
+    "test:library:e2e": "electron tests/e2e/library-window.js",
     "build:ext": "node scripts/build-extension.js"
   },
   "license": "MIT",

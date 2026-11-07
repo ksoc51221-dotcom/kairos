@@ -1,10 +1,9 @@
 // Every ipcMain handler in one place. Thin on purpose: each one calls into the module that owns the behaviour.
-const { app, ipcMain, shell } = require('electron');
+const { app, ipcMain } = require('electron');
 const store = require('../store');
 const { transcribeAudioFile } = require('../agents/transcribe');
 const path = require('path');
 const fs = require('fs');
-const config = require('./config');
 const permissions = require('./permissions');
 const session = require('./session');
 const screenshot = require('./screenshot');
@@ -25,7 +24,7 @@ function register() {
   handle('ready:download', () => { require('./readiness').startDownload(); return require('./readiness').get(); });
   handle('settings:get', () => store.getSettings());
   handle('settings:set', (patch) => store.setSettings(patch));
-  handle('library:open', () => shell.openExternal(config.ownerOrigin('/')));
+  handle('library:open', () => require('./library-window').showLibrary());
   handle('screenshot:start', screenshot.start);
   handle('sources:list', (opts) => session.listSources(opts));
   handle('perm:status', () => (process.platform !== 'darwin' ? permissions.status() : { ...permissions.status(), host: permissions.hostName() }));

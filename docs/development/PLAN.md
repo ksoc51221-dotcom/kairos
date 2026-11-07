@@ -279,7 +279,7 @@ Page `server/public/editor.html` (owner-only). Non-destructive: edits are a list
 - **U13** (custom player controls + hover thumbnails) and **B23** (AudioWorklet dictation) were not in this session's task list and are **not done**.
 - Cursor highlight, ripples and zoom still exist only in the player; they are not burned into a downloaded file.
 - The editor preview skips the cut ranges while playing, but the rendered file is only made on Apply. The editor was exercised in headless Chrome with a synthetic clip, not with a long real recording. Apply from the page (button → queue → SSE progress) was not exercised end to end; the render itself is covered by the unit tests.
-- After Stop, `shell.openExternal` still opens the watch page in the browser, which brings the browser forward (a product choice, unchanged).
+- After Stop, the watch page opens in the library window (`library-window.js`), which comes forward (a product choice). It used to open in the browser.
 - The Electron windows (launcher, bubble toolbar) were only checked as far as their tokens already match the reference.
 
 ### Phase 4: AI actions + MCP · Oct 18 — ✅ done 2026-10-16 (results below the acceptance line)

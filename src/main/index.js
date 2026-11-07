@@ -14,6 +14,7 @@ const shortcuts = require('./shortcuts');
 const screenshot = require('./screenshot');
 const session = require('./session');
 const win = require('./windows');
+const library = require('./library-window');
 const ipc = require('./ipc');
 const { log } = logger;
 
@@ -51,13 +52,14 @@ app.whenReady().then(async () => {
     callback(S?.opts.systemAudio ? { video: pick, audio: 'loopback' } : { video: pick });
   });
   win.createRecorder();
+  library.installMenu();
   log('start', { packaged: app.isPackaged, version: app.getVersion(), perms: permissions.report() });
 
   const tray = new Tray(nativeImage.createEmpty()); tray.setTitle('● Kairos');
   const trayMenu = () => Menu.buildFromTemplate([
     ...(readiness.get().speechMissing ? [{ label: readiness.get().download.state === 'running' ? `Downloading speech model… ${readiness.get().download.percent}%` : `⚠ Download the speech model (${readiness.MODEL_MB} MB)`, enabled: readiness.get().download.state !== 'running', click: () => readiness.startDownload() }, { type: 'separator' }] : []),
     { label: 'New recording…  (⌥⇧R)', click: win.showLauncher }, { label: 'Screenshot  (⌥⇧A)', click: screenshot.start },
-    { label: 'Open library', click: () => shell.openExternal(config.ownerOrigin('/')) }, { type: 'separator' },
+    { label: 'Open library', click: () => library.showLibrary() }, { type: 'separator' },
     { label: 'Copy diagnostics', click: () => clipboard.writeText(`Kairos diagnostics\nperms: ${JSON.stringify(permissions.report())}\n${logger.tail(60)}`) },
     { label: 'Show log file', click: () => shell.showItemInFolder(logger.file) }, { type: 'separator' }, { role: 'quit' },
   ]);
@@ -73,5 +75,5 @@ app.whenReady().then(async () => {
   if (!app.getLoginItemSettings().wasOpenedAtLogin) { win.showSplash(); win.showLauncher(); }
 });
 app.on('window-all-closed', (e) => e.preventDefault());
-app.on('activate', () => win.showLauncher()); // clicking the Dock icon always brings the launcher back
+app.on('activate', () => { if (library.isOpen()) library.showLibrary(); else win.showLauncher(); }); // the Dock icon goes back to the open library, otherwise it brings the launcher back
 app.on('will-quit', () => shortcuts.unregisterAll());

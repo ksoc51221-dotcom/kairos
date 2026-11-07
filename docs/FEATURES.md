@@ -75,6 +75,7 @@ Legend: ✅ built and tested · 🟡 built, partly tested or with a limit · ⏳
 | Retention policy, disable downloads, data export/delete | ✅ |
 | Share over LAN (owner/viewer separation) | ✅ |
 | SSO/SCIM, SOC 2, ISO 27001, hosted regions | ❌ (local-first; stated honestly in Settings) |
+| **Library in its own window**: the tray, the launcher, the Dock and the end of a recording open one Kairos window instead of the browser. It remembers its size and place, and only the local server's pages stay in it; other links go to the default browser. | ✅ | `npm run test:library:e2e` runs the real window code hidden. The title bar, Dock and physical trackpad need a check by hand. |
 
 ## Editing (Phase 3)
 | Feature | Status | Notes |

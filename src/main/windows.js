@@ -41,6 +41,10 @@ function holdOverlay(key) { if (holders.has(key)) return; holders.add(key); if (
 // up, Kairos stays a menu-bar app (tray icon and ⌥⇧R open the launcher); the Dock icon is only there at launch, before the first overlay.
 function releaseOverlay(key) { holders.delete(key); }
 const setDockIcon = (img) => { dockIcon = img; };
+// The library is an ordinary window, so it needs the Dock icon and Cmd-Tab, and the icon comes back only when the user is on that window (opening or
+// focusing it), never when an overlay goes: that is what keeps B28 fixed. While any overlay holds, the overlay wins (B25). showDockForWindow runs again on the next focus.
+const showDockForWindow = () => { if (app.dock && holders.size === 0 && !app.dock.isVisible()) app.dock.show(); };
+const hideDockAfterWindow = () => { if (app.dock && holders.size === 0 && !quitting && app.dock.isVisible()) app.dock.hide(); };
 const floatTop = (w) => { w.setAlwaysOnTop(true, 'screen-saver'); w.setVisibleOnAllWorkspaces(true, { visibleInFullScreen: true, skipTransformProcessType: true }); };
 const showWhenReady = (w) => w.once('ready-to-show', () => w.showInactive());
 
@@ -179,6 +183,6 @@ function createAnnotator(d) {
 }
 
 module.exports = {
-  W, alive, send, load, baseWin, floatTop, easeBounds, holdOverlay, releaseOverlay, setDockIcon, setQuitting, displayFor,
+  W, alive, send, load, baseWin, floatTop, easeBounds, holdOverlay, releaseOverlay, setDockIcon, showDockForWindow, hideDockAfterWindow, setQuitting, displayFor,
   showLauncher, showSplash, hideLauncher, toggleLauncher, sizeLauncher, createRecorder, createBubble, createControls, createCountdown, prepareCountdown, beginCountdown, createOutline, createDraw, createRing, createNotes, createArea, createAnnotator,
 };

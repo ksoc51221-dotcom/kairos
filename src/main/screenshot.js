@@ -1,6 +1,6 @@
 // Screenshots: capture the display → pick an area → annotate → save as an image in the library.
 // The area picker is shared with "Custom area" recording; its result arrives through areaResult() (wired in ipc.js).
-const { desktopCapturer, screen, nativeImage, clipboard, shell } = require('electron');
+const { desktopCapturer, screen, nativeImage, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const store = require('../store');
@@ -60,7 +60,7 @@ function saveAnnotated(url) {
   clipboard.writeText(config.origin(`/v/${v.id}`));
   require('../agents/orchestrator').guardStill(v.id).catch((e) => console.error('screenshot guard', e));
   cancelAnnotate();
-  shell.openExternal(config.ownerOrigin(`/v/${v.id}`));
+  require('./library-window').showLibrary(`/v/${v.id}`);
 }
 
 module.exports = { start, pickArea, pickCrop, areaResult, openAnnotator, cancelAnnotate, copyAnnotated, saveAnnotated };
